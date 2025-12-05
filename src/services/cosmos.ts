@@ -5,7 +5,7 @@ export interface CosmosResponse<T> {
 }
 
 export const cosmos = {
-    connect: async (connectionString: string): Promise<CosmosResponse<string[]>> => {
+    connect: async (connectionString: string): Promise<CosmosResponse<{ databases: string[], accountName: string }>> => {
         return await window.ipcRenderer.invoke('cosmos:connect', connectionString);
     },
 

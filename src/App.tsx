@@ -16,11 +16,17 @@ function App() {
     const [queryResults, setQueryResults] = useState<any[]>([]);
     const [isQuerying, setIsQuerying] = useState(false);
 
+    const [accountName, setAccountName] = useState('Cosmos DB');
+
     const handleConnect = async (connStr: string) => {
         setConnectionString(connStr);
+
+
+
         const result = await cosmos.connect(connStr);
         if (result.success && result.data) {
-            setDatabases(result.data);
+            setDatabases(result.data.databases);
+            setAccountName(result.data.accountName);
             setIsConnected(true);
         }
     };
@@ -88,6 +94,7 @@ function App() {
                     onSelectDatabase={handleSelectDatabase}
                     onSelectContainer={setSelectedContainer}
                     containers={containers}
+                    accountName={accountName}
                 />
             }
             content={

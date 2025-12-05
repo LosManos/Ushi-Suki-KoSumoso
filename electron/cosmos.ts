@@ -20,7 +20,24 @@ export const cosmosService = {
 
             // Verify connection by listing databases
             const { resources } = await client.databases.readAll().fetchAll();
-            return { success: true, data: resources.map(d => d.id) };
+
+            // Fetch account info
+            const accountInfo = await client.getDatabaseAccount();
+
+            // Default to 'Cosmos DB' if we can't find a good name, but id is usually the account name
+            let accountName = (accountInfo?.resource as any)?.id;
+
+            if (!accountName && accountInfo?.headers && accountInfo.headers['content-location']) {
+                const contentLoc = accountInfo.headers['content-location'] as string;
+                const match = contentLoc.match(/https:\/\/([\w-]+)\.documents\.azure\.com/);
+                if (match && match[1]) {
+                    accountName = match[1];
+                }
+            }
+
+            if (!accountName) accountName = 'Cosmos DB';
+
+            return { success: true, data: { databases: resources.map(d => d.id), accountName } };
         } catch (error: any) {
             console.error('Cosmos Connection Error:', error);
             return { success: false, error: error.message };

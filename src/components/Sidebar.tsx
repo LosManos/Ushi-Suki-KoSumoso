@@ -8,6 +8,7 @@ interface SidebarProps {
   onSelectDatabase: (dbId: string | null) => void;
   onSelectContainer: (containerId: string) => void;
   containers: Record<string, string[]>; // Map dbId -> containerIds
+  accountName?: string;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -16,7 +17,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   selectedContainer,
   onSelectDatabase,
   onSelectContainer,
-  containers
+  containers,
+  accountName = 'Cosmos DB'
 }) => {
   const [focusedId, setFocusedId] = React.useState<string | null>(null);
   const sidebarRef = React.useRef<HTMLDivElement>(null);
@@ -126,7 +128,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <div className="sidebar-content">
       <div className="sidebar-header">
-        <h2 title="Focus Sidebar (Cmd+1)">Cosmos DB</h2>
+        <h2 title="Focus Sidebar (Cmd+1)">{accountName}</h2>
       </div>
       <nav
         className="sidebar-nav"
