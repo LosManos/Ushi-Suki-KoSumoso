@@ -51,6 +51,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
     return () => window.removeEventListener('keydown', handleWindowKeyDown);
   }, []);
 
+  // Global Cmd+, listener to toggle settings
+  React.useEffect(() => {
+    const handleWindowKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === ',') {
+        e.preventDefault();
+        setIsSettingsOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleWindowKeyDown);
+    return () => window.removeEventListener('keydown', handleWindowKeyDown);
+  }, []);
+
   const flatItems = React.useMemo(() => {
     const items: { type: 'db' | 'container'; id: string; parentId?: string }[] = [];
     databases.forEach(db => {
@@ -153,7 +165,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             className={`settings-btn ${isSettingsOpen ? 'active' : ''}`}
             onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-            title="Settings"
+            title="Settings (Cmd+,)"
           >
             ⚙️
           </button>
