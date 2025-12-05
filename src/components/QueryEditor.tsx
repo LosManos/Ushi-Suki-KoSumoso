@@ -13,6 +13,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({ onRunQuery, selectedCo
 
     const pageSizeSelectRef = React.useRef<HTMLSelectElement>(null);
     const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+    const quickIdInputRef = React.useRef<HTMLInputElement>(null);
 
     React.useEffect(() => {
         if (selectedContainer && textareaRef.current) {
@@ -31,6 +32,11 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({ onRunQuery, selectedCo
             if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'r') {
                 e.preventDefault();
                 pageSizeSelectRef.current?.focus();
+            }
+            // Cmd/Ctrl + Shift + I to focus ID lookup
+            if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'i') {
+                e.preventDefault();
+                quickIdInputRef.current?.focus();
             }
             // Cmd/Ctrl + 2 to focus query editor
             if ((e.metaKey || e.ctrlKey) && e.key === '2') {
@@ -55,14 +61,17 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({ onRunQuery, selectedCo
             <div className="editor-toolbar">
                 <span className="tab active" title="Focus Query Editor (Cmd+2)">Query 1</span>
                 <div className="quick-lookup">
+                    <label title="Focus ID Lookup (Cmd+Shift+I)" style={{ color: '#ccc', fontSize: '0.8rem', marginRight: '0.5rem' }}>Get by Document Id:</label>
                     <input
+                        ref={quickIdInputRef}
                         type="text"
                         placeholder="Quick ID Lookup..."
                         value={quickId}
                         onChange={(e) => setQuickId(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleQuickLookup()}
+                        title="Focus ID Lookup (Cmd+Shift+I)"
                     />
-                    <button onClick={handleQuickLookup}>Go</button>
+                    <button onClick={handleQuickLookup}>Get</button>
                 </div>
             </div>
             <div className="editor-area">
