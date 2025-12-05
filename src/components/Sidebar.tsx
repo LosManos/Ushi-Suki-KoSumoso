@@ -127,11 +127,67 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   const { theme, setTheme } = useTheme();
+  const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
+  const settingsRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (settingsRef.current && !settingsRef.current.contains(event.target as Node)) {
+        setIsSettingsOpen(false);
+      }
+    };
+
+    if (isSettingsOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isSettingsOpen]);
 
   return (
     <div className="sidebar-content">
       <div className="sidebar-header">
         <h2 title="Focus Sidebar (Cmd+1)">{accountName}</h2>
+        <div className="settings-container" ref={settingsRef}>
+          <button
+            className={`settings-btn ${isSettingsOpen ? 'active' : ''}`}
+            onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+            title="Settings"
+          >
+            ⚙️
+          </button>
+          {isSettingsOpen && (
+            <div className="settings-dropdown">
+              <div className="settings-section">
+                <h4>Theme</h4>
+                <div className="theme-options">
+                  <button
+                    className={theme === 'light' ? 'active' : ''}
+                    onClick={() => setTheme('light')}
+                    title="Light Mode"
+                  >
+                    ☀️ Light
+                  </button>
+                  <button
+                    className={theme === 'dark' ? 'active' : ''}
+                    onClick={() => setTheme('dark')}
+                    title="Dark Mode"
+                  >
+                    🌙 Dark
+                  </button>
+                  <button
+                    className={theme === 'system' ? 'active' : ''}
+                    onClick={() => setTheme('system')}
+                    title="System Theme"
+                  >
+                    💻 System
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
       <nav
         className="sidebar-nav"
@@ -164,33 +220,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         ))}
       </nav>
-
-      <div className="sidebar-footer">
-        <div className="theme-switcher">
-          <button
-            className={theme === 'light' ? 'active' : ''}
-            onClick={() => setTheme('light')}
-            title="Light Mode"
-          >
-            ☀️
-          </button>
-          <button
-            className={theme === 'dark' ? 'active' : ''}
-            onClick={() => setTheme('dark')}
-            title="Dark Mode"
-          >
-            🌙
-          </button>
-          <button
-            className={theme === 'system' ? 'active' : ''}
-            onClick={() => setTheme('system')}
-            title="System Theme"
-          >
-            💻
-          </button>
-        </div>
-      </div>
     </div>
   );
 };
-
