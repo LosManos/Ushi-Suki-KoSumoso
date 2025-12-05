@@ -39,6 +39,18 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ results, loading }) =>
           }
         }
       }
+
+      // Cmd/Ctrl + T to switch to Text view
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && (e.key === 't' || e.key === 'T')) {
+        e.preventDefault();
+        setViewMode('text');
+      }
+
+      // Cmd/Ctrl + Shift + T to switch to Hierarchical view
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 't' || e.key === 'T')) {
+        e.preventDefault();
+        setViewMode('json');
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -54,16 +66,16 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ results, loading }) =>
             <button
               className={viewMode === 'text' ? 'active' : ''}
               onClick={() => setViewMode('text')}
-              title="Text View"
+              title="Text View (Cmd+T)"
             >
               Text
             </button>
             <button
               className={viewMode === 'json' ? 'active' : ''}
               onClick={() => setViewMode('json')}
-              title="JSON View"
+              title="Hierarchical View (Cmd+Shift+T)"
             >
-              JSON
+              Hierarchical
             </button>
           </div>
           <div className="results-meta">{loading ? 'Running...' : `${results.length} documents found`}</div>
