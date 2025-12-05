@@ -3,7 +3,8 @@
         "module": "commonjs",
         "target": "esnext",
         "sourceMap": true,
-        "outDir": "dist-electron"
+        "outDir": "dist-electron",
+        "esModuleInterop": true
     },
     "include": [
         "electron/**/*"

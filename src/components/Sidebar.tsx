@@ -1,4 +1,3 @@
-```
 import React from 'react';
 import './Sidebar.css';
 
@@ -11,11 +10,11 @@ interface SidebarProps {
   containers: Record<string, string[]>; // Map dbId -> containerIds
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ 
-  databases, 
-  selectedDatabase, 
+export const Sidebar: React.FC<SidebarProps> = ({
+  databases,
+  selectedDatabase,
   selectedContainer,
-  onSelectDatabase, 
+  onSelectDatabase,
   onSelectContainer,
   containers
 }) => {
@@ -27,8 +26,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <nav className="sidebar-nav">
         {databases.map(db => (
           <div key={db} className="db-item">
-            <div 
-              className={`nav - item ${ selectedDatabase === db ? 'active' : '' } `}
+            <div
+              className={`nav-item ${selectedDatabase === db ? 'active' : ''}`}
               onClick={() => onSelectDatabase(db)}
             >
               📂 {db}
@@ -36,9 +35,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {selectedDatabase === db && containers[db] && (
               <div className="container-list">
                 {containers[db].map(container => (
-                  <div 
+                  <div
                     key={container}
-                    className={`nav - item sub - item ${ selectedContainer === container ? 'active' : '' } `}
+                    className={`nav-item sub-item ${selectedContainer === container ? 'active' : ''}`}
                     onClick={() => onSelectContainer(container)}
                   >
                     📄 {container}
@@ -52,4 +51,4 @@ export const Sidebar: React.FC<SidebarProps> = ({
     </div>
   );
 };
-```
+

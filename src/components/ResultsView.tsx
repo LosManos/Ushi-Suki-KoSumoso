@@ -1,4 +1,3 @@
-```typescript
 import React from 'react';
 import './ResultsView.css';
 
@@ -12,7 +11,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ results, loading }) =>
     <div className="results-view-container">
       <div className="results-header">
         <h3>Results</h3>
-        <div className="results-meta">{loading ? 'Running...' : `${ results.length } documents found`}</div>
+        <div className="results-meta">{loading ? 'Running...' : `${results.length} documents found`}</div>
       </div>
       <div className="results-content">
         {loading ? (
@@ -28,4 +27,4 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ results, loading }) =>
     </div>
   );
 };
-```
+
