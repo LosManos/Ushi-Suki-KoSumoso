@@ -66,3 +66,32 @@ button[type="submit"]:disabled {
     opacity: 0.7;
     cursor: not-allowed;
 }
+
+.auth-method-toggle {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.auth-method-toggle label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: #e0e0e0;
+}
+
+.help-text {
+    display: block;
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    color: #aaa;
+}
+
+.help-text code {
+    background: #333;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    font-family: monospace;
+}

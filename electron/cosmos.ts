@@ -1,14 +1,26 @@
 import { CosmosClient } from '@azure/cosmos';
+import { DefaultAzureCredential } from '@azure/identity';
 
 let client: CosmosClient | null = null;
 
 export const cosmosService = {
-    connect: async (connectionString: string) => {
+    connect: async (connectionStringOrEndpoint: string) => {
         try {
-            client = new CosmosClient(connectionString);
+            // Check if it's a full connection string or just an endpoint
+            if (connectionStringOrEndpoint.includes('AccountKey=')) {
+                client = new CosmosClient(connectionStringOrEndpoint);
+            } else {
+                // Assume it's an endpoint and use Azure Identity
+                console.log('Using Azure Identity for endpoint:', connectionStringOrEndpoint);
+                client = new CosmosClient({
+                    endpoint: connectionStringOrEndpoint,
+                    aadCredentials: new DefaultAzureCredential()
+                });
+            }
+
             // Verify connection by listing databases
             const { resources } = await client.databases.readAll().fetchAll();
-            return { success: true, databases: resources.map(d => d.id) };
+            return { success: true, data: resources.map(d => d.id) };
         } catch (error: any) {
             console.error('Cosmos Connection Error:', error);
             return { success: false, error: error.message };
