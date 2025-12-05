@@ -32,7 +32,7 @@ export const cosmosService = {
         try {
             const database = client.database(databaseId);
             const container = database.container(containerId);
-            const { resources } = await container.items.query(query).fetchAll();
+            const { resources } = await container.items.query(query, { maxItemCount: 10 }).fetchNext();
             return { success: true, data: resources };
         } catch (error: any) {
             return { success: false, error: error.message };
