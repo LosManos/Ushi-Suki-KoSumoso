@@ -58,7 +58,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({ onRunQuery, onGetDocum
     return (
         <div className="query-editor-container">
             <div className="editor-toolbar">
-                <span className="tab active" title="Focus Query Editor (Cmd+2)">Query 1</span>
+                <span className="tab active" title="Focus Query Editor (Cmd+2)">{selectedContainer || 'Query 1'}</span>
                 <div className="quick-lookup">
                     <label title="Focus ID Lookup (Cmd+Shift+I)">Get by Document Id:</label>
                     <input
