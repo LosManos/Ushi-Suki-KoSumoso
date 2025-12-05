@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Layout } from './components/Layout';
 import { Sidebar } from './components/Sidebar';
 import { QueryEditor } from './components/QueryEditor';
@@ -6,24 +6,39 @@ import { ResultsView } from './components/ResultsView';
 import { ConnectionForm } from './components/ConnectionForm';
 import { cosmos } from './services/cosmos';
 import { ThemeProvider } from './context/ThemeContext';
+import { QueryTab } from './types';
 
 function App() {
     const [isConnected, setIsConnected] = useState(false);
     const [connectionString, setConnectionString] = useState('');
     const [databases, setDatabases] = useState<string[]>([]);
     const [containers, setContainers] = useState<Record<string, string[]>>({});
-    const [selectedDatabase, setSelectedDatabase] = useState<string | null>(null);
-    const [selectedContainer, setSelectedContainer] = useState<string | null>(null);
-    const [queryResults, setQueryResults] = useState<any[]>([]);
-    const [isQuerying, setIsQuerying] = useState(false);
+
+    // View State for Sidebar (Expanded DB)
+    const [sidebarDatabaseId, setSidebarDatabaseId] = useState<string | null>(null);
+
+    // Tab State
+    const [tabs, setTabs] = useState<QueryTab[]>([]);
+    const [activeTabId, setActiveTabId] = useState<string | null>(null);
 
     const [accountName, setAccountName] = useState('Cosmos DB');
 
+    // Derived Selection State for Sidebar Highlighting
+    const activeTab = tabs.find(t => t.id === activeTabId);
+
+    // Derived sidebar highlighting
+    const highlightedContainer = activeTab?.containerId || null;
+    const highlightedDatabase = activeTab?.databaseId || sidebarDatabaseId;
+
+    // Sync sidebar expansion when tab changes
+    useEffect(() => {
+        if (activeTab?.databaseId) {
+            setSidebarDatabaseId(activeTab.databaseId);
+        }
+    }, [activeTabId, activeTab?.databaseId]);
+
     const handleConnect = async (connStr: string) => {
         setConnectionString(connStr);
-
-
-
         const result = await cosmos.connect(connStr);
         if (result.success && result.data) {
             setDatabases(result.data.databases);
@@ -34,66 +49,102 @@ function App() {
 
     const handleSelectDatabase = async (dbId: string | null) => {
         if (dbId === null) {
-            setSelectedDatabase(null);
+            setSidebarDatabaseId(null);
             return;
         }
 
-        // Variable toggling is handled sidebar side or by passing logic, but user wants 'folding'.
-        // If we select the SAME database, we might want to toggle? 
-        // Logic will be driven by Sidebar, here we just respect the command.
-
-        // If we switch database, we set it.
-        if (selectedDatabase === dbId) {
-            // Already selected, do nothing or let Sidebar handle 'collapse' by sending null
-            return;
+        setSidebarDatabaseId(dbId);
+        if (!containers[dbId]) {
+            const result = await cosmos.getContainers(dbId);
+            if (result.success && result.data) {
+                setContainers(prev => ({ ...prev, [dbId]: result.data! }));
+            }
         }
+    };
 
-        setSelectedDatabase(dbId);
-        // Fetch real containers
-        const result = await cosmos.getContainers(dbId);
-        if (result.success && result.data) {
-            setContainers(prev => ({ ...prev, [dbId]: result.data! }));
-            // We DO NOT auto-select container anymore based on strict 'Enter only' rule?
-            // Actually, if we just expand the DB, we shouldn't auto-select a container?
-            // User said: "Only enter selects the collection".
-            // So expanding DB should just show containers.
+    const handleSelectContainer = (containerId: string | null) => {
+        // We assume the container belongs to the currently expanded sidebarDatabaseId
+        if (!containerId || !sidebarDatabaseId) return;
+
+        const newTabId = `${sidebarDatabaseId}/${containerId}`;
+        const existingTab = tabs.find(t => t.id === newTabId);
+
+        if (existingTab) {
+            setActiveTabId(newTabId);
         } else {
-            console.error('Failed to fetch containers:', result.error);
-            setContainers(prev => ({ ...prev, [dbId]: [] }));
+            const newTab: QueryTab = {
+                id: newTabId,
+                databaseId: sidebarDatabaseId,
+                containerId: containerId,
+                query: 'SELECT * FROM c',
+                results: [],
+                isQuerying: false,
+                pageSize: 10
+            };
+            setTabs(prev => [...prev, newTab]);
+            setActiveTabId(newTabId);
         }
+    };
+
+    const handleTabClose = (tabId: string) => {
+        setTabs(prev => {
+            const newTabs = prev.filter(t => t.id !== tabId);
+            // If we closed the active tab, switch to the last one or null
+            if (tabId === activeTabId) {
+                const lastTab = newTabs[newTabs.length - 1];
+                setActiveTabId(lastTab ? lastTab.id : null);
+            }
+            return newTabs;
+        });
+    };
+
+    const handleQueryChange = (query: string) => {
+        setTabs(prev => prev.map(t =>
+            t.id === activeTabId ? { ...t, query } : t
+        ));
+    };
+
+    const handlePageSizeChange = (pageSize: number | 'All') => {
+        setTabs(prev => prev.map(t =>
+            t.id === activeTabId ? { ...t, pageSize } : t
+        ));
     };
 
     const handleRunQuery = async (query: string, pageSize: number | 'All') => {
-        console.log('App: HandleRunQuery called with pageSize:', pageSize);
-        if (!selectedDatabase || !selectedContainer) {
-            console.log('App: Not connected or no container selected');
-            return;
-        }
-        setIsQuerying(true);
-        console.log('App: Running query with pageSize:', pageSize);
-        const result = await cosmos.query(selectedDatabase, selectedContainer, query, pageSize);
-        setIsQuerying(false);
-        if (result.success && result.data) {
-            setQueryResults(result.data);
-        } else {
-            console.error(result.error);
-            setQueryResults([]);
-        }
+        if (!activeTab || !activeTabId) return;
+
+        // Set isQuerying
+        setTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, isQuerying: true } : t));
+
+        const result = await cosmos.query(activeTab.databaseId, activeTab.containerId, query, pageSize);
+
+        setTabs(prev => prev.map(t => {
+            if (t.id !== activeTabId) return t;
+            return {
+                ...t,
+                isQuerying: false,
+                results: (result.success && result.data) ? result.data : [],
+                error: result.success ? undefined : result.error
+            };
+        }));
     };
 
     const handleGetDocument = async (docId: string) => {
-        if (!selectedDatabase || !selectedContainer) return;
+        if (!activeTab || !activeTabId) return;
 
-        setIsQuerying(true);
-        const result = await cosmos.getDocument(selectedDatabase, selectedContainer, docId);
-        setIsQuerying(false);
+        setTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, isQuerying: true } : t));
 
-        if (result.success && result.data) {
-            setQueryResults([result.data]);
-        } else {
-            console.error(result.error);
-            setQueryResults([]);
-        }
+        const result = await cosmos.getDocument(activeTab.databaseId, activeTab.containerId, docId);
+
+        setTabs(prev => prev.map(t => {
+            if (t.id !== activeTabId) return t;
+            return {
+                ...t,
+                isQuerying: false,
+                results: (result.success && result.data) ? [result.data] : [],
+                error: result.success ? undefined : result.error
+            };
+        }));
     };
 
     if (!isConnected) {
@@ -110,10 +161,10 @@ function App() {
                 sidebar={
                     <Sidebar
                         databases={databases}
-                        selectedDatabase={selectedDatabase}
-                        selectedContainer={selectedContainer}
+                        selectedDatabase={highlightedDatabase}
+                        selectedContainer={highlightedContainer}
                         onSelectDatabase={handleSelectDatabase}
-                        onSelectContainer={setSelectedContainer}
+                        onSelectContainer={handleSelectContainer}
                         containers={containers}
                         accountName={accountName}
                     />
@@ -121,11 +172,19 @@ function App() {
                 content={
                     <>
                         <QueryEditor
+                            tabs={tabs}
+                            activeTabId={activeTabId}
+                            onTabSelect={setActiveTabId}
+                            onTabClose={handleTabClose}
                             onRunQuery={handleRunQuery}
                             onGetDocument={handleGetDocument}
-                            selectedContainer={selectedContainer}
+                            onQueryChange={handleQueryChange}
+                            onPageSizeChange={handlePageSizeChange}
                         />
-                        <ResultsView results={queryResults} loading={isQuerying} />
+                        <ResultsView
+                            results={activeTab?.results || []}
+                            loading={activeTab?.isQuerying || false}
+                        />
                     </>
                 }
             />

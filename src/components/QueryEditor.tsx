@@ -1,28 +1,47 @@
-import React, { useState } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import './QueryEditor.css';
+import { QueryTab } from '../types';
 
 interface QueryEditorProps {
+    tabs: QueryTab[];
+    activeTabId: string | null;
+    onTabSelect: (tabId: string) => void;
+    onTabClose: (tabId: string) => void;
     onRunQuery: (query: string, pageSize: number | 'All') => void;
     onGetDocument: (docId: string) => void;
-    selectedContainer?: string | null;
+    onQueryChange: (query: string) => void;
+    onPageSizeChange: (pageSize: number | 'All') => void;
 }
 
-export const QueryEditor: React.FC<QueryEditorProps> = ({ onRunQuery, onGetDocument, selectedContainer }) => {
-    const [query, setQuery] = useState('SELECT * FROM c');
+export const QueryEditor: React.FC<QueryEditorProps> = ({
+    tabs,
+    activeTabId,
+    onTabSelect,
+    onTabClose,
+    onRunQuery,
+    onGetDocument,
+    onQueryChange,
+    onPageSizeChange
+}) => {
     const [quickId, setQuickId] = useState('');
-    const [pageSize, setPageSize] = useState<number | 'All'>(10);
 
-    const pageSizeSelectRef = React.useRef<HTMLSelectElement>(null);
-    const textareaRef = React.useRef<HTMLTextAreaElement>(null);
-    const quickIdInputRef = React.useRef<HTMLInputElement>(null);
+    // Derived state from active tab
+    const activeTab = tabs.find(t => t.id === activeTabId);
+    const query = activeTab?.query || '';
+    const pageSize = activeTab?.pageSize || 10;
+    const selectedContainer = activeTab?.containerId || null;
 
-    React.useEffect(() => {
-        if (selectedContainer && textareaRef.current) {
+    const pageSizeSelectRef = useRef<HTMLSelectElement>(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const quickIdInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (activeTabId && textareaRef.current) {
             textareaRef.current.focus();
         }
-    }, [selectedContainer]);
+    }, [activeTabId]);
 
-    React.useEffect(() => {
+    useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             // Cmd/Ctrl + Enter to run query
             if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
@@ -55,10 +74,36 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({ onRunQuery, onGetDocum
         onGetDocument(quickId.trim());
     };
 
+    if (!activeTab) {
+        return <div className="query-editor-container placeholder">Please select a container to start querying.</div>;
+    }
+
     return (
         <div className="query-editor-container">
             <div className="editor-toolbar">
-                <span className="tab active" title="Focus Query Editor (Cmd+2)">{selectedContainer || 'Query 1'}</span>
+                <div className="tabs-container">
+                    {tabs.map(tab => (
+                        <span
+                            key={tab.id}
+                            className={`tab ${tab.id === activeTabId ? 'active' : ''}`}
+                            onClick={() => onTabSelect(tab.id)}
+                            title={`Query ${tab.containerId}`}
+                        >
+                            {tab.containerId}
+                            <button
+                                className="close-tab-btn"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onTabClose(tab.id);
+                                }}
+                                title="Close Tab"
+                            >
+                                ×
+                            </button>
+                        </span>
+                    ))}
+                </div>
+
                 <div className="quick-lookup">
                     <label title="Focus ID Lookup (Cmd+Shift+I)">Get by Document Id:</label>
                     <input
@@ -78,7 +123,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({ onRunQuery, onGetDocum
                     ref={textareaRef}
                     className="code-input"
                     value={query}
-                    onChange={(e) => setQuery(e.target.value)}
+                    onChange={(e) => onQueryChange(e.target.value)}
                     placeholder="SELECT * FROM c"
                 />
             </div>
@@ -90,7 +135,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({ onRunQuery, onGetDocum
                         value={pageSize}
                         onChange={(e) => {
                             const val = e.target.value;
-                            setPageSize(val === 'All' ? 'All' : Number(val));
+                            onPageSizeChange(val === 'All' ? 'All' : Number(val));
                         }}
                         title="Change page size (Cmd+Shift+R)"
                     >
