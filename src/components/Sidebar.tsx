@@ -36,6 +36,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
     else if (selectedDatabase) setFocusedId(selectedDatabase);
   }, [selectedDatabase, selectedContainer]);
 
+  // Global Cmd+1 listener to focus sidebar
+  React.useEffect(() => {
+    const handleWindowKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === '1') {
+        e.preventDefault();
+        sidebarRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleWindowKeyDown);
+    return () => window.removeEventListener('keydown', handleWindowKeyDown);
+  }, []);
+
   const flatItems = React.useMemo(() => {
     const items: { type: 'db' | 'container'; id: string; parentId?: string }[] = [];
     databases.forEach(db => {
@@ -114,7 +126,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <div className="sidebar-content">
       <div className="sidebar-header">
-        <h2>Cosmos DB</h2>
+        <h2 title="Focus Sidebar (Cmd+1)">Cosmos DB</h2>
       </div>
       <nav
         className="sidebar-nav"

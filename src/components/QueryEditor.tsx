@@ -32,8 +32,8 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({ onRunQuery, selectedCo
                 e.preventDefault();
                 pageSizeSelectRef.current?.focus();
             }
-            // Cmd/Ctrl + 1 to focus query editor
-            if ((e.metaKey || e.ctrlKey) && e.key === '1') {
+            // Cmd/Ctrl + 2 to focus query editor
+            if ((e.metaKey || e.ctrlKey) && e.key === '2') {
                 e.preventDefault();
                 textareaRef.current?.focus();
             }
@@ -53,7 +53,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({ onRunQuery, selectedCo
     return (
         <div className="query-editor-container">
             <div className="editor-toolbar">
-                <span className="tab active" title="Focus Query Editor (Cmd+1)">Query 1</span>
+                <span className="tab active" title="Focus Query Editor (Cmd+2)">Query 1</span>
                 <div className="quick-lookup">
                     <input
                         type="text"
