@@ -27,13 +27,18 @@ function App() {
 
     const handleSelectDatabase = async (dbId: string) => {
         setSelectedDatabase(dbId);
-        // In a real app, we'd fetch containers here. 
-        // For now, let's assume we get them or mock them since our service only lists databases.
-        // Wait, I need to implement listContainers in service.
-        // For now I'll just mock it or assume the user knows the container name?
-        // No, I should implement listContainers.
-        // I'll add a TODO and mock it for now to keep moving.
-        setContainers(prev => ({ ...prev, [dbId]: ['Container1', 'Container2'] }));
+        // Fetch real containers
+        const result = await cosmos.getContainers(dbId);
+        if (result.success && result.data) {
+            setContainers(prev => ({ ...prev, [dbId]: result.data! }));
+            // Auto-select first container if available and none selected
+            if (result.data.length > 0) {
+                setSelectedContainer(result.data[0]);
+            }
+        } else {
+            console.error('Failed to fetch containers:', result.error);
+            setContainers(prev => ({ ...prev, [dbId]: [] }));
+        }
     };
 
     const handleRunQuery = async (query: string) => {

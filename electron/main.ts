@@ -61,4 +61,8 @@ app.whenReady().then(() => {
     ipcMain.handle('cosmos:getDocument', async (_, dbId, containerId, docId) => {
         return await cosmosService.getDocument(dbId, containerId, docId);
     });
+
+    ipcMain.handle('cosmos:getContainers', async (_, dbId) => {
+        return await cosmosService.getContainers(dbId);
+    });
 });

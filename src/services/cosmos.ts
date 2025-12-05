@@ -15,5 +15,9 @@ export const cosmos = {
 
     getDocument: async (databaseId: string, containerId: string, docId: string): Promise<CosmosResponse<any>> => {
         return await window.ipcRenderer.invoke('cosmos:getDocument', databaseId, containerId, docId);
+    },
+
+    getContainers: async (databaseId: string): Promise<CosmosResponse<string[]>> => {
+        return await window.ipcRenderer.invoke('cosmos:getContainers', databaseId);
     }
 };

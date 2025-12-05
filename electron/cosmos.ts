@@ -39,6 +39,17 @@ export const cosmosService = {
         }
     },
 
+    getContainers: async (databaseId: string) => {
+        if (!client) return { success: false, error: 'Not connected' };
+        try {
+            const database = client.database(databaseId);
+            const { resources } = await database.containers.readAll().fetchAll();
+            return { success: true, data: resources.map(c => c.id) };
+        } catch (error: any) {
+            return { success: false, error: error.message };
+        }
+    },
+
     getDocument: async (databaseId: string, containerId: string, docId: string) => {
         if (!client) return { success: false, error: 'Not connected' };
         try {
