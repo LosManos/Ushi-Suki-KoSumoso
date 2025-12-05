@@ -41,10 +41,15 @@ function App() {
         }
     };
 
-    const handleRunQuery = async (query: string) => {
-        if (!selectedDatabase || !selectedContainer) return;
+    const handleRunQuery = async (query: string, pageSize: number | 'All') => {
+        console.log('App: HandleRunQuery called with pageSize:', pageSize);
+        if (!selectedDatabase || !selectedContainer) {
+            console.log('App: Not connected or no container selected');
+            return;
+        }
         setIsQuerying(true);
-        const result = await cosmos.query(selectedDatabase, selectedContainer, query);
+        console.log('App: Running query with pageSize:', pageSize);
+        const result = await cosmos.query(selectedDatabase, selectedContainer, query, pageSize);
         setIsQuerying(false);
         if (result.success && result.data) {
             setQueryResults(result.data);

@@ -2,18 +2,19 @@ import React, { useState } from 'react';
 import './QueryEditor.css';
 
 interface QueryEditorProps {
-    onRunQuery: (query: string) => void;
+    onRunQuery: (query: string, pageSize: number | 'All') => void;
 }
 
 export const QueryEditor: React.FC<QueryEditorProps> = ({ onRunQuery }) => {
     const [query, setQuery] = useState('SELECT * FROM c');
     const [quickId, setQuickId] = useState('');
+    const [pageSize, setPageSize] = useState<number | 'All'>(10);
 
     const handleQuickLookup = () => {
         if (!quickId.trim()) return;
         const lookupQuery = `SELECT * FROM c WHERE c.id = '${quickId.trim()}'`;
         setQuery(lookupQuery);
-        onRunQuery(lookupQuery);
+        onRunQuery(lookupQuery, 1); // Quick lookup implies single result usually
     };
 
     return (
@@ -40,7 +41,24 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({ onRunQuery }) => {
                 />
             </div>
             <div className="editor-actions">
-                <button className="run-btn" onClick={() => onRunQuery(query)}>Run Query</button>
+                <div className="page-size-selector">
+                    <label>Results per page:</label>
+                    <select
+                        value={pageSize}
+                        onChange={(e) => {
+                            const val = e.target.value;
+                            setPageSize(val === 'All' ? 'All' : Number(val));
+                        }}
+                    >
+                        <option value={1}>1</option>
+                        <option value={10}>10</option>
+                        <option value={50}>50</option>
+                        <option value={100}>100</option>
+                        <option value={1000}>1000</option>
+                        <option value="All">All</option>
+                    </select>
+                </div>
+                <button className="run-btn" onClick={() => onRunQuery(query, pageSize)}>Run Query</button>
             </div>
         </div>
     );

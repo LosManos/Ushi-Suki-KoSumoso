@@ -27,12 +27,22 @@ export const cosmosService = {
         }
     },
 
-    query: async (databaseId: string, containerId: string, query: string) => {
+    query: async (databaseId: string, containerId: string, query: string, pageSize: number | 'All' = 10) => {
+        console.log('Main: Received query request. PageSize:', pageSize);
         if (!client) return { success: false, error: 'Not connected' };
         try {
             const database = client.database(databaseId);
             const container = database.container(containerId);
-            const { resources } = await container.items.query(query, { maxItemCount: 10 }).fetchNext();
+
+            let resources;
+            if (pageSize === 'All') {
+                const result = await container.items.query(query).fetchAll();
+                resources = result.resources;
+            } else {
+                const result = await container.items.query(query, { maxItemCount: pageSize }).fetchNext();
+                resources = result.resources;
+            }
+
             return { success: true, data: resources };
         } catch (error: any) {
             return { success: false, error: error.message };

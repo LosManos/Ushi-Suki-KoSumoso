@@ -102,3 +102,26 @@
     background-color: #106ebe;
     border-color: transparent;
 }
+
+.page-size-selector {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-right: 1rem;
+    color: #ccc;
+    font-size: 0.9rem;
+}
+
+.page-size-selector select {
+    background-color: #333;
+    color: white;
+    border: 1px solid #444;
+    padding: 0.3rem;
+    border-radius: 4px;
+    outline: none;
+    cursor: pointer;
+}
+
+.page-size-selector select:focus {
+    border-color: #0078d4;
+}
