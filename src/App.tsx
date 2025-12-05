@@ -77,7 +77,10 @@ function App() {
             }
             content={
                 <>
-                    <QueryEditor onRunQuery={handleRunQuery} />
+                    <QueryEditor
+                        onRunQuery={handleRunQuery}
+                        selectedContainer={selectedContainer}
+                    />
                     <ResultsView results={queryResults} loading={isQuerying} />
                 </>
             }

@@ -3,14 +3,22 @@ import './QueryEditor.css';
 
 interface QueryEditorProps {
     onRunQuery: (query: string, pageSize: number | 'All') => void;
+    selectedContainer?: string | null;
 }
 
-export const QueryEditor: React.FC<QueryEditorProps> = ({ onRunQuery }) => {
+export const QueryEditor: React.FC<QueryEditorProps> = ({ onRunQuery, selectedContainer }) => {
     const [query, setQuery] = useState('SELECT * FROM c');
     const [quickId, setQuickId] = useState('');
     const [pageSize, setPageSize] = useState<number | 'All'>(10);
 
     const pageSizeSelectRef = React.useRef<HTMLSelectElement>(null);
+    const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+
+    React.useEffect(() => {
+        if (selectedContainer && textareaRef.current) {
+            textareaRef.current.focus();
+        }
+    }, [selectedContainer]);
 
     React.useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -23,6 +31,11 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({ onRunQuery }) => {
             if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'r') {
                 e.preventDefault();
                 pageSizeSelectRef.current?.focus();
+            }
+            // Cmd/Ctrl + 1 to focus query editor
+            if ((e.metaKey || e.ctrlKey) && e.key === '1') {
+                e.preventDefault();
+                textareaRef.current?.focus();
             }
         };
 
@@ -40,7 +53,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({ onRunQuery }) => {
     return (
         <div className="query-editor-container">
             <div className="editor-toolbar">
-                <span className="tab active">Query 1</span>
+                <span className="tab active" title="Focus Query Editor (Cmd+1)">Query 1</span>
                 <div className="quick-lookup">
                     <input
                         type="text"
@@ -54,6 +67,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({ onRunQuery }) => {
             </div>
             <div className="editor-area">
                 <textarea
+                    ref={textareaRef}
                     className="code-input"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
