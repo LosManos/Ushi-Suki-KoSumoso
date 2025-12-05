@@ -21,7 +21,11 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ results, loading }) =>
       // Cmd/Ctrl + 3 to focus results view
       if ((e.metaKey || e.ctrlKey) && e.key === '3') {
         e.preventDefault();
-        containerRef.current?.focus();
+        if (containerRef.current) {
+          containerRef.current.focus();
+          containerRef.current.setSelectionRange(0, 0);
+          containerRef.current.scrollTop = 0;
+        }
       }
     };
 
