@@ -3,15 +3,15 @@
     flex-direction: column;
     flex: 1;
     /* Split view */
-    border-bottom: 1px solid #333;
-    background-color: #1e1e1e;
+    border-bottom: 1px solid var(--border-color);
+    background-color: var(--bg-primary);
     box-sizing: border-box;
     overflow: hidden;
 }
 
 .editor-toolbar {
     display: flex;
-    background-color: #252526;
+    background-color: var(--bg-tertiary);
     padding: 0 0.5rem;
     height: 35px;
     align-items: center;
@@ -23,10 +23,10 @@
     height: 100%;
     display: flex;
     align-items: center;
-    background-color: #1e1e1e;
-    color: #fff;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
     font-size: 0.9rem;
-    border-top: 2px solid #0078d4;
+    border-top: 2px solid var(--accent-color);
     cursor: pointer;
 }
 
@@ -37,10 +37,16 @@
     margin-right: 0.5rem;
 }
 
+.quick-lookup label {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    margin-right: 0.5rem;
+}
+
 .quick-lookup input {
-    background-color: #1e1e1e;
-    border: 1px solid #333;
-    color: #fff;
+    background-color: var(--input-bg);
+    border: 1px solid var(--input-border);
+    color: var(--text-primary);
     padding: 0.2rem 0.5rem;
     border-radius: 4px;
     font-size: 0.8rem;
@@ -49,33 +55,36 @@
 
 .quick-lookup input:focus {
     outline: none;
-    border-color: #0078d4;
+    border-color: var(--accent-color);
 }
 
 .quick-lookup button {
-    background-color: #333;
+    background-color: var(--bg-secondary);
     border: none;
-    color: #fff;
+    color: var(--text-primary);
     padding: 0.2rem 0.5rem;
     border-radius: 4px;
     font-size: 0.8rem;
     cursor: pointer;
+    border: 1px solid var(--border-color);
 }
 
 .quick-lookup button:hover {
-    background-color: #444;
+    background-color: var(--button-hover-bg);
+    border-color: var(--accent-color);
 }
 
 .editor-area {
     flex: 1;
     position: relative;
+    background-color: var(--bg-primary);
 }
 
 .code-input {
     width: 100%;
     height: 100%;
-    background-color: #1e1e1e;
-    color: #d4d4d4;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
     border: none;
     padding: 1rem;
     font-family: 'Consolas', 'Monaco', monospace;
@@ -87,7 +96,7 @@
 
 .editor-actions {
     padding: 0.5rem 1rem;
-    background-color: #252526;
+    background-color: var(--bg-tertiary);
     display: flex;
     justify-content: flex-end;
     box-sizing: border-box;
@@ -95,7 +104,7 @@
 }
 
 .run-btn {
-    background-color: #0078d4;
+    background-color: var(--accent-color);
     color: white;
     border: none;
     padding: 0.4rem 1rem;
@@ -104,7 +113,7 @@
 }
 
 .run-btn:hover {
-    background-color: #106ebe;
+    background-color: var(--accent-hover);
     border-color: transparent;
 }
 
@@ -113,14 +122,14 @@
     align-items: center;
     gap: 0.5rem;
     margin-right: 1rem;
-    color: #ccc;
+    color: var(--text-secondary);
     font-size: 0.9rem;
 }
 
 .page-size-selector select {
-    background-color: #333;
-    color: white;
-    border: 1px solid #444;
+    background-color: var(--input-bg);
+    color: var(--text-primary);
+    border: 1px solid var(--input-border);
     padding: 0.3rem;
     border-radius: 4px;
     outline: none;
@@ -128,5 +137,5 @@
 }
 
 .page-size-selector select:focus {
-    border-color: #0078d4;
+    border-color: var(--accent-color);
 }

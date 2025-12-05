@@ -3,20 +3,21 @@
     justify-content: center;
     align-items: center;
     height: 100vh;
-    background-color: #1e1e1e;
+    background-color: var(--bg-primary);
 }
 
 .connection-form {
-    background-color: #252526;
+    background-color: var(--bg-tertiary);
     padding: 2rem;
     border-radius: 8px;
     width: 400px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--border-color);
 }
 
 .connection-form h2 {
     margin-top: 0;
-    color: #fff;
+    color: var(--text-primary);
     text-align: center;
 }
 
@@ -27,33 +28,34 @@
 .form-group label {
     display: block;
     margin-bottom: 0.5rem;
-    color: #ccc;
+    color: var(--text-secondary);
 }
 
 .form-group input {
     width: 100%;
     padding: 0.75rem;
-    background-color: #1e1e1e;
-    border: 1px solid #333;
-    color: #fff;
+    background-color: var(--input-bg);
+    border: 1px solid var(--input-border);
+    color: var(--text-primary);
     border-radius: 4px;
     box-sizing: border-box;
 }
 
 .form-group input:focus {
     outline: none;
-    border-color: #0078d4;
+    border-color: var(--accent-color);
 }
 
 .error-message {
     color: #ff6b6b;
+    /* Keep this or add --error-color */
     margin-bottom: 1rem;
     font-size: 0.9rem;
 }
 
 button[type="submit"] {
     width: 100%;
-    background-color: #0078d4;
+    background-color: var(--accent-color);
     color: white;
     padding: 0.75rem;
     border: none;
@@ -79,18 +81,18 @@ button[type="submit"]:disabled {
     gap: 0.5rem;
     cursor: pointer;
     font-size: 0.9rem;
-    color: #e0e0e0;
+    color: var(--text-primary);
 }
 
 .help-text {
     display: block;
     margin-top: 0.5rem;
     font-size: 0.8rem;
-    color: #aaa;
+    color: var(--text-secondary);
 }
 
 .help-text code {
-    background: #333;
+    background: var(--bg-secondary);
     padding: 0.2rem 0.4rem;
     border-radius: 4px;
     font-family: monospace;

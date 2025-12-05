@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactJson from 'react-json-view';
+import { useTheme } from '../context/ThemeContext';
 import './ResultsView.css';
 
 interface ResultsViewProps {
@@ -13,6 +14,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ results, loading }) =>
   const containerRef = React.useRef<HTMLTextAreaElement>(null);
   const [content, setContent] = React.useState('');
   const [viewMode, setViewMode] = React.useState<ViewMode>('text');
+  const { resolvedTheme } = useTheme();
 
   React.useEffect(() => {
     if (results) {
@@ -57,6 +59,44 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ results, loading }) =>
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [viewMode]);
 
+  const darkTheme = {
+    base00: "transparent", // background
+    base01: "#383830",
+    base02: "#49483e",
+    base03: "#75715e",
+    base04: "#a59f85",
+    base05: "#f8f8f2", // text
+    base06: "#f5f4f1",
+    base07: "#f9f8f5",
+    base08: "#f92672",
+    base09: "#fd971f",
+    base0A: "#f4bf75",
+    base0B: "#a6e22e", // string
+    base0C: "#a1efe4",
+    base0D: "#66d9ef", // key
+    base0E: "#ae81ff",
+    base0F: "#cc6633"
+  };
+
+  const lightTheme = {
+    base00: "transparent", // background
+    base01: "#f5f5f5",
+    base02: "#e0e0e0",
+    base03: "#c0c0c0",
+    base04: "#a0a0a0",
+    base05: "#333333", // text
+    base06: "#202020",
+    base07: "#101010",
+    base08: "#d73a49", // keyword?
+    base09: "#e36209",
+    base0A: "#6f42c1", // key? mixed up locally but ok
+    base0B: "#22863a", // string
+    base0C: "#005cc5",
+    base0D: "#005cc5", // key
+    base0E: "#6f42c1",
+    base0F: "#24292e"
+  };
+
   return (
     <div className="results-view-container">
       <div className="results-header">
@@ -97,24 +137,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ results, loading }) =>
             <div className="json-viewer-container">
               <ReactJson
                 src={results}
-                theme={{
-                  base00: "transparent", // background
-                  base01: "#383830",
-                  base02: "#49483e",
-                  base03: "#75715e",
-                  base04: "#a59f85",
-                  base05: "#f8f8f2", // text
-                  base06: "#f5f4f1",
-                  base07: "#f9f8f5",
-                  base08: "#f92672",
-                  base09: "#fd971f",
-                  base0A: "#f4bf75",
-                  base0B: "#a6e22e", // string
-                  base0C: "#a1efe4",
-                  base0D: "#66d9ef", // key
-                  base0E: "#ae81ff",
-                  base0F: "#cc6633"
-                }}
+                theme={resolvedTheme === 'dark' ? darkTheme : lightTheme}
                 displayDataTypes={false}
                 style={{ backgroundColor: 'transparent' }}
                 collapsed={1}

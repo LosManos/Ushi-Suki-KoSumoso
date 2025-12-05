@@ -3,9 +3,9 @@
     flex-direction: column;
     flex: 1;
     overflow: hidden;
-    background-color: #1e1e1e;
+    background-color: var(--bg-primary);
     /* Content bg */
-    border-left: 1px solid #333;
+    border-left: 1px solid var(--border-color);
 }
 
 .results-header {
@@ -16,8 +16,8 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid #333;
-    background-color: #252526;
+    border-bottom: 1px solid var(--border-color);
+    background-color: var(--bg-tertiary);
     /* Toolbar bg */
 }
 
@@ -25,7 +25,7 @@
     margin: 0;
     font-size: 0.9rem;
     font-weight: 600;
-    color: #e0e0e0;
+    color: var(--text-primary);
 }
 
 .header-controls {
@@ -48,25 +48,29 @@
     height: 100%;
     font-size: 0.9rem;
     cursor: pointer;
-    color: #ccc;
+    color: var(--text-secondary);
     border-top: 2px solid transparent;
     /* Reserve space for accent */
     transition: all 0.2s;
     display: flex;
     /* alignment */
     align-items: center;
+    border-radius: 0;
+    /* Override default button radius */
 }
 
 .view-toggle button:hover {
-    background-color: #333;
-    color: #fff;
+    background-color: var(--button-hover-bg);
+    color: var(--text-primary);
+    border-color: transparent;
+    /* Reset border color on hover to avoid conflict with active state if managed primarily by class */
 }
 
 .view-toggle button.active {
-    background-color: #1e1e1e;
+    background-color: var(--bg-primary);
     /* Match content */
-    color: #fff;
-    border-top: 2px solid #0078d4;
+    color: var(--text-primary);
+    border-top: 2px solid var(--accent-color);
     /* Blue accent on top */
     border-bottom: none;
     /* No bottom border needed as it merges */
@@ -75,13 +79,14 @@
 
 .results-meta {
     font-size: 0.8rem;
-    color: #999;
+    color: var(--text-secondary);
 }
 
 .results-content {
     flex: 1;
     overflow: hidden;
     position: relative;
+    background-color: var(--bg-primary);
 }
 
 .json-editor {

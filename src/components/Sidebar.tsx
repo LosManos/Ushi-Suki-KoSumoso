@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTheme } from '../context/ThemeContext';
 import './Sidebar.css';
 
 interface SidebarProps {
@@ -125,6 +126,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
+  const { theme, setTheme } = useTheme();
+
   return (
     <div className="sidebar-content">
       <div className="sidebar-header">
@@ -161,6 +164,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         ))}
       </nav>
+
+      <div className="sidebar-footer">
+        <div className="theme-switcher">
+          <button
+            className={theme === 'light' ? 'active' : ''}
+            onClick={() => setTheme('light')}
+            title="Light Mode"
+          >
+            ☀️
+          </button>
+          <button
+            className={theme === 'dark' ? 'active' : ''}
+            onClick={() => setTheme('dark')}
+            title="Dark Mode"
+          >
+            🌙
+          </button>
+          <button
+            className={theme === 'system' ? 'active' : ''}
+            onClick={() => setTheme('system')}
+            title="System Theme"
+          >
+            💻
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

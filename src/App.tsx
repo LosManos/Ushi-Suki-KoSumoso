@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Layout } from './components/Layout';
 import { Sidebar } from './components/Sidebar';
 import { QueryEditor } from './components/QueryEditor';
 import { ResultsView } from './components/ResultsView';
 import { ConnectionForm } from './components/ConnectionForm';
 import { cosmos } from './services/cosmos';
+import { ThemeProvider } from './context/ThemeContext';
 
 function App() {
     const [isConnected, setIsConnected] = useState(false);
@@ -96,33 +97,39 @@ function App() {
     };
 
     if (!isConnected) {
-        return <ConnectionForm onConnect={handleConnect} />;
+        return (
+            <ThemeProvider>
+                <ConnectionForm onConnect={handleConnect} />
+            </ThemeProvider>
+        );
     }
 
     return (
-        <Layout
-            sidebar={
-                <Sidebar
-                    databases={databases}
-                    selectedDatabase={selectedDatabase}
-                    selectedContainer={selectedContainer}
-                    onSelectDatabase={handleSelectDatabase}
-                    onSelectContainer={setSelectedContainer}
-                    containers={containers}
-                    accountName={accountName}
-                />
-            }
-            content={
-                <>
-                    <QueryEditor
-                        onRunQuery={handleRunQuery}
-                        onGetDocument={handleGetDocument}
+        <ThemeProvider>
+            <Layout
+                sidebar={
+                    <Sidebar
+                        databases={databases}
+                        selectedDatabase={selectedDatabase}
                         selectedContainer={selectedContainer}
+                        onSelectDatabase={handleSelectDatabase}
+                        onSelectContainer={setSelectedContainer}
+                        containers={containers}
+                        accountName={accountName}
                     />
-                    <ResultsView results={queryResults} loading={isQuerying} />
-                </>
-            }
-        />
+                }
+                content={
+                    <>
+                        <QueryEditor
+                            onRunQuery={handleRunQuery}
+                            onGetDocument={handleGetDocument}
+                            selectedContainer={selectedContainer}
+                        />
+                        <ResultsView results={queryResults} loading={isQuerying} />
+                    </>
+                }
+            />
+        </ThemeProvider>
     );
 }
 
