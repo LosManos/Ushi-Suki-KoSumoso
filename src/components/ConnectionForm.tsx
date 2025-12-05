@@ -12,6 +12,12 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect }) => 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    const inputRef = React.useRef<HTMLInputElement>(null);
+
+    React.useEffect(() => {
+        inputRef.current?.focus();
+    }, []);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -62,6 +68,7 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect }) => 
                         {authMethod === 'connectionString' ? 'Connection String' : 'Cosmos DB Endpoint URL'}
                     </label>
                     <input
+                        ref={inputRef}
                         type={authMethod === 'connectionString' ? 'password' : 'url'}
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
@@ -71,6 +78,7 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect }) => 
                                 : "https://<my-account>.documents.azure.com:443/"
                         }
                         required
+                        autoFocus
                     />
                     {authMethod === 'azureCli' && (
                         <small className="help-text">
