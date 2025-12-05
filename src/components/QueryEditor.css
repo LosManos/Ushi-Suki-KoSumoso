@@ -1,10 +1,12 @@
 .query-editor-container {
     display: flex;
     flex-direction: column;
-    height: 50%;
+    flex: 1;
     /* Split view */
     border-bottom: 1px solid #333;
     background-color: #1e1e1e;
+    box-sizing: border-box;
+    overflow: hidden;
 }
 
 .editor-toolbar {
@@ -80,6 +82,7 @@
     font-size: 14px;
     resize: none;
     outline: none;
+    box-sizing: border-box;
 }
 
 .editor-actions {
@@ -87,6 +90,8 @@
     background-color: #252526;
     display: flex;
     justify-content: flex-end;
+    box-sizing: border-box;
+    flex-shrink: 0;
 }
 
 .run-btn {
