@@ -3,10 +3,11 @@ import './QueryEditor.css';
 
 interface QueryEditorProps {
     onRunQuery: (query: string, pageSize: number | 'All') => void;
+    onGetDocument: (docId: string) => void;
     selectedContainer?: string | null;
 }
 
-export const QueryEditor: React.FC<QueryEditorProps> = ({ onRunQuery, selectedContainer }) => {
+export const QueryEditor: React.FC<QueryEditorProps> = ({ onRunQuery, onGetDocument, selectedContainer }) => {
     const [query, setQuery] = useState('SELECT * FROM c');
     const [quickId, setQuickId] = useState('');
     const [pageSize, setPageSize] = useState<number | 'All'>(10);
@@ -51,9 +52,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({ onRunQuery, selectedCo
 
     const handleQuickLookup = () => {
         if (!quickId.trim()) return;
-        const lookupQuery = `SELECT * FROM c WHERE c.id = '${quickId.trim()}'`;
-        setQuery(lookupQuery);
-        onRunQuery(lookupQuery, 1); // Quick lookup implies single result usually
+        onGetDocument(quickId.trim());
     };
 
     return (

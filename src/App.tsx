@@ -80,6 +80,21 @@ function App() {
         }
     };
 
+    const handleGetDocument = async (docId: string) => {
+        if (!selectedDatabase || !selectedContainer) return;
+
+        setIsQuerying(true);
+        const result = await cosmos.getDocument(selectedDatabase, selectedContainer, docId);
+        setIsQuerying(false);
+
+        if (result.success && result.data) {
+            setQueryResults([result.data]);
+        } else {
+            console.error(result.error);
+            setQueryResults([]);
+        }
+    };
+
     if (!isConnected) {
         return <ConnectionForm onConnect={handleConnect} />;
     }
@@ -101,6 +116,7 @@ function App() {
                 <>
                     <QueryEditor
                         onRunQuery={handleRunQuery}
+                        onGetDocument={handleGetDocument}
                         selectedContainer={selectedContainer}
                     />
                     <ResultsView results={queryResults} loading={isQuerying} />
