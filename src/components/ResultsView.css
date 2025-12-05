@@ -1,0 +1,52 @@
+.results-view-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: #1e1e1e;
+    overflow: hidden;
+}
+
+.results-header {
+    padding: 0.5rem 1rem;
+    background-color: #252526;
+    border-bottom: 1px solid #333;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.results-header h3 {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #aaa;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.results-meta {
+    font-size: 0.8rem;
+    color: #888;
+}
+
+.results-content {
+    flex: 1;
+    overflow: auto;
+    padding: 1rem;
+}
+
+.empty-state {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    color: #666;
+    font-style: italic;
+}
+
+.json-output {
+    margin: 0;
+    color: #ce9178;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 14px;
+}

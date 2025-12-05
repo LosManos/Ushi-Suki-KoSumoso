@@ -1,0 +1,104 @@
+.query-editor-container {
+    display: flex;
+    flex-direction: column;
+    height: 50%;
+    /* Split view */
+    border-bottom: 1px solid #333;
+    background-color: #1e1e1e;
+}
+
+.editor-toolbar {
+    display: flex;
+    background-color: #252526;
+    padding: 0 0.5rem;
+    height: 35px;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.tab {
+    padding: 0 1rem;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    background-color: #1e1e1e;
+    color: #fff;
+    font-size: 0.9rem;
+    border-top: 2px solid #0078d4;
+    cursor: pointer;
+}
+
+.quick-lookup {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-right: 0.5rem;
+}
+
+.quick-lookup input {
+    background-color: #1e1e1e;
+    border: 1px solid #333;
+    color: #fff;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    width: 150px;
+}
+
+.quick-lookup input:focus {
+    outline: none;
+    border-color: #0078d4;
+}
+
+.quick-lookup button {
+    background-color: #333;
+    border: none;
+    color: #fff;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+.quick-lookup button:hover {
+    background-color: #444;
+}
+
+.editor-area {
+    flex: 1;
+    position: relative;
+}
+
+.code-input {
+    width: 100%;
+    height: 100%;
+    background-color: #1e1e1e;
+    color: #d4d4d4;
+    border: none;
+    padding: 1rem;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 14px;
+    resize: none;
+    outline: none;
+}
+
+.editor-actions {
+    padding: 0.5rem 1rem;
+    background-color: #252526;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.run-btn {
+    background-color: #0078d4;
+    color: white;
+    border: none;
+    padding: 0.4rem 1rem;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.run-btn:hover {
+    background-color: #106ebe;
+    border-color: transparent;
+}
