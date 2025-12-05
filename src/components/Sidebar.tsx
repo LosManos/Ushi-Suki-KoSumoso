@@ -5,7 +5,7 @@ interface SidebarProps {
   databases: string[];
   selectedDatabase: string | null;
   selectedContainer: string | null;
-  onSelectDatabase: (dbId: string) => void;
+  onSelectDatabase: (dbId: string | null) => void;
   onSelectContainer: (containerId: string) => void;
   containers: Record<string, string[]>; // Map dbId -> containerIds
 }
@@ -18,26 +18,125 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectContainer,
   containers
 }) => {
+  const [focusedId, setFocusedId] = React.useState<string | null>(null);
+  const sidebarRef = React.useRef<HTMLDivElement>(null);
+
+  // Auto-focus first item when databases load
+  React.useEffect(() => {
+    if (databases.length > 0 && !selectedDatabase && !focusedId) {
+      setFocusedId(databases[0]);
+      // Give a slight delay to ensure render is complete
+      setTimeout(() => sidebarRef.current?.focus(), 50);
+    }
+  }, [databases, selectedDatabase, focusedId]);
+
+  // Sync focusedId when selection changes via click
+  React.useEffect(() => {
+    if (selectedContainer) setFocusedId(selectedContainer);
+    else if (selectedDatabase) setFocusedId(selectedDatabase);
+  }, [selectedDatabase, selectedContainer]);
+
+  const flatItems = React.useMemo(() => {
+    const items: { type: 'db' | 'container'; id: string; parentId?: string }[] = [];
+    databases.forEach(db => {
+      items.push({ type: 'db', id: db });
+      if (selectedDatabase === db && containers[db]) {
+        containers[db].forEach(c => {
+          items.push({ type: 'container', id: c, parentId: db });
+        });
+      }
+    });
+    return items;
+  }, [databases, selectedDatabase, containers]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (flatItems.length === 0) return;
+    const currentIndex = flatItems.findIndex(i => i.id === focusedId);
+    // If nothing focused, start at 0
+    const idx = currentIndex === -1 ? 0 : currentIndex;
+
+    switch (e.key) {
+      case 'ArrowDown': {
+        e.preventDefault();
+        const next = Math.min(flatItems.length - 1, idx + 1);
+        setFocusedId(flatItems[next].id);
+        break;
+      }
+      case 'ArrowUp': {
+        e.preventDefault();
+        const prev = Math.max(0, idx - 1);
+        setFocusedId(flatItems[prev].id);
+        break;
+      }
+      case 'Enter': {
+        e.preventDefault();
+        const item = flatItems[idx];
+        if (item) {
+          if (item.type === 'db') {
+            // Toggle expansion
+            if (selectedDatabase === item.id) {
+              onSelectDatabase(null); // Collapse
+            } else {
+              onSelectDatabase(item.id); // Expand
+            }
+          } else {
+            // Select collection (and thus load query editor)
+            onSelectContainer(item.id);
+          }
+        }
+        break;
+      }
+      case 'ArrowRight': {
+        e.preventDefault();
+        const item = flatItems[idx];
+        if (item && item.type === 'db' && selectedDatabase !== item.id) {
+          onSelectDatabase(item.id); // Expand
+        }
+        break;
+      }
+      case 'ArrowLeft': {
+        e.preventDefault();
+        const item = flatItems[idx];
+        if (item) {
+          if (item.type === 'container' && item.parentId) {
+            // Move focus to parent DB
+            setFocusedId(item.parentId);
+          } else if (item.type === 'db' && selectedDatabase === item.id) {
+            // Collapse DB
+            onSelectDatabase(null);
+          }
+        }
+        break;
+      }
+    }
+  };
+
   return (
     <div className="sidebar-content">
       <div className="sidebar-header">
         <h2>Cosmos DB</h2>
       </div>
-      <nav className="sidebar-nav">
+      <nav
+        className="sidebar-nav"
+        tabIndex={0}
+        ref={sidebarRef}
+        onKeyDown={handleKeyDown}
+        style={{ outline: 'none' }}
+      >
         {databases.map(db => (
           <div key={db} className="db-item">
             <div
-              className={`nav-item ${selectedDatabase === db ? 'active' : ''}`}
+              className={`nav-item ${selectedDatabase === db ? 'active' : ''} ${focusedId === db ? 'focused' : ''}`}
               onClick={() => onSelectDatabase(db)}
             >
-              📂 {db}
+              {selectedDatabase === db ? '📂' : '📁'} {db}
             </div>
             {selectedDatabase === db && containers[db] && (
               <div className="container-list">
                 {containers[db].map(container => (
                   <div
                     key={container}
-                    className={`nav-item sub-item ${selectedContainer === container ? 'active' : ''}`}
+                    className={`nav-item sub-item ${selectedContainer === container ? 'active' : ''} ${focusedId === container ? 'focused' : ''}`}
                     onClick={() => onSelectContainer(container)}
                   >
                     📄 {container}

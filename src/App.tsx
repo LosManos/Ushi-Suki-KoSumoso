@@ -25,16 +25,31 @@ function App() {
         }
     };
 
-    const handleSelectDatabase = async (dbId: string) => {
+    const handleSelectDatabase = async (dbId: string | null) => {
+        if (dbId === null) {
+            setSelectedDatabase(null);
+            return;
+        }
+
+        // Variable toggling is handled sidebar side or by passing logic, but user wants 'folding'.
+        // If we select the SAME database, we might want to toggle? 
+        // Logic will be driven by Sidebar, here we just respect the command.
+
+        // If we switch database, we set it.
+        if (selectedDatabase === dbId) {
+            // Already selected, do nothing or let Sidebar handle 'collapse' by sending null
+            return;
+        }
+
         setSelectedDatabase(dbId);
         // Fetch real containers
         const result = await cosmos.getContainers(dbId);
         if (result.success && result.data) {
             setContainers(prev => ({ ...prev, [dbId]: result.data! }));
-            // Auto-select first container if available and none selected
-            if (result.data.length > 0) {
-                setSelectedContainer(result.data[0]);
-            }
+            // We DO NOT auto-select container anymore based on strict 'Enter only' rule?
+            // Actually, if we just expand the DB, we shouldn't auto-select a container?
+            // User said: "Only enter selects the collection".
+            // So expanding DB should just show containers.
         } else {
             console.error('Failed to fetch containers:', result.error);
             setContainers(prev => ({ ...prev, [dbId]: [] }));
