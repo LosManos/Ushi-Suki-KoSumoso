@@ -10,6 +10,26 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({ onRunQuery }) => {
     const [quickId, setQuickId] = useState('');
     const [pageSize, setPageSize] = useState<number | 'All'>(10);
 
+    const pageSizeSelectRef = React.useRef<HTMLSelectElement>(null);
+
+    React.useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Cmd/Ctrl + Enter to run query
+            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                e.preventDefault();
+                onRunQuery(query, pageSize);
+            }
+            // Cmd/Ctrl + Shift + R to focus page size selector
+            if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'r') {
+                e.preventDefault();
+                pageSizeSelectRef.current?.focus();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [query, pageSize, onRunQuery]);
+
     const handleQuickLookup = () => {
         if (!quickId.trim()) return;
         const lookupQuery = `SELECT * FROM c WHERE c.id = '${quickId.trim()}'`;
@@ -42,13 +62,15 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({ onRunQuery }) => {
             </div>
             <div className="editor-actions">
                 <div className="page-size-selector">
-                    <label>Results per page:</label>
+                    <label title="Change page size (Cmd+Shift+R)">Results per page:</label>
                     <select
+                        ref={pageSizeSelectRef}
                         value={pageSize}
                         onChange={(e) => {
                             const val = e.target.value;
                             setPageSize(val === 'All' ? 'All' : Number(val));
                         }}
+                        title="Change page size (Cmd+Shift+R)"
                     >
                         <option value={1}>1</option>
                         <option value={10}>10</option>
@@ -58,7 +80,13 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({ onRunQuery }) => {
                         <option value="All">All</option>
                     </select>
                 </div>
-                <button className="run-btn" onClick={() => onRunQuery(query, pageSize)}>Run Query</button>
+                <button
+                    className="run-btn"
+                    onClick={() => onRunQuery(query, pageSize)}
+                    title="Run Query (Cmd+Enter)"
+                >
+                    Run Query
+                </button>
             </div>
         </div>
     );
