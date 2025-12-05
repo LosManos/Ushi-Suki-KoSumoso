@@ -157,6 +157,62 @@ export const Sidebar: React.FC<SidebarProps> = ({
     };
   }, [isSettingsOpen]);
 
+  // Settings focus management
+  const themeButtonsRef = React.useRef<(HTMLButtonElement | null)[]>([]);
+  const settingsBtnRef = React.useRef<HTMLButtonElement>(null);
+
+  React.useEffect(() => {
+    if (isSettingsOpen) {
+      // Use explicit timeout to ensure DOM is ready and painting
+      const timer = setTimeout(() => {
+        const activeIndex = ['light', 'dark', 'system'].indexOf(theme);
+        if (activeIndex !== -1 && themeButtonsRef.current[activeIndex]) {
+          themeButtonsRef.current[activeIndex]?.focus();
+        } else if (themeButtonsRef.current[0]) {
+          themeButtonsRef.current[0]?.focus();
+        }
+      }, 50);
+      return () => clearTimeout(timer);
+    } else {
+      // Return focus to toggle button when closed
+      if (settingsBtnRef.current) {
+        settingsBtnRef.current.focus();
+      }
+    }
+  }, [isSettingsOpen]); // Remove theme from deps to avoid refocusing on selection change
+
+  const handleSettingsKeyDown = (e: React.KeyboardEvent, index: number) => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+      e.preventDefault();
+      e.stopPropagation(); // Stop event bubbling
+      const nextIndex = (index + 1) % 3;
+      themeButtonsRef.current[nextIndex]?.focus();
+    } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+      e.preventDefault();
+      e.stopPropagation();
+      const prevIndex = (index - 1 + 3) % 3;
+      themeButtonsRef.current[prevIndex]?.focus();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsSettingsOpen(false);
+    }
+  };
+
+  const handleToggleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      setIsSettingsOpen(true);
+    }
+  };
+
+  const handleThemeSelect = (newTheme: 'light' | 'dark' | 'system') => {
+    setTheme(newTheme);
+    setIsSettingsOpen(false);
+  };
+
+
+
   return (
     <div className="sidebar-content">
       <div className="sidebar-header">
@@ -166,6 +222,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className={`settings-btn ${isSettingsOpen ? 'active' : ''}`}
             onClick={() => setIsSettingsOpen(!isSettingsOpen)}
             title="Settings (Cmd+,)"
+            ref={settingsBtnRef}
+            onKeyDown={handleToggleKeyDown}
           >
             ⚙️
           </button>
@@ -175,22 +233,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <h4>Theme</h4>
                 <div className="theme-options">
                   <button
+                    ref={el => themeButtonsRef.current[0] = el}
                     className={theme === 'light' ? 'active' : ''}
-                    onClick={() => setTheme('light')}
+                    onClick={() => handleThemeSelect('light')}
+                    onKeyDown={(e) => handleSettingsKeyDown(e, 0)}
                     title="Light Mode"
                   >
                     ☀️ Light
                   </button>
                   <button
+                    ref={el => themeButtonsRef.current[1] = el}
                     className={theme === 'dark' ? 'active' : ''}
-                    onClick={() => setTheme('dark')}
+                    onClick={() => handleThemeSelect('dark')}
+                    onKeyDown={(e) => handleSettingsKeyDown(e, 1)}
                     title="Dark Mode"
                   >
                     🌙 Dark
                   </button>
                   <button
+                    ref={el => themeButtonsRef.current[2] = el}
                     className={theme === 'system' ? 'active' : ''}
-                    onClick={() => setTheme('system')}
+                    onClick={() => handleThemeSelect('system')}
+                    onKeyDown={(e) => handleSettingsKeyDown(e, 2)}
                     title="System Theme"
                   >
                     💻 System
