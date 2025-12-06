@@ -16,6 +16,9 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ results, loading }) =>
   const [viewMode, setViewMode] = React.useState<ViewMode>('text');
   const { resolvedTheme } = useTheme();
 
+  /* New Ref for JsonTreeView */
+  const jsonViewRef = React.useRef<HTMLDivElement>(null);
+
   React.useEffect(() => {
     if (results) {
       setContent(JSON.stringify(results, null, 2));
@@ -24,24 +27,19 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ results, loading }) =>
 
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Cmd/Ctrl + 3 to focus results view
+      // Cmd/Ctrl + 3 to focus results view (or Cmd+R/Ctrl+R depending on implementation)
       if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'r') {
         e.preventDefault();
         if (viewMode === 'text' && containerRef.current) {
           containerRef.current.focus();
           containerRef.current.setSelectionRange(0, 0);
           containerRef.current.scrollTop = 0;
-        } else if (viewMode === 'json') {
-          // For JSON view, we can't easily "focus" a specific element, 
-          // but we can scroll the container to top if we had a ref to it.
-          // For now, let's just ensure the view itself is visible.
-          const jsonContainer = document.querySelector('.react-json-view');
-          if (jsonContainer) {
-            jsonContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }
+        } else if (viewMode === 'json' && jsonViewRef.current) {
+          jsonViewRef.current.focus();
         }
       }
 
+      // ... existing mode switch logic ...
       // Cmd/Ctrl + T to switch to Text view
       if ((e.metaKey || e.ctrlKey) && !e.shiftKey && (e.key === 't' || e.key === 'T')) {
         e.preventDefault();
@@ -59,7 +57,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ results, loading }) =>
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [viewMode]);
 
-
+  /* ... */
 
   return (
     <div className="results-view-container">
@@ -100,6 +98,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ results, loading }) =>
           ) : (
             <div className="json-viewer-container">
               <JsonTreeView
+                ref={jsonViewRef}
                 data={results}
                 theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
               />

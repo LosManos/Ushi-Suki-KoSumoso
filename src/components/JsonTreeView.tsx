@@ -17,10 +17,22 @@ interface FlattenedItem {
     path: string[];
 }
 
-export const JsonTreeView: React.FC<JsonTreeViewProps> = ({ data, theme = 'dark' }) => {
+// Interface removed as we forward HTMLDivElement directly
+
+export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(({ data, theme = 'dark' }, ref) => {
     const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set(['root']));
     const [focusedPath, setFocusedPath] = useState<string>('root');
-    const containerRef = useRef<HTMLDivElement>(null);
+    const internalRef = useRef<HTMLDivElement>(null);
+
+    // Merge local and forwarded refs
+    const setBufferRef = (element: HTMLDivElement | null) => {
+        internalRef.current = element;
+        if (typeof ref === 'function') {
+            ref(element);
+        } else if (ref) {
+            (ref as any).current = element;
+        }
+    };
 
     // Flatten the visible tree structure
     const flattenedItems = useMemo(() => {
@@ -184,15 +196,17 @@ export const JsonTreeView: React.FC<JsonTreeViewProps> = ({ data, theme = 'dark'
             className={`json-tree-view ${theme}`}
             tabIndex={0}
             onKeyDown={handleKeyDown}
-            ref={containerRef}
-            onClick={() => containerRef.current?.focus()}
+            ref={setBufferRef}
+            onClick={() => internalRef.current?.focus()}
         >
             {flattenedItems.map(item => (
                 <JsonNode key={item.id} item={item} isFocused={focusedPath === item.id} onSelect={(id) => setFocusedPath(id)} />
             ))}
         </div>
     );
-};
+});
+
+JsonTreeView.displayName = 'JsonTreeView';
 
 const JsonNode: React.FC<{ item: FlattenedItem; isFocused: boolean; onSelect: (id: string) => void }> = ({ item, isFocused, onSelect }) => {
 
