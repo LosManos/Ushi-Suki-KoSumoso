@@ -58,8 +58,8 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
                 e.preventDefault();
                 quickIdInputRef.current?.focus();
             }
-            // Cmd/Ctrl + 2 to focus query editor
-            if ((e.metaKey || e.ctrlKey) && e.key === '2') {
+            // Cmd/Ctrl + E to focus query editor
+            if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'e') {
                 e.preventDefault();
                 textareaRef.current?.focus();
             }
@@ -125,6 +125,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
                     value={query}
                     onChange={(e) => onQueryChange(e.target.value)}
                     placeholder="SELECT * FROM c"
+                    title="Query Editor (Cmd+E)"
                 />
             </div>
             <div className="editor-actions">

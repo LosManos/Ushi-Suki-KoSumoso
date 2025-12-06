@@ -25,7 +25,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ results, loading }) =>
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Cmd/Ctrl + 3 to focus results view
-      if ((e.metaKey || e.ctrlKey) && e.key === '3') {
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'r') {
         e.preventDefault();
         if (viewMode === 'text' && containerRef.current) {
           containerRef.current.focus();
@@ -100,7 +100,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ results, loading }) =>
   return (
     <div className="results-view-container">
       <div className="results-header">
-        <h3 title="Focus Results View (Cmd+3)">Results</h3>
+        <h3 title="Focus Results View (Cmd+R)">Results</h3>
         <div className="header-controls">
           <div className="view-toggle">
             <button

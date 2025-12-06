@@ -42,7 +42,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   // Global Cmd+1 listener to focus sidebar
   React.useEffect(() => {
     const handleWindowKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === '1') {
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'e') {
         e.preventDefault();
         sidebarRef.current?.focus();
       }
@@ -216,7 +216,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <div className="sidebar-content">
       <div className="sidebar-header">
-        <h2 title="Focus Sidebar (Cmd+1)">{accountName}</h2>
+        <h2 title="Focus Sidebar (Cmd+Shift+E)">{accountName}</h2>
         <div className="settings-container" ref={settingsRef}>
           <button
             className={`settings-btn ${isSettingsOpen ? 'active' : ''}`}
