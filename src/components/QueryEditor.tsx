@@ -63,11 +63,52 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
                 e.preventDefault();
                 textareaRef.current?.focus();
             }
+
+            // Tab Navigation Cmd+1 through Cmd+9
+            if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey) {
+                const key = e.key;
+                if (/^[1-9]$/.test(key)) {
+                    e.preventDefault();
+                    const num = parseInt(key, 10);
+                    if (num >= 1 && num <= 8) {
+                        // Switch to specific tab index 0-7
+                        if (tabs[num - 1]) {
+                            onTabSelect(tabs[num - 1].id);
+                        }
+                    } else if (num === 9) {
+                        // Switch to last tab
+                        if (tabs.length > 0) {
+                            onTabSelect(tabs[tabs.length - 1].id);
+                        }
+                    }
+                }
+            }
+
+            // Ctrl+Tab and Shift+Ctrl+Tab Navigation
+            if (e.ctrlKey && e.key === 'Tab') {
+                e.preventDefault();
+                e.stopPropagation(); // Important to stop focus ring movement if possible, though Ctrl+Tab is usually browser level
+
+                if (tabs.length <= 1) return;
+
+                const currentIndex = tabs.findIndex(t => t.id === activeTabId);
+                if (currentIndex === -1) return;
+
+                if (e.shiftKey) {
+                    // Previous tab (round robin)
+                    const prevIndex = currentIndex === 0 ? tabs.length - 1 : currentIndex - 1;
+                    onTabSelect(tabs[prevIndex].id);
+                } else {
+                    // Next tab (round robin)
+                    const nextIndex = currentIndex === tabs.length - 1 ? 0 : currentIndex + 1;
+                    onTabSelect(tabs[nextIndex].id);
+                }
+            }
         };
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [query, pageSize, onRunQuery]);
+    }, [query, pageSize, onRunQuery, tabs, onTabSelect]);
 
     const handleQuickLookup = () => {
         if (!quickId.trim()) return;
@@ -82,26 +123,35 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
         <div className="query-editor-container">
             <div className="editor-toolbar">
                 <div className="tabs-container">
-                    {tabs.map(tab => (
-                        <span
-                            key={tab.id}
-                            className={`tab ${tab.id === activeTabId ? 'active' : ''}`}
-                            onClick={() => onTabSelect(tab.id)}
-                            title={`Query ${tab.containerId}`}
-                        >
-                            {tab.containerId}
-                            <button
-                                className="close-tab-btn"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onTabClose(tab.id);
-                                }}
-                                title="Close Tab"
+                    {tabs.map((tab, index) => {
+                        let shortcut = '';
+                        if (index < 8) {
+                            shortcut = ` (Cmd+${index + 1})`;
+                        } else if (index === tabs.length - 1) {
+                            shortcut = ' (Cmd+9)';
+                        }
+
+                        return (
+                            <span
+                                key={tab.id}
+                                className={`tab ${tab.id === activeTabId ? 'active' : ''}`}
+                                onClick={() => onTabSelect(tab.id)}
+                                title={`Query ${tab.containerId}${shortcut}`}
                             >
-                                ×
-                            </button>
-                        </span>
-                    ))}
+                                {tab.containerId}
+                                <button
+                                    className="close-tab-btn"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onTabClose(tab.id);
+                                    }}
+                                    title="Close Tab"
+                                >
+                                    ×
+                                </button>
+                            </span>
+                        )
+                    })}
                 </div>
 
                 <div className="quick-lookup">
