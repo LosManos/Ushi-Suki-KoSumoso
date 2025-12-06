@@ -18,6 +18,7 @@
     align-items: center;
     border-bottom: 1px solid var(--border-color);
     background-color: var(--bg-tertiary);
+
     /* Toolbar bg */
 }
 
@@ -33,6 +34,52 @@
     align-items: center;
     height: 100%;
     gap: 1rem;
+}
+
+.control-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-right: 0.5rem;
+}
+
+.run-btn-small {
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    font-weight: 500;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+
+.run-btn-small:hover {
+    background-color: var(--accent-hover);
+}
+
+.page-size-selector-small {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-left: 0.5rem;
+}
+
+.page-size-selector-small label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.page-size-selector-small select {
+    background-color: var(--input-bg);
+    color: var(--text-primary);
+    border: 1px solid var(--input-border);
+    padding: 0.1rem;
+    border-radius: 4px;
+    outline: none;
+    cursor: pointer;
+    font-size: 0.8rem;
 }
 
 .view-toggle {

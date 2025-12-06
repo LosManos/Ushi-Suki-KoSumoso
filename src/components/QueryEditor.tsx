@@ -2,15 +2,15 @@ import React, { useRef, useEffect, useState } from 'react';
 import './QueryEditor.css';
 import { QueryTab } from '../types';
 
+
 interface QueryEditorProps {
     tabs: QueryTab[];
     activeTabId: string | null;
     onTabSelect: (tabId: string) => void;
     onTabClose: (tabId: string) => void;
-    onRunQuery: (query: string, pageSize: number | 'All') => void;
+    onRunQuery: () => void;
     onGetDocument: (docId: string) => void;
     onQueryChange: (query: string) => void;
-    onPageSizeChange: (pageSize: number | 'All') => void;
 }
 
 export const QueryEditor: React.FC<QueryEditorProps> = ({
@@ -20,18 +20,15 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
     onTabClose,
     onRunQuery,
     onGetDocument,
-    onQueryChange,
-    onPageSizeChange
+    onQueryChange
 }) => {
     const [quickId, setQuickId] = useState('');
 
     // Derived state from active tab
     const activeTab = tabs.find(t => t.id === activeTabId);
     const query = activeTab?.query || '';
-    const pageSize = activeTab?.pageSize || 10;
-    const selectedContainer = activeTab?.containerId || null;
 
-    const pageSizeSelectRef = useRef<HTMLSelectElement>(null);
+    // We only need local refs for text area and ID lookup now
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const quickIdInputRef = useRef<HTMLInputElement>(null);
 
@@ -46,12 +43,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
             // Cmd/Ctrl + Enter to run query
             if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
                 e.preventDefault();
-                onRunQuery(query, pageSize);
-            }
-            // Cmd/Ctrl + Shift + R to focus page size selector
-            if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'r') {
-                e.preventDefault();
-                pageSizeSelectRef.current?.focus();
+                onRunQuery();
             }
             // Cmd/Ctrl + Shift + I to focus ID lookup
             if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'i') {
@@ -108,7 +100,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [query, pageSize, onRunQuery, tabs, onTabSelect]);
+    }, [query, onRunQuery, tabs, onTabSelect]);
 
     const handleQuickLookup = () => {
         if (!quickId.trim()) return;
@@ -177,34 +169,6 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
                     placeholder="SELECT * FROM c"
                     title="Query Editor (Cmd+E)"
                 />
-            </div>
-            <div className="editor-actions">
-                <div className="page-size-selector">
-                    <label title="Change page size (Cmd+Shift+R)">Results per page:</label>
-                    <select
-                        ref={pageSizeSelectRef}
-                        value={pageSize}
-                        onChange={(e) => {
-                            const val = e.target.value;
-                            onPageSizeChange(val === 'All' ? 'All' : Number(val));
-                        }}
-                        title="Change page size (Cmd+Shift+R)"
-                    >
-                        <option value={1}>1</option>
-                        <option value={10}>10</option>
-                        <option value={50}>50</option>
-                        <option value={100}>100</option>
-                        <option value={1000}>1000</option>
-                        <option value="All">All</option>
-                    </select>
-                </div>
-                <button
-                    className="run-btn"
-                    onClick={() => onRunQuery(query, pageSize)}
-                    title="Run Query (Cmd+Enter)"
-                >
-                    Run Query
-                </button>
             </div>
         </div>
     );

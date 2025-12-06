@@ -3,14 +3,24 @@ import { JsonTreeView } from './JsonTreeView';
 import { useTheme } from '../context/ThemeContext';
 import './ResultsView.css';
 
+
 interface ResultsViewProps {
   results: any[];
   loading: boolean;
+  onRunQuery: () => void;
+  pageSize: number | 'All';
+  onPageSizeChange: (pageSize: number | 'All') => void;
 }
 
 type ViewMode = 'text' | 'json';
 
-export const ResultsView: React.FC<ResultsViewProps> = ({ results, loading }) => {
+export const ResultsView: React.FC<ResultsViewProps> = ({
+  results,
+  loading,
+  onRunQuery,
+  pageSize,
+  onPageSizeChange
+}) => {
   const containerRef = React.useRef<HTMLTextAreaElement>(null);
   const [content, setContent] = React.useState('');
   const [viewMode, setViewMode] = React.useState<ViewMode>('text');
@@ -64,6 +74,34 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ results, loading }) =>
       <div className="results-header">
         <h3 title="Focus Results View (Cmd+R)">Results</h3>
         <div className="header-controls">
+          <div className="control-group">
+            <button
+              className="run-btn-small"
+              onClick={onRunQuery}
+              title="Run Query (Cmd+Enter)"
+            >
+              Run
+            </button>
+            <div className="page-size-selector-small">
+              <label htmlFor="page-size-select" title="Change page size (Cmd+Shift+R)">Rows:</label>
+              <select
+                id="page-size-select"
+                value={pageSize}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  onPageSizeChange(val === 'All' ? 'All' : Number(val));
+                }}
+                title="Change page size (Cmd+Shift+R)"
+              >
+                <option value={1}>1</option>
+                <option value={10}>10</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+                <option value={1000}>1000</option>
+                <option value="All">All</option>
+              </select>
+            </div>
+          </div>
           <div className="view-toggle">
             <button
               className={viewMode === 'text' ? 'active' : ''}

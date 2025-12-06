@@ -147,6 +147,12 @@ function App() {
         }));
     };
 
+
+    const executeActiveQuery = () => {
+        if (!activeTab || !activeTabId) return;
+        handleRunQuery(activeTab.query, activeTab.pageSize);
+    };
+
     if (!isConnected) {
         return (
             <ThemeProvider>
@@ -176,14 +182,16 @@ function App() {
                             activeTabId={activeTabId}
                             onTabSelect={setActiveTabId}
                             onTabClose={handleTabClose}
-                            onRunQuery={handleRunQuery}
+                            onRunQuery={executeActiveQuery}
                             onGetDocument={handleGetDocument}
                             onQueryChange={handleQueryChange}
-                            onPageSizeChange={handlePageSizeChange}
                         />
                         <ResultsView
                             results={activeTab?.results || []}
                             loading={activeTab?.isQuerying || false}
+                            onRunQuery={executeActiveQuery}
+                            pageSize={activeTab?.pageSize || 10}
+                            onPageSizeChange={handlePageSizeChange}
                         />
                     </>
                 }
