@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout } from './components/Layout';
 import { Sidebar } from './components/Sidebar';
 import { QueryEditor } from './components/QueryEditor';
@@ -22,6 +22,74 @@ function App() {
     const [activeTabId, setActiveTabId] = useState<string | null>(null);
 
     const [accountName, setAccountName] = useState('Cosmos DB');
+
+    // Resize State
+    const [queryPaneHeight, setQueryPaneHeight] = useState(300);
+    const [isDragging, setIsDragging] = useState(false);
+    const resizeHandleRef = React.useRef<HTMLDivElement>(null);
+    const lastFocusedElementRef = React.useRef<HTMLElement | null>(null);
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+        setIsDragging(true);
+        e.preventDefault();
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+        if (!isDragging) return;
+
+        // Calculate new height based on mouse Y position relative to window
+        // (This is a simplification; precise calc might need offset of top-nav, but sidebar layout usually starts below)
+        // Adjusting for top-left (0,0) coordinate system
+        // We enforce min height 100px and max height 80% of window
+        const newHeight = Math.max(100, Math.min(e.clientY, window.innerHeight * 0.8));
+        setQueryPaneHeight(newHeight);
+    };
+
+    const handleMouseUp = () => {
+        setIsDragging(false);
+    };
+
+    const handleHandleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            setQueryPaneHeight(prev => Math.max(100, prev - 10));
+        } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            setQueryPaneHeight(prev => Math.min(window.innerHeight * 0.8, prev + 10));
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (lastFocusedElementRef.current) {
+                lastFocusedElementRef.current.focus();
+            } else {
+                resizeHandleRef.current?.blur();
+            }
+        }
+    };
+
+    useEffect(() => {
+        const handleWindowKeyDown = (e: KeyboardEvent) => {
+            // Handle Ctrl+M (or Cmd+M) to focus resize handle
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'm') {
+                e.preventDefault();
+                lastFocusedElementRef.current = document.activeElement as HTMLElement;
+                resizeHandleRef.current?.focus();
+            }
+        };
+
+        window.addEventListener('keydown', handleWindowKeyDown);
+        if (isDragging) {
+            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('mouseup', handleMouseUp);
+        } else {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        }
+        return () => {
+            window.removeEventListener('keydown', handleWindowKeyDown);
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [isDragging]);
 
     // Derived Selection State for Sidebar Highlighting
     const activeTab = tabs.find(t => t.id === activeTabId);
@@ -177,15 +245,29 @@ function App() {
                 }
                 content={
                     <>
-                        <QueryEditor
-                            tabs={tabs}
-                            activeTabId={activeTabId}
-                            onTabSelect={setActiveTabId}
-                            onTabClose={handleTabClose}
-                            onRunQuery={executeActiveQuery}
-                            onGetDocument={handleGetDocument}
-                            onQueryChange={handleQueryChange}
-                        />
+                        <div style={{ height: queryPaneHeight, display: 'flex', flexDirection: 'column' }}>
+                            <QueryEditor
+                                tabs={tabs}
+                                activeTabId={activeTabId}
+                                onTabSelect={setActiveTabId}
+                                onTabClose={handleTabClose}
+                                onRunQuery={executeActiveQuery}
+                                onGetDocument={handleGetDocument}
+                                onQueryChange={handleQueryChange}
+                            />
+                        </div>
+
+                        <div
+                            ref={resizeHandleRef}
+                            className={`resize-handle ${isDragging ? 'dragging' : ''}`}
+                            onMouseDown={handleMouseDown}
+                            tabIndex={0}
+                            title="Resize Pane (Ctrl+M)"
+                            onKeyDown={handleHandleKeyDown}
+                        >
+                            <div className="resize-handle-grabber" />
+                        </div>
+
                         <ResultsView
                             results={activeTab?.results || []}
                             loading={activeTab?.isQuerying || false}

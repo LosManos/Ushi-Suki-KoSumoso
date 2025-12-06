@@ -115,3 +115,47 @@ button:focus-visible {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-hover);
 }
+
+.resize-handle {
+  height: 12px;
+  background-color: var(--bg-tertiary);
+  cursor: row-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  transition: background-color 0.2s;
+  user-select: none;
+  z-index: 10;
+}
+
+.resize-handle:hover,
+.resize-handle.dragging {
+  background-color: var(--accent-color);
+  border-color: var(--accent-color);
+}
+
+.resize-handle-grabber {
+  width: 40px;
+  height: 4px;
+  background-color: var(--text-secondary);
+  border-radius: 2px;
+  opacity: 0.5;
+}
+
+.resize-handle:hover .resize-handle-grabber,
+.resize-handle.dragging .resize-handle-grabber {
+  background-color: white;
+  opacity: 1;
+}
+
+.resize-handle:focus {
+  outline: none;
+  background-color: var(--accent-color);
+}
+
+.resize-handle:focus .resize-handle-grabber {
+  background-color: white;
+  opacity: 1;
+}
