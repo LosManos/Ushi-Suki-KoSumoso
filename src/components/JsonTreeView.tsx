@@ -1,0 +1,236 @@
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import './JsonTreeView.css';
+
+interface JsonTreeViewProps {
+    data: any;
+    theme?: 'light' | 'dark';
+}
+
+interface FlattenedItem {
+    id: string;
+    key: string;
+    value: any;
+    level: number;
+    type: 'object' | 'array' | 'primitive';
+    expanded?: boolean;
+    hasChildren: boolean;
+    path: string[];
+}
+
+export const JsonTreeView: React.FC<JsonTreeViewProps> = ({ data, theme = 'dark' }) => {
+    const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set(['root']));
+    const [focusedPath, setFocusedPath] = useState<string>('root');
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    // Flatten the visible tree structure
+    const flattenedItems = useMemo(() => {
+        const items: FlattenedItem[] = [];
+
+        const traverse = (currentData: any, currentLevel: number, currentPath: string[]) => {
+            const pathStr = currentPath.join('.');
+
+            // Determine type
+            let type: 'object' | 'array' | 'primitive' = 'primitive';
+            let hasChildren = false;
+
+            if (currentData !== null && typeof currentData === 'object') {
+                type = Array.isArray(currentData) ? 'array' : 'object';
+                hasChildren = Object.keys(currentData).length > 0;
+            }
+
+            // We don't push the root object itself as a visible line if we want to show its properties directly?
+            // Actually, usually root is implicit. Let's make root renderable so we can collapse it if we want, 
+            // or better, just start traversing from root properties if root is an array/object.
+            // But typically JSON view starts with { or [
+
+            const isExpanded = expandedKeys.has(pathStr);
+
+            // However, for the list logic, we need items.
+            // Let's treat the incoming 'data' as the root item.
+            if (currentPath.length === 0) {
+                // Special case for root
+                const rootType = Array.isArray(data) ? 'array' : (typeof data === 'object' && data !== null ? 'object' : 'primitive');
+                const rootHasChildren = rootType !== 'primitive' && Object.keys(data).length > 0;
+                items.push({
+                    id: 'root',
+                    key: 'root',
+                    value: data,
+                    level: 0,
+                    type: rootType,
+                    expanded: expandedKeys.has('root'),
+                    hasChildren: rootHasChildren,
+                    path: ['root']
+                });
+
+                if (expandedKeys.has('root') && rootHasChildren) {
+                    Object.entries(data).forEach(([k, v]) => {
+                        traverse(v, 1, ['root', k]);
+                    });
+                }
+                return;
+            }
+
+            // For non-root items
+            const key = currentPath[currentPath.length - 1];
+            items.push({
+                id: pathStr,
+                key,
+                value: currentData,
+                level: currentLevel,
+                type,
+                expanded: isExpanded,
+                hasChildren,
+                path: currentPath
+            });
+
+            if (isExpanded && hasChildren) {
+                Object.entries(currentData).forEach(([k, v]) => {
+                    traverse(v, currentLevel + 1, [...currentPath, k]);
+                });
+            }
+        };
+
+        // Initialize with data
+        traverse(data, 0, []);
+        return items;
+    }, [data, expandedKeys]);
+
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (flattenedItems.length === 0) return;
+
+        const currentIndex = flattenedItems.findIndex(item => item.id === focusedPath);
+        let newIndex = currentIndex;
+
+        switch (e.key) {
+            case 'ArrowDown': {
+                e.preventDefault();
+                newIndex = Math.min(flattenedItems.length - 1, currentIndex + 1);
+                break;
+            }
+            case 'ArrowUp': {
+                e.preventDefault();
+                newIndex = Math.max(0, currentIndex - 1);
+                break;
+            }
+            case 'ArrowRight': {
+                e.preventDefault();
+                if (currentIndex === -1) return;
+                const item = flattenedItems[currentIndex];
+                if (item.hasChildren) {
+                    if (!item.expanded) {
+                        const newKeys = new Set(expandedKeys);
+                        newKeys.add(item.id);
+                        setExpandedKeys(newKeys);
+                    } else {
+                        // Already expanded, move to next item (which will be the first child)
+                        newIndex = Math.min(flattenedItems.length - 1, currentIndex + 1);
+                    }
+                }
+                break;
+            }
+            case 'ArrowLeft': {
+                e.preventDefault();
+                if (currentIndex === -1) return;
+                const item = flattenedItems[currentIndex];
+                if (item.hasChildren && item.expanded) {
+                    const newKeys = new Set(expandedKeys);
+                    newKeys.delete(item.id);
+                    setExpandedKeys(newKeys);
+                } else {
+                    // Move to parent
+                    if (item.level > 0) {
+                        // Find parent index
+                        // Parent path is path sliced by -1
+                        // Actually we can just search backwards for an item with level - 1
+                        for (let i = currentIndex - 1; i >= 0; i--) {
+                            if (flattenedItems[i].level < item.level) {
+                                newIndex = i;
+                                break;
+                            }
+                        }
+                    }
+                }
+                break;
+            }
+            case 'Home': {
+                e.preventDefault();
+                newIndex = 0;
+                break;
+            }
+            case 'End': {
+                e.preventDefault();
+                newIndex = flattenedItems.length - 1;
+                break;
+            }
+        }
+
+        if (newIndex !== currentIndex && newIndex !== -1) {
+            setFocusedPath(flattenedItems[newIndex].id);
+
+            // Auto-scroll
+            const element = document.getElementById(`json-node-${flattenedItems[newIndex].id}`);
+            element?.scrollIntoView({ block: 'nearest' });
+        }
+    };
+
+    // Auto focus root on mount if nothing focused
+    useEffect(() => {
+        // maybe focus container?
+    }, []);
+
+    return (
+        <div
+            className={`json-tree-view ${theme}`}
+            tabIndex={0}
+            onKeyDown={handleKeyDown}
+            ref={containerRef}
+            onClick={() => containerRef.current?.focus()}
+        >
+            {flattenedItems.map(item => (
+                <JsonNode key={item.id} item={item} isFocused={focusedPath === item.id} onSelect={(id) => setFocusedPath(id)} />
+            ))}
+        </div>
+    );
+};
+
+const JsonNode: React.FC<{ item: FlattenedItem; isFocused: boolean; onSelect: (id: string) => void }> = ({ item, isFocused, onSelect }) => {
+
+    // Formatting value
+    let valueDisplay = null;
+    let typeClass = `type-${typeof item.value}`;
+
+    if (item.value === null) {
+        valueDisplay = <span className="json-null">null</span>;
+    } else if (typeof item.value === 'boolean') {
+        valueDisplay = <span className="json-boolean">{item.value.toString()}</span>;
+    } else if (typeof item.value === 'number') {
+        valueDisplay = <span className="json-number">{item.value}</span>;
+    } else if (typeof item.value === 'string') {
+        valueDisplay = <span className={`json-string ${typeClass}`}>"{item.value}"</span>;
+    } else if (Array.isArray(item.value)) {
+        valueDisplay = <span className="json-array-label">Array({item.value.length})</span>;
+    } else if (typeof item.value === 'object') {
+        valueDisplay = <span className="json-object-label">{"{}"}</span>;
+    }
+
+    return (
+        <div
+            id={`json-node-${item.id}`}
+            className={`json-node ${isFocused ? 'focused' : ''}`}
+            style={{ paddingLeft: `${item.level * 20}px` }}
+            onClick={(e) => {
+                e.stopPropagation();
+                onSelect(item.id);
+            }}
+        >
+            <span className="arrow">
+                {item.hasChildren ? (item.expanded ? '▼' : '▶') : <span style={{ display: 'inline-block', width: '1em' }}></span>}
+            </span>
+            <span className="json-key">{item.key === 'root' ? 'root' : item.key}: </span>
+            {valueDisplay}
+        </div>
+    );
+}
+
+export default JsonTreeView;

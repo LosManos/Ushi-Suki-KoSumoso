@@ -112,10 +112,7 @@
 }
 
 /* Customize react-json-view styles to match theme if needed */
-.react-json-view {
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace !important;
-    font-size: 14px !important;
-}
+
 
 .empty-state {
     display: flex;

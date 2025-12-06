@@ -1,0 +1,113 @@
+.json-tree-view {
+    font-family: 'Consolas', 'Monaco', 'Andale Mono', 'Ubuntu Mono', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    overflow-y: auto;
+    height: 100%;
+    outline: none;
+    cursor: default;
+    padding: 10px;
+}
+
+.json-node {
+    display: flex;
+    align-items: center;
+    padding: 2px 0;
+    border-radius: 2px;
+    white-space: nowrap;
+}
+
+.json-node:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.json-node.focused {
+    background-color: var(--accent-color);
+    color: white;
+    /* Force text color to white on selection for readability */
+}
+
+/* Ensure syntax colors are readable on selection, or override them */
+.json-node.focused .json-key,
+.json-node.focused .json-string,
+.json-node.focused .json-number,
+.json-node.focused .json-boolean,
+.json-node.focused .json-null,
+.json-node.focused .json-array-label,
+.json-node.focused .json-object-label {
+    color: white !important;
+}
+
+.arrow {
+    display: inline-block;
+    width: 1.5em;
+    text-align: center;
+    cursor: pointer;
+    font-size: 0.8em;
+    user-select: none;
+    margin-right: 4px;
+}
+
+/* Dark Theme Colors (Default) */
+.json-tree-view.dark .json-key {
+    color: #66d9ef;
+    font-weight: bold;
+}
+
+.json-tree-view.dark .json-string {
+    color: #e6db74;
+}
+
+.json-tree-view.dark .json-number {
+    color: #ae81ff;
+}
+
+.json-tree-view.dark .json-boolean {
+    color: #ae81ff;
+}
+
+.json-tree-view.dark .json-null {
+    color: #75715e;
+}
+
+.json-tree-view.dark .json-array-label {
+    color: #a6e22e;
+}
+
+.json-tree-view.dark .json-object-label {
+    color: #a6e22e;
+}
+
+/* Light Theme Colors */
+.json-tree-view.light .json-node:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.json-tree-view.light .json-key {
+    color: #005cc5;
+    font-weight: bold;
+}
+
+.json-tree-view.light .json-string {
+    color: #22863a;
+}
+
+.json-tree-view.light .json-number {
+    color: #d73a49;
+}
+
+.json-tree-view.light .json-boolean {
+    color: #005cc5;
+}
+
+.json-tree-view.light .json-null {
+    color: #586069;
+}
+
+.json-tree-view.light .json-array-label {
+    color: #6f42c1;
+}
+
+.json-tree-view.light .json-object-label {
+    color: #6f42c1;
+}
