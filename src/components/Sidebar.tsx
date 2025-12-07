@@ -29,7 +29,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectHistory
 }) => {
   const [focusedId, setFocusedId] = React.useState<string | null>(null);
+  const [historyFilter, setHistoryFilter] = React.useState<string>('');
   const sidebarRef = React.useRef<HTMLDivElement>(null);
+
+  // Sync history filter with active selection
+  React.useEffect(() => {
+    if (selectedDatabase && selectedContainer) {
+      setHistoryFilter(`${selectedDatabase}/${selectedContainer}`);
+    } else {
+      setHistoryFilter('');
+    }
+  }, [selectedDatabase, selectedContainer]);
 
   // Auto-focus first item when databases load
   React.useEffect(() => {
@@ -81,15 +91,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
       }
     });
 
-    if (history.length > 0) {
-      history.forEach(h => {
+    const filteredHistory = historyFilter
+      ? history.filter(h => `${h.databaseId}/${h.containerId}` === historyFilter)
+      : history;
+
+    if (filteredHistory.length > 0) {
+      filteredHistory.forEach(h => {
         const hId = `hist-${h.timestamp}-${h.query.substring(0, 10)}`;
         items.push({ type: 'history', id: hId, data: h });
       });
     }
 
     return items;
-  }, [databases, selectedDatabase, containers, history]);
+  }, [databases, selectedDatabase, containers, history, historyFilter]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (flatItems.length === 0) return;
@@ -438,13 +452,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {history.length > 0 && (
           <div className="history-section">
-            <div className="history-header">History</div>
-            {history.map(h => {
-              const hId = `hist-${h.timestamp}-${h.query.substring(0, 10)}`;
+            <div className="history-header">
+              <select
+                className="history-filter-select"
+                value={historyFilter}
+                onChange={(e) => setHistoryFilter(e.target.value)}
+                title="Filter history by Database/Container"
+              >
+                <option value="">History (All)</option>
+                {Array.from(new Set(history.map(h => `${h.databaseId}/${h.containerId}`))).sort().map(val => (
+                  <option key={val} value={val}>{val}</option>
+                ))}
+              </select>
+            </div>
+            {flatItems.filter(i => i.type === 'history').map(item => {
+              const h = item.data!;
               return (
                 <div
-                  key={hId}
-                  className={`nav-item history-item ${focusedId === hId ? 'focused' : ''}`}
+                  key={item.id}
+                  className={`nav-item history-item ${focusedId === item.id ? 'focused' : ''}`}
                   onClick={() => onSelectHistory(h)}
                   title={`${h.query}\n${new Date(h.timestamp).toLocaleString()}`}
                 >
