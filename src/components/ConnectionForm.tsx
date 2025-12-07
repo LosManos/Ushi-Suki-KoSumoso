@@ -23,6 +23,8 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect, onCan
     const [error, setError] = useState<string | null>(null);
 
     const inputRef = React.useRef<HTMLInputElement>(null);
+    const savedSelectRef = React.useRef<HTMLSelectElement>(null);
+    const nameInputRef = React.useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         loadSavedConnections();
@@ -34,6 +36,42 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect, onCan
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape' && onCancel) {
                 onCancel();
+                return;
+            }
+
+            // Custom shortcuts (Windows-style Alt keys)
+            // On Mac, Alt (Option) often produces special characters in e.key (e.g. ß for s),
+            // so we must use e.code (e.g. KeyS) to reliably detect the intended key.
+            if (e.altKey && !e.ctrlKey && !e.metaKey) {
+                switch (e.code) {
+                    case 'KeyS': {
+                        e.preventDefault();
+                        savedSelectRef.current?.focus();
+                        break;
+                    }
+                    case 'KeyN': {
+                        e.preventDefault();
+                        nameInputRef.current?.focus();
+                        break;
+                    }
+                    case 'KeyO': {
+                        e.preventDefault();
+                        setAuthMethod('connectionString');
+                        setInputValue('');
+                        break;
+                    }
+                    case 'KeyA': {
+                        e.preventDefault();
+                        setAuthMethod('azureCli');
+                        setInputValue('');
+                        break;
+                    }
+                    case 'KeyC': {
+                        e.preventDefault();
+                        inputRef.current?.focus();
+                        break;
+                    }
+                }
             }
         };
         window.addEventListener('keydown', handleKeyDown);
@@ -117,8 +155,9 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect, onCan
 
                 {savedConnections.length > 0 && (
                     <div className="form-group saved-connections-group">
-                        <label>Saved Connections</label>
+                        <label><u>S</u>aved Connections</label>
                         <select
+                            ref={savedSelectRef}
                             onChange={handleSavedConnectionSelect}
                             value={savedConnections.find(c => c.name === connectionName) ? connectionName : ''}
                         >
@@ -142,7 +181,7 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect, onCan
                                 setInputValue('');
                             }}
                         />
-                        Connection String
+                        <span>C<u>o</u>nnection String</span>
                     </label>
                     <label>
                         <input
@@ -153,15 +192,16 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect, onCan
                                 setInputValue('');
                             }}
                         />
-                        Azure CLI (az login)
+                        <span><u>A</u>zure CLI (az login)</span>
                     </label>
                 </div>
 
                 {authMethod === 'connectionString' && (
                     <div className="form-group">
-                        <label>Connection Name <small>(Optional - to remember for later)</small></label>
+                        <label>Connection <u>N</u>ame <small>(Optional - to remember for later)</small></label>
                         <div style={{ display: 'flex', gap: '8px' }}>
                             <input
+                                ref={nameInputRef}
                                 type="text"
                                 value={connectionName}
                                 onChange={(e) => setConnectionName(e.target.value)}
@@ -184,7 +224,7 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect, onCan
 
                 <div className="form-group">
                     <label>
-                        {authMethod === 'connectionString' ? 'Connection String' : 'Cosmos DB Endpoint URL'}
+                        {authMethod === 'connectionString' ? <><u>C</u>onnection String</> : <><u>C</u>osmos DB Endpoint URL</>}
                     </label>
                     <input
                         ref={inputRef}
