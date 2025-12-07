@@ -164,18 +164,35 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }, [isSettingsOpen]);
 
   // Settings focus management
-  const themeButtonsRef = React.useRef<(HTMLButtonElement | null)[]>([]);
+  const [menuView, setMenuView] = React.useState<'main' | 'theme'>('main');
+  const menuItemsRef = React.useRef<(HTMLButtonElement | null)[]>([]);
   const settingsBtnRef = React.useRef<HTMLButtonElement>(null);
+
+  // Reset menu view when closed
+  React.useEffect(() => {
+    if (!isSettingsOpen) {
+      const timer = setTimeout(() => {
+        setMenuView('main');
+      }, 200); // Delay reset slightly to allow exit animation if we had one and to avoid flash
+      return () => clearTimeout(timer);
+    }
+  }, [isSettingsOpen]);
 
   React.useEffect(() => {
     if (isSettingsOpen) {
       // Use explicit timeout to ensure DOM is ready and painting
       const timer = setTimeout(() => {
-        const activeIndex = ['light', 'dark', 'system'].indexOf(theme);
-        if (activeIndex !== -1 && themeButtonsRef.current[activeIndex]) {
-          themeButtonsRef.current[activeIndex]?.focus();
-        } else if (themeButtonsRef.current[0]) {
-          themeButtonsRef.current[0]?.focus();
+
+        if (menuView === 'main') {
+          // Focus first item
+          menuItemsRef.current[0]?.focus();
+        } else if (menuView === 'theme') {
+          // Focus currently selected theme or first item
+          // Indices in theme view: 0=Back, 1=Light, 2=Dark, 3=System
+          // Map theme to index
+          const map: Record<string, number> = { 'light': 1, 'dark': 2, 'system': 3 };
+          const idx = map[theme] || 1;
+          menuItemsRef.current[idx]?.focus();
         }
       }, 50);
       return () => clearTimeout(timer);
@@ -185,23 +202,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
         settingsBtnRef.current.focus();
       }
     }
-  }, [isSettingsOpen]); // Remove theme from deps to avoid refocusing on selection change
+  }, [isSettingsOpen, menuView]);
 
-  const handleSettingsKeyDown = (e: React.KeyboardEvent, index: number) => {
-    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
-      e.preventDefault();
-      e.stopPropagation(); // Stop event bubbling
-      const nextIndex = (index + 1) % 3;
-      themeButtonsRef.current[nextIndex]?.focus();
-    } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+  const handleMenuKeyDown = (e: React.KeyboardEvent, index: number, totalItems: number) => {
+    if (e.key === 'ArrowDown') {
       e.preventDefault();
       e.stopPropagation();
-      const prevIndex = (index - 1 + 3) % 3;
-      themeButtonsRef.current[prevIndex]?.focus();
+      const nextIndex = (index + 1) % totalItems;
+      menuItemsRef.current[nextIndex]?.focus();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      e.stopPropagation();
+      const prevIndex = (index - 1 + totalItems) % totalItems;
+      menuItemsRef.current[prevIndex]?.focus();
     } else if (e.key === 'Escape') {
       e.preventDefault();
       e.stopPropagation();
-      setIsSettingsOpen(false);
+      if (menuView === 'theme') {
+        setMenuView('main');
+      } else {
+        setIsSettingsOpen(false);
+      }
     }
   };
 
@@ -222,65 +243,150 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <div className="sidebar-content">
       <div className="sidebar-header">
-        <h2 title={`${accountName}\nFocus Sidebar (Cmd+Shift+E)`}>
-          {accountName}
-        </h2>
-        <div className="sidebar-actions">
-          <button
-            className="icon-btn"
-            onClick={onChangeConnection}
-            title="Change Connection (Ctrl+D)"
-          >
-            ...
-          </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div className="settings-container" ref={settingsRef}>
             <button
               className={`settings-btn ${isSettingsOpen ? 'active' : ''}`}
-              onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-              title="Settings (Cmd+,)"
+              onClick={() => {
+                setIsSettingsOpen(!isSettingsOpen);
+                setMenuView('main');
+              }}
+              title="Menu"
               ref={settingsBtnRef}
               onKeyDown={handleToggleKeyDown}
             >
-              ⚙️
+              ☰
             </button>
             {isSettingsOpen && (
               <div className="settings-dropdown">
-                <div className="settings-section">
-                  <h4>Theme</h4>
-                  <div className="theme-options">
+                {menuView === 'main' ? (
+                  <>
                     <button
-                      ref={el => themeButtonsRef.current[0] = el}
-                      className={theme === 'light' ? 'active' : ''}
-                      onClick={() => handleThemeSelect('light')}
-                      onKeyDown={(e) => handleSettingsKeyDown(e, 0)}
-                      title="Light Mode"
+                      ref={(el) => (menuItemsRef.current[0] = el)}
+                      className="menu-item"
+                      onClick={() => {
+                        onChangeConnection();
+                        setIsSettingsOpen(false);
+                      }}
+                      onKeyDown={(e) => handleMenuKeyDown(e, 0, 3)}
                     >
-                      ☀️ Light
+                      Account...
                     </button>
+
+                    <div className="menu-separator"></div>
+
                     <button
-                      ref={el => themeButtonsRef.current[1] = el}
-                      className={theme === 'dark' ? 'active' : ''}
-                      onClick={() => handleThemeSelect('dark')}
-                      onKeyDown={(e) => handleSettingsKeyDown(e, 1)}
-                      title="Dark Mode"
+                      ref={(el) => (menuItemsRef.current[1] = el)}
+                      className="menu-item"
+                      onClick={() => {
+                        setMenuView('theme');
+                        // Focus will be handled by useEffect when view changes
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'ArrowRight' || e.key === 'Enter') {
+                          e.preventDefault();
+                          setMenuView('theme');
+                        } else {
+                          handleMenuKeyDown(e, 1, 3);
+                        }
+                      }}
+                      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                     >
-                      🌙 Dark
+                      <span>Theme</span>
+                      <span>›</span>
                     </button>
+
+                    <div className="menu-separator"></div>
+
                     <button
-                      ref={el => themeButtonsRef.current[2] = el}
-                      className={theme === 'system' ? 'active' : ''}
-                      onClick={() => handleThemeSelect('system')}
-                      onKeyDown={(e) => handleSettingsKeyDown(e, 2)}
-                      title="System Theme"
+                      ref={(el) => (menuItemsRef.current[2] = el)}
+                      className="menu-item"
+                      onClick={() => {
+                        window.ipcRenderer.send('app:quit');
+                        setIsSettingsOpen(false);
+                      }}
+                      onKeyDown={(e) => handleMenuKeyDown(e, 2, 3)}
                     >
-                      💻 System
+                      Quit Cmd-Q
                     </button>
-                  </div>
-                </div>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      ref={(el) => (menuItemsRef.current[0] = el)}
+                      className="menu-item"
+                      onClick={() => setMenuView('main')}
+                      onKeyDown={(e) => {
+                        if (e.key === 'ArrowLeft') {
+                          e.preventDefault();
+                          setMenuView('main');
+                        } else {
+                          handleMenuKeyDown(e, 0, 4);
+                        }
+                      }}
+                      style={{ color: 'var(--text-secondary)', fontSize: '0.85em', borderBottom: '1px solid var(--border-color)', marginBottom: '4px' }}
+                    >
+                      ‹ Back
+                    </button>
+
+                    <div className="theme-options">
+                      <button
+                        ref={(el) => (menuItemsRef.current[1] = el)}
+                        className={`menu-item ${theme === 'light' ? 'active' : ''}`}
+                        onClick={() => handleThemeSelect('light')}
+                        onKeyDown={(e) => {
+                          if (e.key === 'ArrowLeft') {
+                            e.preventDefault();
+                            setMenuView('main');
+                          } else {
+                            handleMenuKeyDown(e, 1, 4);
+                          }
+                        }}
+                      >
+                        ☀️ Light
+                      </button>
+                      <button
+                        ref={(el) => (menuItemsRef.current[2] = el)}
+                        className={`menu-item ${theme === 'dark' ? 'active' : ''}`}
+                        onClick={() => handleThemeSelect('dark')}
+                        onKeyDown={(e) => {
+                          if (e.key === 'ArrowLeft') {
+                            e.preventDefault();
+                            setMenuView('main');
+                          } else {
+                            handleMenuKeyDown(e, 2, 4);
+                          }
+                        }}
+                      >
+                        🌙 Dark
+                      </button>
+                      <button
+                        ref={(el) => (menuItemsRef.current[3] = el)}
+                        className={`menu-item ${theme === 'system' ? 'active' : ''}`}
+                        onClick={() => handleThemeSelect('system')}
+                        onKeyDown={(e) => {
+                          if (e.key === 'ArrowLeft') {
+                            e.preventDefault();
+                            setMenuView('main');
+                          } else {
+                            handleMenuKeyDown(e, 3, 4);
+                          }
+                        }}
+                      >
+                        💻 System
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>
+          <h2 title={`${accountName}\nFocus Sidebar (Cmd+Shift+E)`}>
+            {accountName}
+          </h2>
         </div>
+
+
       </div>
       <nav
         className="sidebar-nav"

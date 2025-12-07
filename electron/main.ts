@@ -48,6 +48,10 @@ app.on('activate', () => {
     }
 });
 
+ipcMain.on('app:quit', () => {
+    app.quit();
+});
+
 app.whenReady().then(() => {
     createWindow();
 
