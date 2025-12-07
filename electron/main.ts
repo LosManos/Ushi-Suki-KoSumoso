@@ -1,5 +1,6 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, safeStorage } from 'electron';
 import path from 'path';
+import fs from 'fs';
 import { cosmosService } from './cosmos';
 
 process.env.DIST = path.join(__dirname, '../dist');
@@ -49,6 +50,107 @@ app.on('activate', () => {
 
 app.whenReady().then(() => {
     createWindow();
+
+    const connectionsPath = path.join(app.getPath('userData'), 'connections.json');
+
+    ipcMain.handle('storage:saveConnection', async (_, name: string, connectionString: string) => {
+        console.log('[Main] storage:saveConnection called', { name });
+        try {
+            if (!safeStorage.isEncryptionAvailable()) {
+                console.error('[Main] Encryption not available');
+                throw new Error('Encryption is not available');
+            }
+            console.log('[Main] Encryption is available');
+
+            let connections: any[] = [];
+            try {
+                console.log('[Main] Reading file:', connectionsPath);
+                const data = await fs.promises.readFile(connectionsPath, 'utf8');
+                connections = JSON.parse(data);
+                console.log('[Main] File read successfully, entries: ', connections.length);
+            } catch (error) {
+                console.log('[Main] File read failed (likely new):', error);
+                // File might not exist yet, ignore
+            }
+
+            console.log('[Main] Encrypting string...');
+            const encrypted = safeStorage.encryptString(connectionString).toString('base64');
+            console.log('[Main] String encrypted');
+
+            // Remove existing with same name if any
+            connections = connections.filter(c => c.name !== name);
+
+            // Add new or updated
+            connections.unshift({
+                name,
+                encryptedConnectionString: encrypted,
+                lastUsed: Date.now()
+            });
+
+
+
+            console.log('[Main] Writing file...');
+            await fs.promises.writeFile(connectionsPath, JSON.stringify(connections, null, 2));
+            console.log('[Main] File written successfully');
+
+            return { success: true };
+        } catch (error: any) {
+            console.error('[Main] Failed to save connection:', error);
+            return { success: false, error: error.message };
+        }
+    });
+
+    ipcMain.handle('storage:getConnections', async () => {
+        try {
+            if (!safeStorage.isEncryptionAvailable()) {
+                return { success: true, data: [] };
+            }
+
+            try {
+                const data = await fs.promises.readFile(connectionsPath, 'utf8');
+                const connections = JSON.parse(data);
+
+                const decryptedConnections = connections.map((c: any) => {
+                    try {
+                        const buffer = Buffer.from(c.encryptedConnectionString, 'base64');
+                        const decrypted = safeStorage.decryptString(buffer);
+                        return { ...c, connectionString: decrypted };
+                    } catch (e) {
+                        // Removing invalid/unreadable entries
+                        return null;
+                    }
+                }).filter(Boolean);
+
+                // Sort by lastUsed desc
+                decryptedConnections.sort((a: any, b: any) => b.lastUsed - a.lastUsed);
+
+                return { success: true, data: decryptedConnections };
+            } catch (error) {
+                // Return empty if file doesn't exist
+                return { success: true, data: [] };
+            }
+        } catch (error: any) {
+            return { success: false, error: error.message };
+        }
+    });
+
+    ipcMain.handle('storage:deleteConnection', async (_, name: string) => {
+        try {
+            let connections: any[] = [];
+            try {
+                const data = await fs.promises.readFile(connectionsPath, 'utf8');
+                connections = JSON.parse(data);
+            } catch (error) {
+                return { success: true };
+            }
+
+            connections = connections.filter(c => c.name !== name);
+            await fs.promises.writeFile(connectionsPath, JSON.stringify(connections, null, 2));
+            return { success: true };
+        } catch (error: any) {
+            return { success: false, error: error.message };
+        }
+    });
 
     ipcMain.handle('cosmos:connect', async (_, connectionString) => {
         return await cosmosService.connect(connectionString);

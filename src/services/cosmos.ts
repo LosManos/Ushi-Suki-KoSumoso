@@ -19,5 +19,18 @@ export const cosmos = {
 
     getContainers: async (databaseId: string): Promise<CosmosResponse<string[]>> => {
         return await window.ipcRenderer.invoke('cosmos:getContainers', databaseId);
+    },
+
+    // Storage
+    saveConnection: async (name: string, connectionString: string): Promise<CosmosResponse<void>> => {
+        return await window.ipcRenderer.invoke('storage:saveConnection', name, connectionString);
+    },
+
+    getConnections: async (): Promise<CosmosResponse<Array<{ name: string, connectionString: string, lastUsed: number }>>> => {
+        return await window.ipcRenderer.invoke('storage:getConnections');
+    },
+
+    deleteConnection: async (name: string): Promise<CosmosResponse<void>> => {
+        return await window.ipcRenderer.invoke('storage:deleteConnection', name);
     }
 };
