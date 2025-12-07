@@ -96,6 +96,30 @@
     color: white;
 }
 
+.sidebar-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.icon-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--text-secondary);
+    line-height: 1;
+    font-weight: bold;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.icon-btn:hover {
+    background-color: var(--button-hover-bg);
+    color: var(--text-primary);
+}
+
 .sidebar-header h2 {
     margin: 0;
     font-size: 1.2rem;

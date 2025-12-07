@@ -109,6 +109,12 @@ function App() {
         setConnectionString(connStr);
         const result = await cosmos.connect(connStr);
         if (result.success && result.data) {
+            // Clear previous session state
+            setTabs([]);
+            setActiveTabId(null);
+            setContainers({});
+            setSidebarDatabaseId(null);
+
             setDatabases(result.data.databases);
             setAccountName(result.data.accountName);
             setIsConnected(true);
@@ -221,10 +227,31 @@ function App() {
         handleRunQuery(activeTab.query, activeTab.pageSize);
     };
 
+    const handleChangeConnection = () => {
+        setIsConnected(false);
+        // Do NOT clear state here, so we can "Cancel" and go back.
+    };
+
+    useEffect(() => {
+        const handleWindowKeyDown = (e: KeyboardEvent) => {
+            // Handle Ctrl+D (or Cmd+D) to change connection
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
+                e.preventDefault();
+                handleChangeConnection();
+            }
+        };
+
+        window.addEventListener('keydown', handleWindowKeyDown);
+        return () => window.removeEventListener('keydown', handleWindowKeyDown);
+    }, []);
+
     if (!isConnected) {
         return (
             <ThemeProvider>
-                <ConnectionForm onConnect={handleConnect} />
+                <ConnectionForm
+                    onConnect={handleConnect}
+                    onCancel={databases.length > 0 ? () => setIsConnected(true) : undefined}
+                />
             </ThemeProvider>
         );
     }
@@ -241,6 +268,7 @@ function App() {
                         onSelectContainer={handleSelectContainer}
                         containers={containers}
                         accountName={accountName}
+                        onChangeConnection={handleChangeConnection}
                     />
                 }
                 content={

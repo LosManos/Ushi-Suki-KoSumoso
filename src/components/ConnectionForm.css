@@ -53,8 +53,13 @@
     font-size: 0.9rem;
 }
 
-button[type="submit"] {
-    width: 100%;
+.form-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.connect-btn {
+    flex: 1;
     background-color: var(--accent-color);
     color: white;
     padding: 0.75rem;
@@ -64,9 +69,24 @@ button[type="submit"] {
     cursor: pointer;
 }
 
-button[type="submit"]:disabled {
+.connect-btn:disabled {
     opacity: 0.7;
     cursor: not-allowed;
+}
+
+.cancel-btn {
+    flex: 1;
+    background-color: transparent;
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    padding: 0.75rem;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.cancel-btn:hover {
+    background-color: var(--bg-secondary);
 }
 
 .auth-method-toggle {

@@ -4,6 +4,7 @@ import './ConnectionForm.css';
 
 interface ConnectionFormProps {
     onConnect: (connectionString: string) => void;
+    onCancel?: () => void;
 }
 
 interface SavedConnection {
@@ -12,7 +13,7 @@ interface SavedConnection {
     lastUsed: number;
 }
 
-export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect }) => {
+export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect, onCancel }) => {
     const [authMethod, setAuthMethod] = useState<'connectionString' | 'azureCli'>('connectionString');
     const [inputValue, setInputValue] = useState('');
     const [connectionName, setConnectionName] = useState('');
@@ -27,6 +28,18 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect }) => 
         loadSavedConnections();
         inputRef.current?.focus();
     }, []);
+
+    // Handle ESC key to cancel
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && onCancel) {
+                onCancel();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [onCancel]);
+
 
     const loadSavedConnections = async () => {
         const result = await cosmos.getConnections();
@@ -193,9 +206,17 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect }) => 
                     )}
                 </div>
                 {error && <div className="error-message">{error}</div>}
-                <button type="submit" disabled={loading}>
-                    {loading ? 'Connecting...' : 'Connect'}
-                </button>
+
+                <div className="form-actions">
+                    {onCancel && (
+                        <button type="button" className="cancel-btn" onClick={onCancel}>
+                            Cancel
+                        </button>
+                    )}
+                    <button type="submit" disabled={loading} className="connect-btn">
+                        {loading ? 'Connecting...' : 'Connect'}
+                    </button>
+                </div>
             </form>
         </div>
     );

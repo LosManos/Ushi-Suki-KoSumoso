@@ -10,6 +10,7 @@ interface SidebarProps {
   onSelectContainer: (containerId: string) => void;
   containers: Record<string, string[]>; // Map dbId -> containerIds
   accountName?: string;
+  onChangeConnection: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -19,7 +20,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectDatabase,
   onSelectContainer,
   containers,
-  accountName = 'Cosmos DB'
+  accountName = 'Cosmos DB',
+  onChangeConnection
 }) => {
   const [focusedId, setFocusedId] = React.useState<string | null>(null);
   const sidebarRef = React.useRef<HTMLDivElement>(null);
@@ -216,53 +218,64 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <div className="sidebar-content">
       <div className="sidebar-header">
-        <h2 title="Focus Sidebar (Cmd+Shift+E)">{accountName}</h2>
-        <div className="settings-container" ref={settingsRef}>
+        <h2 title="Focus Sidebar (Cmd+Shift+E)">
+          {accountName}
+        </h2>
+        <div className="sidebar-actions">
           <button
-            className={`settings-btn ${isSettingsOpen ? 'active' : ''}`}
-            onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-            title="Settings (Cmd+,)"
-            ref={settingsBtnRef}
-            onKeyDown={handleToggleKeyDown}
+            className="icon-btn"
+            onClick={onChangeConnection}
+            title="Change Connection (Ctrl+D)"
           >
-            ⚙️
+            ...
           </button>
-          {isSettingsOpen && (
-            <div className="settings-dropdown">
-              <div className="settings-section">
-                <h4>Theme</h4>
-                <div className="theme-options">
-                  <button
-                    ref={el => themeButtonsRef.current[0] = el}
-                    className={theme === 'light' ? 'active' : ''}
-                    onClick={() => handleThemeSelect('light')}
-                    onKeyDown={(e) => handleSettingsKeyDown(e, 0)}
-                    title="Light Mode"
-                  >
-                    ☀️ Light
-                  </button>
-                  <button
-                    ref={el => themeButtonsRef.current[1] = el}
-                    className={theme === 'dark' ? 'active' : ''}
-                    onClick={() => handleThemeSelect('dark')}
-                    onKeyDown={(e) => handleSettingsKeyDown(e, 1)}
-                    title="Dark Mode"
-                  >
-                    🌙 Dark
-                  </button>
-                  <button
-                    ref={el => themeButtonsRef.current[2] = el}
-                    className={theme === 'system' ? 'active' : ''}
-                    onClick={() => handleThemeSelect('system')}
-                    onKeyDown={(e) => handleSettingsKeyDown(e, 2)}
-                    title="System Theme"
-                  >
-                    💻 System
-                  </button>
+          <div className="settings-container" ref={settingsRef}>
+            <button
+              className={`settings-btn ${isSettingsOpen ? 'active' : ''}`}
+              onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+              title="Settings (Cmd+,)"
+              ref={settingsBtnRef}
+              onKeyDown={handleToggleKeyDown}
+            >
+              ⚙️
+            </button>
+            {isSettingsOpen && (
+              <div className="settings-dropdown">
+                <div className="settings-section">
+                  <h4>Theme</h4>
+                  <div className="theme-options">
+                    <button
+                      ref={el => themeButtonsRef.current[0] = el}
+                      className={theme === 'light' ? 'active' : ''}
+                      onClick={() => handleThemeSelect('light')}
+                      onKeyDown={(e) => handleSettingsKeyDown(e, 0)}
+                      title="Light Mode"
+                    >
+                      ☀️ Light
+                    </button>
+                    <button
+                      ref={el => themeButtonsRef.current[1] = el}
+                      className={theme === 'dark' ? 'active' : ''}
+                      onClick={() => handleThemeSelect('dark')}
+                      onKeyDown={(e) => handleSettingsKeyDown(e, 1)}
+                      title="Dark Mode"
+                    >
+                      🌙 Dark
+                    </button>
+                    <button
+                      ref={el => themeButtonsRef.current[2] = el}
+                      className={theme === 'system' ? 'active' : ''}
+                      onClick={() => handleThemeSelect('system')}
+                      onKeyDown={(e) => handleSettingsKeyDown(e, 2)}
+                      title="System Theme"
+                    >
+                      💻 System
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
       <nav
