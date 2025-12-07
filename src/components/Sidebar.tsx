@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTheme } from '../context/ThemeContext';
+import { HistoryItem } from '../types';
 import './Sidebar.css';
 
 interface SidebarProps {
@@ -11,6 +12,8 @@ interface SidebarProps {
   containers: Record<string, string[]>; // Map dbId -> containerIds
   accountName?: string;
   onChangeConnection: () => void;
+  history: HistoryItem[];
+  onSelectHistory: (item: HistoryItem) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -21,7 +24,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectContainer,
   containers,
   accountName = 'Cosmos DB',
-  onChangeConnection
+  onChangeConnection,
+  history,
+  onSelectHistory
 }) => {
   const [focusedId, setFocusedId] = React.useState<string | null>(null);
   const sidebarRef = React.useRef<HTMLDivElement>(null);
@@ -66,7 +71,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }, []);
 
   const flatItems = React.useMemo(() => {
-    const items: { type: 'db' | 'container'; id: string; parentId?: string }[] = [];
+    const items: { type: 'db' | 'container' | 'history'; id: string; parentId?: string; data?: HistoryItem }[] = [];
     databases.forEach(db => {
       items.push({ type: 'db', id: db });
       if (selectedDatabase === db && containers[db]) {
@@ -75,8 +80,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
         });
       }
     });
+
+    if (history.length > 0) {
+      history.forEach(h => {
+        const hId = `hist-${h.timestamp}-${h.query.substring(0, 10)}`;
+        items.push({ type: 'history', id: hId, data: h });
+      });
+    }
+
     return items;
-  }, [databases, selectedDatabase, containers]);
+  }, [databases, selectedDatabase, containers, history]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (flatItems.length === 0) return;
@@ -110,6 +123,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             } else {
               onSelectDatabase(item.id); // Expand
             }
+          } else if (item.type === 'history' && item.data) {
+            onSelectHistory(item.data);
           } else {
             // Select collection (and thus load query editor)
             if (item.parentId) {
@@ -420,6 +435,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
             )}
           </div>
         ))}
+
+        {history.length > 0 && (
+          <div className="history-section">
+            <div className="history-header">History</div>
+            {history.map(h => {
+              const hId = `hist-${h.timestamp}-${h.query.substring(0, 10)}`;
+              return (
+                <div
+                  key={hId}
+                  className={`nav-item history-item ${focusedId === hId ? 'focused' : ''}`}
+                  onClick={() => onSelectHistory(h)}
+                  title={`${h.query}\n${new Date(h.timestamp).toLocaleString()}`}
+                >
+                  <div className="history-query-text">{h.query}</div>
+                  <div className="history-meta">{h.databaseId}/{h.containerId}</div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </nav>
     </div>
   );

@@ -56,6 +56,8 @@ app.whenReady().then(() => {
     createWindow();
 
     const connectionsPath = path.join(app.getPath('userData'), 'connections.json');
+    const historyPath = path.join(app.getPath('userData'), 'history.json');
+
 
     ipcMain.handle('storage:saveConnection', async (_, name: string, connectionString: string) => {
         console.log('[Main] storage:saveConnection called', { name });
@@ -155,6 +157,57 @@ app.whenReady().then(() => {
             return { success: false, error: error.message };
         }
     });
+
+    ipcMain.handle('storage:saveHistory', async (_, item: any) => {
+        try {
+            let history: any[] = [];
+            try {
+                const data = await fs.promises.readFile(historyPath, 'utf8');
+                history = JSON.parse(data);
+            } catch (error) {
+                // Ignore, start empty
+            }
+
+            // Remove existing item with same key (account, db, container, query)
+            // We want to update timestamp aka move to top/update
+            history = history.filter(h =>
+                !(h.accountName === item.accountName &&
+                    h.databaseId === item.databaseId &&
+                    h.containerId === item.containerId &&
+                    h.query === item.query)
+            );
+
+            // Add new item
+            history.unshift(item);
+
+            // Optional: Limit history size? User didn't ask, but good practice. 
+            // Let's cap at 1000 for sanity.
+            if (history.length > 1000) {
+                history = history.slice(0, 1000);
+            }
+
+            await fs.promises.writeFile(historyPath, JSON.stringify(history, null, 2));
+            return { success: true };
+        } catch (error: any) {
+            console.error('[Main] Failed to save history:', error);
+            return { success: false, error: error.message };
+        }
+    });
+
+    ipcMain.handle('storage:getHistory', async () => {
+        try {
+            try {
+                const data = await fs.promises.readFile(historyPath, 'utf8');
+                const history = JSON.parse(data);
+                return { success: true, data: history };
+            } catch (error) {
+                return { success: true, data: [] };
+            }
+        } catch (error: any) {
+            return { success: false, error: error.message };
+        }
+    });
+
 
     ipcMain.handle('cosmos:connect', async (_, connectionString) => {
         return await cosmosService.connect(connectionString);

@@ -6,7 +6,8 @@ import { ResultsView } from './components/ResultsView';
 import { ConnectionForm } from './components/ConnectionForm';
 import { cosmos } from './services/cosmos';
 import { ThemeProvider } from './context/ThemeContext';
-import { QueryTab } from './types';
+import { QueryTab, HistoryItem } from './types';
+import { historyService } from './services/history';
 
 function App() {
     const [isConnected, setIsConnected] = useState(false);
@@ -22,6 +23,15 @@ function App() {
     const [activeTabId, setActiveTabId] = useState<string | null>(null);
 
     const [accountName, setAccountName] = useState('Cosmos DB');
+    const [history, setHistory] = useState<HistoryItem[]>([]);
+
+    useEffect(() => {
+        historyService.getHistory().then(res => {
+            if (res.success && res.data) {
+                setHistory(res.data);
+            }
+        });
+    }, []);
 
     // Resize State
     const [queryPaneHeight, setQueryPaneHeight] = useState(300);
@@ -231,6 +241,25 @@ function App() {
 
         const result = await cosmos.query(activeTab.databaseId, activeTab.containerId, query, pageSize);
 
+        // Add to history
+        const historyItem: HistoryItem = {
+            accountName,
+            databaseId: activeTab.databaseId,
+            containerId: activeTab.containerId,
+            query,
+            timestamp: Date.now()
+        };
+        historyService.addHistoryItem(historyItem);
+        setHistory(prev => {
+            const filtered = prev.filter(h =>
+                !(h.accountName === historyItem.accountName &&
+                    h.databaseId === historyItem.databaseId &&
+                    h.containerId === historyItem.containerId &&
+                    h.query === historyItem.query)
+            );
+            return [historyItem, ...filtered];
+        });
+
         setTabs(prev => prev.map(t => {
             if (t.id !== activeTabId) return t;
             return {
@@ -258,6 +287,40 @@ function App() {
                 error: result.success ? undefined : result.error
             };
         }));
+    };
+
+    const handleSelectHistory = (item: HistoryItem) => {
+        const tabId = `${item.databaseId}/${item.containerId}`;
+
+        setTabs(prev => {
+            const existingTab = prev.find(t => t.id === tabId);
+            if (existingTab) {
+                return prev.map(t => t.id === tabId ? { ...t, query: item.query } : t);
+            } else {
+                const newTab: QueryTab = {
+                    id: tabId,
+                    databaseId: item.databaseId,
+                    containerId: item.containerId,
+                    query: item.query,
+                    results: [],
+                    isQuerying: false,
+                    pageSize: 10
+                };
+                return [...prev, newTab];
+            }
+        });
+
+        setActiveTabId(tabId);
+        setSidebarDatabaseId(item.databaseId);
+
+        // Ensure container list is loaded for this DB if not already
+        if (!containers[item.databaseId]) {
+            cosmos.getContainers(item.databaseId).then(result => {
+                if (result.success && result.data) {
+                    setContainers(prev => ({ ...prev, [item.databaseId]: result.data! }));
+                }
+            });
+        }
     };
 
 
@@ -313,6 +376,8 @@ function App() {
                         containers={containers}
                         accountName={accountName}
                         onChangeConnection={handleChangeConnection}
+                        history={history.filter(h => h.accountName === accountName)}
+                        onSelectHistory={handleSelectHistory}
                     />
                 }
                 content={

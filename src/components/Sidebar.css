@@ -203,3 +203,43 @@
     font-size: 0.9rem;
     padding: 0.3rem 0.75rem;
 }
+/* History Section */
+.history-section {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.history-header {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+    padding-left: 0.5rem;
+}
+
+.history-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 0.5rem;
+    cursor: pointer;
+}
+
+.history-query-text {
+    font-family: monospace;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text-primary);
+}
+
+.history-meta {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
