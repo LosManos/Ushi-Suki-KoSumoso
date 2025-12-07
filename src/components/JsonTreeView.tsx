@@ -22,7 +22,7 @@ interface FlattenedItem {
 export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(({ data, theme = 'dark' }, ref) => {
     const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set(['root']));
     const [focusedPath, setFocusedPath] = useState<string>('root');
-    const internalRef = useRef<HTMLDivElement>(null);
+    const internalRef = useRef<HTMLDivElement | null>(null);
 
     // Merge local and forwarded refs
     const setBufferRef = (element: HTMLDivElement | null) => {
@@ -115,17 +115,20 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
         let newIndex = currentIndex;
 
         switch (e.key) {
-            case 'ArrowDown': {
+            case 'ArrowDown':
+            case 'j': {
                 e.preventDefault();
                 newIndex = Math.min(flattenedItems.length - 1, currentIndex + 1);
                 break;
             }
-            case 'ArrowUp': {
+            case 'ArrowUp':
+            case 'k': {
                 e.preventDefault();
                 newIndex = Math.max(0, currentIndex - 1);
                 break;
             }
-            case 'ArrowRight': {
+            case 'ArrowRight':
+            case 'l': {
                 e.preventDefault();
                 if (currentIndex === -1) return;
                 const item = flattenedItems[currentIndex];
@@ -141,7 +144,8 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
                 }
                 break;
             }
-            case 'ArrowLeft': {
+            case 'ArrowLeft':
+            case 'h': {
                 e.preventDefault();
                 if (currentIndex === -1) return;
                 const item = flattenedItems[currentIndex];

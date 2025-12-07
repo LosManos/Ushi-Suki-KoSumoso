@@ -85,13 +85,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const idx = currentIndex === -1 ? 0 : currentIndex;
 
     switch (e.key) {
-      case 'ArrowDown': {
+      case 'ArrowDown':
+      case 'j': {
         e.preventDefault();
         const next = Math.min(flatItems.length - 1, idx + 1);
         setFocusedId(flatItems[next].id);
         break;
       }
-      case 'ArrowUp': {
+      case 'ArrowUp':
+      case 'k': {
         e.preventDefault();
         const prev = Math.max(0, idx - 1);
         setFocusedId(flatItems[prev].id);
@@ -115,7 +117,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         }
         break;
       }
-      case 'ArrowRight': {
+      case 'ArrowRight':
+      case 'l': {
         e.preventDefault();
         const item = flatItems[idx];
         if (item && item.type === 'db' && selectedDatabase !== item.id) {
@@ -123,7 +126,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         }
         break;
       }
-      case 'ArrowLeft': {
+      case 'ArrowLeft':
+      case 'h': {
         e.preventDefault();
         const item = flatItems[idx];
         if (item) {
