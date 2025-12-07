@@ -218,7 +218,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <div className="sidebar-content">
       <div className="sidebar-header">
-        <h2 title="Focus Sidebar (Cmd+Shift+E)">
+        <h2 title={`${accountName}\nFocus Sidebar (Cmd+Shift+E)`}>
           {accountName}
         </h2>
         <div className="sidebar-actions">
