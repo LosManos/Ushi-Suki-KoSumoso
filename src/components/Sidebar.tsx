@@ -14,6 +14,8 @@ interface SidebarProps {
   onChangeConnection: () => void;
   history: HistoryItem[];
   onSelectHistory: (item: HistoryItem) => void;
+  onCopyHistory: (item: HistoryItem) => void;
+  onDeleteHistory: (item: HistoryItem) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -26,7 +28,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   accountName = 'Cosmos DB',
   onChangeConnection,
   history,
-  onSelectHistory
+  onSelectHistory,
+  onCopyHistory,
+  onDeleteHistory
 }) => {
   const [focusedId, setFocusedId] = React.useState<string | null>(null);
   const [historyFilter, setHistoryFilter] = React.useState<string>('');
@@ -476,6 +480,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 >
                   <div className="history-query-text">{h.query}</div>
                   <div className="history-meta">{h.databaseId}/{h.containerId}</div>
+                  <div className="history-actions">
+                    <button
+                      className="history-action-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onCopyHistory(h);
+                      }}
+                      title="Copy to Query Editor"
+                    >
+                      📋
+                    </button>
+                    <button
+                      className="history-action-btn delete"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteHistory(h);
+                      }}
+                      title="Delete from History"
+                    >
+                      🗑️
+                    </button>
+                  </div>
                 </div>
               );
             })}

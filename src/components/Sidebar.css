@@ -272,3 +272,45 @@
     font-weight: normal;
     text-transform: none;
 }
+
+/* History Actions */
+.history-item {
+    position: relative;
+    padding-right: 2.5rem; /* Make space for buttons */
+}
+
+/* Initially hidden, shown on hover */
+.history-actions {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: none;
+    gap: 4px;
+    background: inherit; /* Blend if needed */
+}
+
+.history-item:hover .history-actions,
+.history-item:focus-within .history-actions {
+    display: flex;
+}
+
+.history-action-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 0.8rem;
+    padding: 2px 4px;
+    border-radius: 4px;
+    opacity: 0.6;
+    transition: opacity 0.2s, background-color 0.2s;
+}
+
+.history-action-btn:hover {
+    opacity: 1;
+    background-color: var(--button-hover-bg);
+}
+
+.history-action-btn.delete:hover {
+    background-color: rgba(255, 0, 0, 0.2);
+}

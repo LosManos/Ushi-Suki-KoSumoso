@@ -11,6 +11,7 @@ export interface QueryTab {
 }
 
 export interface HistoryItem {
+    id: string;
     accountName: string;
     databaseId: string;
     containerId: string;

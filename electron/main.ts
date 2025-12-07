@@ -168,8 +168,16 @@ app.whenReady().then(() => {
                 // Ignore, start empty
             }
 
+            // Ensure ID (for migration of old items if we were doing that) or just usage
+            if (!item.id) {
+                // If the frontend didn't send an ID (shouldn't happen with new code), generate one
+                // But we don't have crypto here easily without require, let's assume frontend sends it.
+                // Or use a simple random string.
+                item.id = Math.random().toString(36).substring(2, 15);
+            }
+
             // Remove existing item with same key (account, db, container, query)
-            // We want to update timestamp aka move to top/update
+            // We still want to deduplicate by content, but we'll use the NEW item (which has a new ID)
             history = history.filter(h =>
                 !(h.accountName === item.accountName &&
                     h.databaseId === item.databaseId &&
@@ -207,6 +215,37 @@ app.whenReady().then(() => {
             return { success: false, error: error.message };
         }
     });
+
+    ipcMain.handle('storage:deleteHistory', async (_, item: any) => {
+        try {
+            let history: any[] = [];
+            try {
+                const data = await fs.promises.readFile(historyPath, 'utf8');
+                history = JSON.parse(data);
+            } catch (error) {
+                return { success: true };
+            }
+
+            // Delete by ID if available, otherwise by fallback properties (legacy support)
+            if (item.id) {
+                history = history.filter(h => h.id !== item.id);
+            } else {
+                history = history.filter(h =>
+                    !(h.accountName === item.accountName &&
+                        h.databaseId === item.databaseId &&
+                        h.containerId === item.containerId &&
+                        h.query === item.query &&
+                        h.timestamp === item.timestamp)
+                );
+            }
+
+            await fs.promises.writeFile(historyPath, JSON.stringify(history, null, 2));
+            return { success: true };
+        } catch (error: any) {
+            return { success: false, error: error.message };
+        }
+    });
+
 
 
     ipcMain.handle('cosmos:connect', async (_, connectionString) => {

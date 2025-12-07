@@ -243,6 +243,7 @@ function App() {
 
         // Add to history
         const historyItem: HistoryItem = {
+            id: crypto.randomUUID(),
             accountName,
             databaseId: activeTab.databaseId,
             containerId: activeTab.containerId,
@@ -295,13 +296,14 @@ function App() {
         setTabs(prev => {
             const existingTab = prev.find(t => t.id === tabId);
             if (existingTab) {
-                return prev.map(t => t.id === tabId ? { ...t, query: item.query } : t);
+                // Just select it, do NOT update query
+                return prev;
             } else {
                 const newTab: QueryTab = {
                     id: tabId,
                     databaseId: item.databaseId,
                     containerId: item.containerId,
-                    query: item.query,
+                    query: 'SELECT * FROM c', // Default query for new tab
                     results: [],
                     isQuerying: false,
                     pageSize: 10
@@ -321,6 +323,21 @@ function App() {
                 }
             });
         }
+    };
+
+    const handleCopyHistoryQuery = (item: HistoryItem) => {
+        if (!activeTabId) return;
+        setTabs(prev => prev.map(t => {
+            if (t.id === activeTabId) {
+                return { ...t, query: t.query ? `${t.query}\n\n${item.query}` : item.query };
+            }
+            return t;
+        }));
+    };
+
+    const handleDeleteHistory = async (item: HistoryItem) => {
+        await historyService.deleteHistoryItem(item);
+        setHistory(prev => prev.filter(h => h.id !== item.id));
     };
 
 
@@ -378,6 +395,8 @@ function App() {
                         onChangeConnection={handleChangeConnection}
                         history={history.filter(h => h.accountName === accountName)}
                         onSelectHistory={handleSelectHistory}
+                        onCopyHistory={handleCopyHistoryQuery}
+                        onDeleteHistory={handleDeleteHistory}
                     />
                 }
                 content={
