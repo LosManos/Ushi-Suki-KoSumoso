@@ -57,9 +57,8 @@
     border-right: 1px solid var(--border-color);
     cursor: pointer;
     white-space: nowrap;
-    min-width: 100px;
-    /* Minimum width for readability */
-    max-width: 200px;
+    flex: 0 0 auto;
+    /* Fit content */
     position: relative;
     user-select: none;
 }
