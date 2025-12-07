@@ -126,8 +126,8 @@ function App() {
     const activeTab = tabs.find(t => t.id === activeTabId);
 
     // Derived sidebar highlighting
-    const highlightedContainer = activeTab?.containerId || null;
-    const highlightedDatabase = activeTab?.databaseId || sidebarDatabaseId;
+    const highlightedDatabase = sidebarDatabaseId;
+    const highlightedContainer = (activeTab?.databaseId === sidebarDatabaseId) ? activeTab?.containerId : null;
 
     // Sync sidebar expansion when tab changes
     useEffect(() => {
@@ -167,11 +167,10 @@ function App() {
         }
     };
 
-    const handleSelectContainer = (containerId: string | null) => {
-        // We assume the container belongs to the currently expanded sidebarDatabaseId
-        if (!containerId || !sidebarDatabaseId) return;
+    const handleSelectContainer = (dbId: string, containerId: string) => {
+        if (!containerId || !dbId) return;
 
-        const newTabId = `${sidebarDatabaseId}/${containerId}`;
+        const newTabId = `${dbId}/${containerId}`;
         const existingTab = tabs.find(t => t.id === newTabId);
 
         if (existingTab) {
@@ -179,7 +178,7 @@ function App() {
         } else {
             const newTab: QueryTab = {
                 id: newTabId,
-                databaseId: sidebarDatabaseId,
+                databaseId: dbId,
                 containerId: containerId,
                 query: 'SELECT * FROM c',
                 results: [],

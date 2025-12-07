@@ -7,7 +7,7 @@ interface SidebarProps {
   selectedDatabase: string | null;
   selectedContainer: string | null;
   onSelectDatabase: (dbId: string | null) => void;
-  onSelectContainer: (containerId: string) => void;
+  onSelectContainer: (databaseId: string, containerId: string) => void;
   containers: Record<string, string[]>; // Map dbId -> containerIds
   accountName?: string;
   onChangeConnection: () => void;
@@ -112,7 +112,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
             }
           } else {
             // Select collection (and thus load query editor)
-            onSelectContainer(item.id);
+            if (item.parentId) {
+              onSelectContainer(item.parentId, item.id);
+            }
           }
         }
         break;
@@ -409,7 +411,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <div
                     key={container}
                     className={`nav-item sub-item ${selectedContainer === container ? 'active' : ''} ${focusedId === container ? 'focused' : ''}`}
-                    onClick={() => onSelectContainer(container)}
+                    onClick={() => onSelectContainer(db, container)}
                   >
                     📄 {container}
                   </div>
