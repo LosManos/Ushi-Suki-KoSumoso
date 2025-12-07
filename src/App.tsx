@@ -25,31 +25,39 @@ function App() {
 
     // Resize State
     const [queryPaneHeight, setQueryPaneHeight] = useState(300);
-    const [isDragging, setIsDragging] = useState(false);
-    const resizeHandleRef = React.useRef<HTMLDivElement>(null);
+    const [sidebarWidth, setSidebarWidth] = useState(250);
+    const [activeDrag, setActiveDrag] = useState<'query' | 'sidebar' | null>(null);
+    const queryResizeHandleRef = React.useRef<HTMLDivElement>(null);
+    const sidebarResizeHandleRef = React.useRef<HTMLDivElement>(null);
     const lastFocusedElementRef = React.useRef<HTMLElement | null>(null);
 
-    const handleMouseDown = (e: React.MouseEvent) => {
-        setIsDragging(true);
+    const handleQueryMouseDown = (e: React.MouseEvent) => {
+        setActiveDrag('query');
+        e.preventDefault();
+    };
+
+    const handleSidebarMouseDown = (e: React.MouseEvent) => {
+        setActiveDrag('sidebar');
         e.preventDefault();
     };
 
     const handleMouseMove = (e: MouseEvent) => {
-        if (!isDragging) return;
+        if (!activeDrag) return;
 
-        // Calculate new height based on mouse Y position relative to window
-        // (This is a simplification; precise calc might need offset of top-nav, but sidebar layout usually starts below)
-        // Adjusting for top-left (0,0) coordinate system
-        // We enforce min height 100px and max height 80% of window
-        const newHeight = Math.max(100, Math.min(e.clientY, window.innerHeight * 0.8));
-        setQueryPaneHeight(newHeight);
+        if (activeDrag === 'query') {
+            const newHeight = Math.max(100, Math.min(e.clientY, window.innerHeight * 0.8));
+            setQueryPaneHeight(newHeight);
+        } else if (activeDrag === 'sidebar') {
+            const newWidth = Math.max(150, Math.min(e.clientX, window.innerWidth * 0.5));
+            setSidebarWidth(newWidth);
+        }
     };
 
     const handleMouseUp = () => {
-        setIsDragging(false);
+        setActiveDrag(null);
     };
 
-    const handleHandleKeyDown = (e: React.KeyboardEvent) => {
+    const handleQueryHandleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'ArrowUp') {
             e.preventDefault();
             setQueryPaneHeight(prev => Math.max(100, prev - 10));
@@ -61,23 +69,46 @@ function App() {
             if (lastFocusedElementRef.current) {
                 lastFocusedElementRef.current.focus();
             } else {
-                resizeHandleRef.current?.blur();
+                queryResizeHandleRef.current?.blur();
+            }
+        }
+    };
+
+    const handleSidebarHandleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            setSidebarWidth(prev => Math.max(150, prev - 10));
+        } else if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            setSidebarWidth(prev => Math.min(window.innerWidth * 0.5, prev + 10));
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (lastFocusedElementRef.current) {
+                lastFocusedElementRef.current.focus();
+            } else {
+                sidebarResizeHandleRef.current?.blur();
             }
         }
     };
 
     useEffect(() => {
         const handleWindowKeyDown = (e: KeyboardEvent) => {
-            // Handle Ctrl+M (or Cmd+M) to focus resize handle
-            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'm') {
+            // Handle Ctrl+M (or Cmd+M) to focus query resize handle
+            if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'm') {
                 e.preventDefault();
                 lastFocusedElementRef.current = document.activeElement as HTMLElement;
-                resizeHandleRef.current?.focus();
+                queryResizeHandleRef.current?.focus();
+            }
+            // Handle Ctrl+Shift+M (or Cmd+Shift+M) to focus sidebar resize handle
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'm') {
+                e.preventDefault();
+                lastFocusedElementRef.current = document.activeElement as HTMLElement;
+                sidebarResizeHandleRef.current?.focus();
             }
         };
 
         window.addEventListener('keydown', handleWindowKeyDown);
-        if (isDragging) {
+        if (activeDrag) {
             window.addEventListener('mousemove', handleMouseMove);
             window.addEventListener('mouseup', handleMouseUp);
         } else {
@@ -89,7 +120,7 @@ function App() {
             window.removeEventListener('mousemove', handleMouseMove);
             window.removeEventListener('mouseup', handleMouseUp);
         };
-    }, [isDragging]);
+    }, [activeDrag]);
 
     // Derived Selection State for Sidebar Highlighting
     const activeTab = tabs.find(t => t.id === activeTabId);
@@ -259,6 +290,11 @@ function App() {
     return (
         <ThemeProvider>
             <Layout
+                sidebarWidth={sidebarWidth}
+                onSidebarMouseDown={handleSidebarMouseDown}
+                sidebarResizeHandleRef={sidebarResizeHandleRef}
+                isDraggingSidebar={activeDrag === 'sidebar'}
+                onSidebarHandleKeyDown={handleSidebarHandleKeyDown}
                 sidebar={
                     <Sidebar
                         databases={databases}
@@ -286,12 +322,12 @@ function App() {
                         </div>
 
                         <div
-                            ref={resizeHandleRef}
-                            className={`resize-handle ${isDragging ? 'dragging' : ''}`}
-                            onMouseDown={handleMouseDown}
+                            ref={queryResizeHandleRef}
+                            className={`resize-handle ${activeDrag === 'query' ? 'dragging' : ''}`}
+                            onMouseDown={handleQueryMouseDown}
                             tabIndex={0}
-                            title="Resize Pane (Ctrl+M)"
-                            onKeyDown={handleHandleKeyDown}
+                            title="Resize Query Pane (Ctrl+M)"
+                            onKeyDown={handleQueryHandleKeyDown}
                         >
                             <div className="resize-handle-grabber" />
                         </div>

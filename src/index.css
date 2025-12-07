@@ -159,3 +159,48 @@ button:focus-visible {
   background-color: white;
   opacity: 1;
 }
+
+.resize-handle-vertical {
+  width: 12px;
+  height: 100%;
+  background-color: var(--bg-tertiary);
+  cursor: col-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-left: 1px solid var(--border-color);
+  border-right: 1px solid var(--border-color);
+  transition: background-color 0.2s;
+  user-select: none;
+  z-index: 10;
+}
+
+.resize-handle-vertical:hover,
+.resize-handle-vertical.dragging {
+  background-color: var(--accent-color);
+  border-color: var(--accent-color);
+}
+
+.resize-handle-vertical-grabber {
+  width: 4px;
+  height: 40px;
+  background-color: var(--text-secondary);
+  border-radius: 2px;
+  opacity: 0.5;
+}
+
+.resize-handle-vertical:hover .resize-handle-vertical-grabber,
+.resize-handle-vertical.dragging .resize-handle-vertical-grabber {
+  background-color: white;
+  opacity: 1;
+}
+
+.resize-handle-vertical:focus {
+  outline: none;
+  background-color: var(--accent-color);
+}
+
+.resize-handle-vertical:focus .resize-handle-vertical-grabber {
+  background-color: white;
+  opacity: 1;
+}

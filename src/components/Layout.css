@@ -7,9 +7,9 @@
 }
 
 .sidebar {
-    width: 250px;
+    /* width: 250px; -- handled via inline style */
     background-color: var(--bg-tertiary);
-    border-right: 1px solid var(--border-color);
+    /* border-right: 1px solid var(--border-color); -- handled by resize handle */
     display: flex;
     flex-direction: column;
 }
