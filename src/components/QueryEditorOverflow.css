@@ -1,0 +1,77 @@
+.tabs-overflow-control {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin-right: 0.5rem;
+    height: 100%;
+}
+
+.overflow-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0 0.5rem;
+    font-size: 0.8rem;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.overflow-btn:hover,
+.overflow-btn.active {
+    background-color: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.overflow-btn.active {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+.tabs-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 4px;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    min-width: 200px;
+    max-height: 300px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.dropdown-item {
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--bg-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.dropdown-item:hover {
+    background-color: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.dropdown-item.active {
+    background-color: var(--bg-primary);
+    color: var(--accent-color);
+    font-weight: 500;
+    border-left: 3px solid var(--accent-color);
+}

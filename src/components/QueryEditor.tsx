@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import './QueryEditor.css';
+import './QueryEditorOverflow.css';
 import { QueryTab } from '../types';
 
 
@@ -31,6 +32,12 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
     // We only need local refs for text area and ID lookup now
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const quickIdInputRef = useRef<HTMLInputElement>(null);
+    const tabsContainerRef = useRef<HTMLDivElement>(null);
+    const menuRef = useRef<HTMLDivElement>(null);
+
+    // Overflow state
+    const [isOverflowing, setIsOverflowing] = useState(false);
+    const [showDropdown, setShowDropdown] = useState(false);
 
     useEffect(() => {
         if (activeTabId && textareaRef.current) {
@@ -102,6 +109,42 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [query, onRunQuery, tabs, onTabSelect]);
 
+    // Check for overflow on resize and tabs change
+    useEffect(() => {
+        const checkOverflow = () => {
+            if (tabsContainerRef.current) {
+                const { scrollWidth, clientWidth } = tabsContainerRef.current;
+                // We add a small buffer (e.g. 1px) to avoid precision issues
+                setIsOverflowing(scrollWidth > clientWidth + 1);
+            }
+        };
+
+        const resizeObserver = new ResizeObserver(checkOverflow);
+        if (tabsContainerRef.current) {
+            resizeObserver.observe(tabsContainerRef.current);
+        }
+
+        checkOverflow();
+
+        return () => resizeObserver.disconnect();
+    }, [tabs]);
+
+    // Click outside to close menu
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setShowDropdown(false);
+            }
+        };
+
+        if (showDropdown) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showDropdown]);
+
     const handleQuickLookup = () => {
         if (!quickId.trim()) return;
         onGetDocument(quickId.trim());
@@ -114,7 +157,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
     return (
         <div className="query-editor-container">
             <div className="editor-toolbar">
-                <div className="tabs-container">
+                <div className="tabs-container" ref={tabsContainerRef}>
                     {tabs.map((tab, index) => {
                         let shortcut = '';
                         if (index < 8) {
@@ -145,6 +188,34 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
                         )
                     })}
                 </div>
+
+                {isOverflowing && (
+                    <div className="tabs-overflow-control" ref={menuRef}>
+                        <button
+                            className={`overflow-btn ${showDropdown ? 'active' : ''}`}
+                            onClick={() => setShowDropdown(!showDropdown)}
+                            title="Show all tabs"
+                        >
+                            ▼
+                        </button>
+                        {showDropdown && (
+                            <div className="tabs-dropdown-menu">
+                                {tabs.map(tab => (
+                                    <div
+                                        key={tab.id}
+                                        className={`dropdown-item ${tab.id === activeTabId ? 'active' : ''}`}
+                                        onClick={() => {
+                                            onTabSelect(tab.id);
+                                            setShowDropdown(false);
+                                        }}
+                                    >
+                                        {tab.containerId}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 <div className="quick-lookup">
                     <label title="Focus ID Lookup (Cmd+Shift+I)">Get by Document Id:</label>

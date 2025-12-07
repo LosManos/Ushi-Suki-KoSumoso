@@ -136,6 +136,15 @@ function App() {
         }
     }, [activeTabId, activeTab?.databaseId]);
 
+    // Update Window Title
+    useEffect(() => {
+        if (activeTab?.containerId) {
+            document.title = `Cosmos DB Viewer - ${activeTab.containerId}`;
+        } else {
+            document.title = 'Cosmos DB Viewer';
+        }
+    }, [activeTab?.containerId]);
+
     const handleConnect = async (connStr: string) => {
         setConnectionString(connStr);
         const result = await cosmos.connect(connStr);
