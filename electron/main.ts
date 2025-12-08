@@ -1,10 +1,14 @@
-import { app, BrowserWindow, ipcMain, safeStorage, shell } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, safeStorage, shell } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import { cosmosService } from './cosmos';
 
 process.env.DIST = path.join(__dirname, '../dist');
-process.env.VITE_PUBLIC = app.isPackaged ? process.env.DIST : path.join(process.env.DIST, '../public');
+
+// Helper function to get VITE_PUBLIC path - defer app.isPackaged access
+function getVitePublicPath(): string {
+    return app.isPackaged ? process.env.DIST! : path.join(process.env.DIST!, '../public');
+}
 
 let win: BrowserWindow | null;
 // 🚧 Use ['ENV_NAME'] avoid vite:define plugin - Vite@2.x
@@ -12,7 +16,7 @@ const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL'];
 
 function createWindow() {
     win = new BrowserWindow({
-        icon: path.join(process.env.VITE_PUBLIC || '', 'electron-vite.svg'),
+        icon: path.join(getVitePublicPath(), 'electron-vite.svg'),
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
         },
@@ -290,5 +294,29 @@ app.whenReady().then(() => {
 
     ipcMain.handle('cosmos:getContainers', async (_, dbId) => {
         return await cosmosService.getContainers(dbId);
+    });
+
+    // IPC handler for saving query results to file
+    ipcMain.handle('file:saveResults', async (_, content: string) => {
+        try {
+            const result = await dialog.showSaveDialog(win!, {
+                title: 'Save Query Results',
+                defaultPath: 'query-results.json',
+                filters: [
+                    { name: 'JSON Files', extensions: ['json'] },
+                    { name: 'All Files', extensions: ['*'] }
+                ]
+            });
+
+            if (result.canceled || !result.filePath) {
+                return { success: false, canceled: true };
+            }
+
+            await fs.promises.writeFile(result.filePath, content, 'utf8');
+            return { success: true, filePath: result.filePath };
+        } catch (error: any) {
+            console.error('[Main] Failed to save results file:', error);
+            return { success: false, error: error.message };
+        }
     });
 });

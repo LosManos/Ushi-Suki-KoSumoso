@@ -70,11 +70,55 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
       if (e.key === 'Escape' && error && onDismissError) {
         onDismissError();
       }
+
+      // Cmd/Ctrl + Shift + S to copy results to clipboard
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        if (results.length > 0) {
+          const jsonString = JSON.stringify(results, null, 2);
+          navigator.clipboard.writeText(jsonString).catch(err => {
+            console.error('Failed to copy to clipboard:', err);
+          });
+        }
+      }
+
+      // Cmd/Ctrl + S to save results to file
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        if (results.length > 0) {
+          const jsonString = JSON.stringify(results, null, 2);
+          (window as any).ipcRenderer.invoke('file:saveResults', jsonString).catch((err: any) => {
+            console.error('Failed to save to file:', err);
+          });
+        }
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [viewMode, error, onDismissError]);
+  }, [viewMode, error, onDismissError, results]);
+
+  // Handler for copying results to clipboard
+  const handleCopyToClipboard = async () => {
+    if (results.length === 0) return;
+    try {
+      const jsonString = JSON.stringify(results, null, 2);
+      await navigator.clipboard.writeText(jsonString);
+    } catch (err) {
+      console.error('Failed to copy to clipboard:', err);
+    }
+  };
+
+  // Handler for saving results to file
+  const handleSaveToFile = async () => {
+    if (results.length === 0) return;
+    try {
+      const jsonString = JSON.stringify(results, null, 2);
+      await (window as any).ipcRenderer.invoke('file:saveResults', jsonString);
+    } catch (err) {
+      console.error('Failed to save to file:', err);
+    }
+  };
 
   /* ... */
 
@@ -82,6 +126,24 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
     <div className="results-view-container">
       <div className="results-header">
         <h3 title="Focus Results View (Cmd+R)">Results</h3>
+        <div className="results-actions">
+          <button
+            className="action-btn"
+            onClick={handleCopyToClipboard}
+            title="Copy results to clipboard (Cmd+Shift+S)"
+            disabled={results.length === 0}
+          >
+            📋
+          </button>
+          <button
+            className="action-btn"
+            onClick={handleSaveToFile}
+            title="Save results to file (Cmd+S)"
+            disabled={results.length === 0}
+          >
+            💾
+          </button>
+        </div>
         <div className="header-controls">
           <div className="control-group">
             <button
