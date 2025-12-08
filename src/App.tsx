@@ -8,6 +8,7 @@ import { cosmos } from './services/cosmos';
 import { ThemeProvider } from './context/ThemeContext';
 import { QueryTab, HistoryItem } from './types';
 import { historyService } from './services/history';
+import { extractParagraphAtCursor } from './utils';
 
 function App() {
     const [isConnected, setIsConnected] = useState(false);
@@ -24,6 +25,8 @@ function App() {
 
     const [accountName, setAccountName] = useState('Cosmos DB');
     const [history, setHistory] = useState<HistoryItem[]>([]);
+
+    const cursorPositionRef = React.useRef<number | null>(null);
 
     useEffect(() => {
         historyService.getHistory().then(res => {
@@ -144,6 +147,8 @@ function App() {
         if (activeTab?.databaseId) {
             setSidebarDatabaseId(activeTab.databaseId);
         }
+        // Reset cursor position when tab changes
+        cursorPositionRef.current = null;
     }, [activeTabId, activeTab?.databaseId]);
 
     // Update Window Title
@@ -343,7 +348,22 @@ function App() {
 
     const executeActiveQuery = () => {
         if (!activeTab || !activeTabId) return;
-        handleRunQuery(activeTab.query, activeTab.pageSize);
+
+        let queryToRun = activeTab.query;
+        if (cursorPositionRef.current !== null) {
+            const paragraph = extractParagraphAtCursor(activeTab.query, cursorPositionRef.current);
+            // If paragraph found and not empty, use it. Otherwise use full query if necessary?
+            // User requirement: "execute only one". So if cursor found, we respect it.
+            // If paragraph is empty string (cursor on empty line), we might choose to do nothing
+            // or run nothing. Here we run it (which will result in empty result or error or nothing).
+            // But Cosmos query might error on empty string.
+            // Let's filter:
+            if (paragraph.trim()) {
+                queryToRun = paragraph;
+            }
+        }
+
+        handleRunQuery(queryToRun, activeTab.pageSize);
     };
 
     const handleChangeConnection = () => {
@@ -410,6 +430,7 @@ function App() {
                                 onRunQuery={executeActiveQuery}
                                 onGetDocument={handleGetDocument}
                                 onQueryChange={handleQueryChange}
+                                cursorPositionRef={cursorPositionRef}
                             />
                         </div>
 

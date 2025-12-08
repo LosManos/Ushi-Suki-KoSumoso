@@ -12,6 +12,7 @@ interface QueryEditorProps {
     onRunQuery: () => void;
     onGetDocument: (docId: string) => void;
     onQueryChange: (query: string) => void;
+    cursorPositionRef?: React.MutableRefObject<number | null>;
 }
 
 export const QueryEditor: React.FC<QueryEditorProps> = ({
@@ -21,7 +22,8 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
     onTabClose,
     onRunQuery,
     onGetDocument,
-    onQueryChange
+    onQueryChange,
+    cursorPositionRef
 }) => {
     const [quickId, setQuickId] = useState('');
 
@@ -45,11 +47,18 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
         }
     }, [activeTabId]);
 
+    const updateCursorPosition = () => {
+        if (textareaRef.current && cursorPositionRef) {
+            cursorPositionRef.current = textareaRef.current.selectionStart;
+        }
+    };
+
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             // Cmd/Ctrl + Enter to run query
             if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
                 e.preventDefault();
+                updateCursorPosition();
                 onRunQuery();
             }
             // Cmd/Ctrl + Shift + I to focus ID lookup
@@ -237,6 +246,9 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
                     className="code-input"
                     value={query}
                     onChange={(e) => onQueryChange(e.target.value)}
+                    onSelect={updateCursorPosition}
+                    onClick={updateCursorPosition}
+                    onKeyUp={updateCursorPosition}
                     placeholder="SELECT * FROM c"
                     title="Query Editor (Cmd+E)"
                 />
