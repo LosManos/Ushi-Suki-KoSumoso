@@ -35,6 +35,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [focusedId, setFocusedId] = React.useState<string | null>(null);
   const [historyFilter, setHistoryFilter] = React.useState<string>('');
   const sidebarRef = React.useRef<HTMLDivElement>(null);
+  const historyFilterRef = React.useRef<HTMLSelectElement>(null);
 
   // Sync history filter with active selection
   React.useEffect(() => {
@@ -44,6 +45,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       setHistoryFilter('');
     }
   }, [selectedDatabase, selectedContainer]);
+
 
   // Auto-focus first item when databases load
   React.useEffect(() => {
@@ -85,7 +87,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }, []);
 
   const flatItems = React.useMemo(() => {
-    const items: { type: 'db' | 'container' | 'history'; id: string; parentId?: string; data?: HistoryItem }[] = [];
+    const items: { type: 'db' | 'container' | 'history' | 'filter'; id: string; parentId?: string; data?: HistoryItem }[] = [];
     databases.forEach(db => {
       items.push({ type: 'db', id: db });
       if (selectedDatabase === db && containers[db]) {
@@ -98,6 +100,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const filteredHistory = historyFilter
       ? history.filter(h => `${h.databaseId}/${h.containerId}` === historyFilter)
       : history;
+
+    if (history.length > 0) {
+      items.push({ type: 'filter', id: 'history-filter-ddl' });
+    }
 
     if (filteredHistory.length > 0) {
       filteredHistory.forEach(h => {
@@ -142,13 +148,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onSelectDatabase(item.id); // Expand
             }
           } else if (item.type === 'history' && item.data) {
-            onSelectHistory(item.data);
+            onCopyHistory(item.data);
+          } else if (item.type === 'filter') {
+            historyFilterRef.current?.focus();
           } else {
             // Select collection (and thus load query editor)
             if (item.parentId) {
               onSelectContainer(item.parentId, item.id);
             }
           }
+        }
+        break;
+      }
+      case 'Delete':
+      case 'Backspace': {
+        e.preventDefault();
+        const item = flatItems[idx];
+        if (item && item.type === 'history' && item.data) {
+          onDeleteHistory(item.data);
         }
         break;
       }
@@ -175,6 +192,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
           }
         }
         break;
+      }
+    }
+  };
+
+  const handleFilterKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Tab' && !e.shiftKey) {
+      e.preventDefault();
+      // Find first history item
+      if (history.length > 0) {
+        // If we have items, focus the list. 
+        // We might want to set focusedId to the first history item if specifically needed,
+        // but just focusing the sidebarRef is usually enough if it maintains state, 
+        // however, let's explicitely set focus to first visible history item if possible.
+        const firstHistory = flatItems.find(i => i.type === 'history');
+        if (firstHistory) {
+          setFocusedId(firstHistory.id);
+        }
+        sidebarRef.current?.focus();
       }
     }
   };
@@ -458,10 +493,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="history-section">
             <div className="history-header">
               <select
-                className="history-filter-select"
+                ref={historyFilterRef}
+                className={`history-filter-select ${focusedId === 'history-filter-ddl' ? 'focused' : ''}`}
                 value={historyFilter}
                 onChange={(e) => setHistoryFilter(e.target.value)}
-                title="Filter history by Database/Container"
+                onKeyDown={handleFilterKeyDown}
+                title="Filter history by Database/Container (Space to change)"
               >
                 <option value="">History (All)</option>
                 {Array.from(new Set(history.map(h => `${h.databaseId}/${h.containerId}`))).sort().map(val => (
@@ -476,7 +513,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   key={item.id}
                   className={`nav-item history-item ${focusedId === item.id ? 'focused' : ''}`}
                   onClick={() => onSelectHistory(h)}
-                  title={`${h.query}\n${new Date(h.timestamp).toLocaleString()}`}
+                  title={`${h.query}\n${new Date(h.timestamp).toLocaleString()}\n(Enter to copy, Delete to remove)`}
                 >
                   <div className="history-query-text">{h.query}</div>
                   <div className="history-meta">{h.databaseId}/{h.containerId}</div>

@@ -303,7 +303,7 @@ function App() {
                     id: tabId,
                     databaseId: item.databaseId,
                     containerId: item.containerId,
-                    query: 'SELECT * FROM c', // Default query for new tab
+                    query: item.query,
                     results: [],
                     isQuerying: false,
                     pageSize: 10
