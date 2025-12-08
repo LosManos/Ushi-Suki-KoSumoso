@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, safeStorage } from 'electron';
+import { app, BrowserWindow, ipcMain, safeStorage, shell } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import { cosmosService } from './cosmos';
@@ -58,6 +58,34 @@ app.whenReady().then(() => {
     const connectionsPath = path.join(app.getPath('userData'), 'connections.json');
     const historyPath = path.join(app.getPath('userData'), 'history.json');
 
+    // IPC handlers to show files in Finder
+    ipcMain.handle('storage:showHistoryFile', async () => {
+        try {
+            // Create file if it doesn't exist
+            if (!fs.existsSync(historyPath)) {
+                await fs.promises.writeFile(historyPath, '[]');
+            }
+            shell.showItemInFolder(historyPath);
+            return { success: true };
+        } catch (error: any) {
+            console.error('[Main] Failed to show history file:', error);
+            return { success: false, error: error.message };
+        }
+    });
+
+    ipcMain.handle('storage:showConnectionsFile', async () => {
+        try {
+            // Create file if it doesn't exist
+            if (!fs.existsSync(connectionsPath)) {
+                await fs.promises.writeFile(connectionsPath, '[]');
+            }
+            shell.showItemInFolder(connectionsPath);
+            return { success: true };
+        } catch (error: any) {
+            console.error('[Main] Failed to show connections file:', error);
+            return { success: false, error: error.message };
+        }
+    });
 
     ipcMain.handle('storage:saveConnection', async (_, name: string, connectionString: string) => {
         console.log('[Main] storage:saveConnection called', { name });

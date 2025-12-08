@@ -338,7 +338,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         onChangeConnection();
                         setIsSettingsOpen(false);
                       }}
-                      onKeyDown={(e) => handleMenuKeyDown(e, 0, 3)}
+                      onKeyDown={(e) => handleMenuKeyDown(e, 0, 5)}
                     >
                       Account...
                     </button>
@@ -357,7 +357,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           e.preventDefault();
                           setMenuView('theme');
                         } else {
-                          handleMenuKeyDown(e, 1, 3);
+                          handleMenuKeyDown(e, 1, 5);
                         }
                       }}
                       style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
@@ -372,10 +372,36 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       ref={(el) => (menuItemsRef.current[2] = el)}
                       className="menu-item"
                       onClick={() => {
+                        window.ipcRenderer.invoke('storage:showHistoryFile');
+                        setIsSettingsOpen(false);
+                      }}
+                      onKeyDown={(e) => handleMenuKeyDown(e, 2, 5)}
+                    >
+                      View History File...
+                    </button>
+
+                    <button
+                      ref={(el) => (menuItemsRef.current[3] = el)}
+                      className="menu-item"
+                      onClick={() => {
+                        window.ipcRenderer.invoke('storage:showConnectionsFile');
+                        setIsSettingsOpen(false);
+                      }}
+                      onKeyDown={(e) => handleMenuKeyDown(e, 3, 5)}
+                    >
+                      View Connections File...
+                    </button>
+
+                    <div className="menu-separator"></div>
+
+                    <button
+                      ref={(el) => (menuItemsRef.current[4] = el)}
+                      className="menu-item"
+                      onClick={() => {
                         window.ipcRenderer.send('app:quit');
                         setIsSettingsOpen(false);
                       }}
-                      onKeyDown={(e) => handleMenuKeyDown(e, 2, 3)}
+                      onKeyDown={(e) => handleMenuKeyDown(e, 4, 5)}
                     >
                       Quit Cmd-Q
                     </button>
