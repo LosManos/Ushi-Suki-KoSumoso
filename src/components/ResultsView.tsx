@@ -10,6 +10,7 @@ interface ResultsViewProps {
   onRunQuery: () => void;
   pageSize: number | 'All';
   onPageSizeChange: (pageSize: number | 'All') => void;
+  error?: string;
 }
 
 type ViewMode = 'text' | 'json';
@@ -19,7 +20,8 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
   loading,
   onRunQuery,
   pageSize,
-  onPageSizeChange
+  onPageSizeChange,
+  error
 }) => {
   const containerRef = React.useRef<HTMLTextAreaElement>(null);
   const [content, setContent] = React.useState('');
@@ -118,12 +120,14 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
               Hierarchical
             </button>
           </div>
-          <div className="results-meta">{loading ? 'Running...' : `${results.length} documents found`}</div>
+          <div className="results-meta">{loading ? 'Running...' : error ? 'Error' : `${results.length} documents found`}</div>
         </div>
       </div>
       <div className="results-content">
         {loading ? (
           <div className="empty-state">Loading...</div>
+        ) : error ? (
+          <div className="error-message">{error}</div>
         ) : results.length > 0 ? (
           viewMode === 'text' ? (
             <textarea

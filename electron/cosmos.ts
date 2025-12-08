@@ -62,7 +62,23 @@ export const cosmosService = {
 
             return { success: true, data: resources };
         } catch (error: any) {
-            return { success: false, error: error.message };
+            console.error('Query Error:', error);
+            let errorMessage = error.message;
+
+            if (error.body) {
+                try {
+                    const body = JSON.parse(error.body);
+                    if (body.message) {
+                        errorMessage = body.message;
+                    }
+                } catch (e) {
+                    // Body is not JSON, use it as is if it's a string
+                    if (typeof error.body === 'string') {
+                        errorMessage = error.body;
+                    }
+                }
+            }
+            return { success: false, error: errorMessage };
         }
     },
 

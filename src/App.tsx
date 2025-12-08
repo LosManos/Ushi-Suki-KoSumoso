@@ -451,6 +451,7 @@ function App() {
                             onRunQuery={executeActiveQuery}
                             pageSize={activeTab?.pageSize || 10}
                             onPageSizeChange={handlePageSizeChange}
+                            error={activeTab?.error}
                         />
                     </>
                 }

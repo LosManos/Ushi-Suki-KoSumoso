@@ -169,3 +169,14 @@
     color: var(--text-secondary);
     font-style: italic;
 }
+
+.error-message {
+    padding: 1rem;
+    color: #ef4444;
+    /* Red color */
+    background-color: rgba(239, 68, 68, 0.1);
+    white-space: pre-wrap;
+    font-family: monospace;
+    height: 100%;
+    overflow: auto;
+}
