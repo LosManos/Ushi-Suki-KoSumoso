@@ -271,7 +271,7 @@ function App() {
             return {
                 ...t,
                 isQuerying: false,
-                results: (result.success && result.data) ? result.data : [],
+                results: result.success ? (result.data || []) : t.results,
                 error: result.success ? undefined : result.error
             };
         }));
@@ -289,10 +289,17 @@ function App() {
             return {
                 ...t,
                 isQuerying: false,
-                results: (result.success && result.data) ? [result.data] : [],
+                results: result.success ? (result.data ? [result.data] : []) : t.results,
                 error: result.success ? undefined : result.error
             };
         }));
+    };
+
+    const handleDismissError = () => {
+        if (!activeTabId) return;
+        setTabs(prev => prev.map(t =>
+            t.id === activeTabId ? { ...t, error: undefined } : t
+        ));
     };
 
     const handleSelectHistory = (item: HistoryItem) => {
@@ -452,6 +459,7 @@ function App() {
                             pageSize={activeTab?.pageSize || 10}
                             onPageSizeChange={handlePageSizeChange}
                             error={activeTab?.error}
+                            onDismissError={handleDismissError}
                         />
                     </>
                 }

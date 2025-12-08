@@ -11,6 +11,7 @@ interface ResultsViewProps {
   pageSize: number | 'All';
   onPageSizeChange: (pageSize: number | 'All') => void;
   error?: string;
+  onDismissError?: () => void;
 }
 
 type ViewMode = 'text' | 'json';
@@ -21,7 +22,8 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
   onRunQuery,
   pageSize,
   onPageSizeChange,
-  error
+  error,
+  onDismissError
 }) => {
   const containerRef = React.useRef<HTMLTextAreaElement>(null);
   const [content, setContent] = React.useState('');
@@ -63,11 +65,16 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
         e.preventDefault();
         setViewMode('json');
       }
+
+      // Escape to dismiss error
+      if (e.key === 'Escape' && error && onDismissError) {
+        onDismissError();
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [viewMode]);
+  }, [viewMode, error, onDismissError]);
 
   /* ... */
 
@@ -120,36 +127,55 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
               Hierarchical
             </button>
           </div>
-          <div className="results-meta">{loading ? 'Running...' : error ? 'Error' : `${results.length} documents found`}</div>
+          <div className="results-meta">{loading ? 'Running...' : `${results.length} documents found`}</div>
         </div>
       </div>
       <div className="results-content">
         {loading ? (
           <div className="empty-state">Loading...</div>
-        ) : error ? (
-          <div className="error-message">{error}</div>
-        ) : results.length > 0 ? (
-          viewMode === 'text' ? (
-            <textarea
-              ref={containerRef}
-              className="json-editor"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              spellCheck={false}
-            />
-          ) : (
-            <div className="json-viewer-container">
-              <JsonTreeView
-                ref={jsonViewRef}
-                data={results}
-                theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
-              />
-            </div>
-          )
         ) : (
-          <div className="empty-state">
-            Run a query to see results
-          </div>
+          <>
+            {results.length > 0 ? (
+              viewMode === 'text' ? (
+                <textarea
+                  ref={containerRef}
+                  className="json-editor"
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  spellCheck={false}
+                />
+              ) : (
+                <div className="json-viewer-container">
+                  <JsonTreeView
+                    ref={jsonViewRef}
+                    data={results}
+                    theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
+                  />
+                </div>
+              )
+            ) : (
+              <div className="empty-state">
+                Run a query to see results
+              </div>
+            )}
+
+            {error && (
+              <div className="error-overlay">
+                <div className="error-dialog">
+                  <div className="error-header">
+                    <span>Query Error</span>
+                    <button className="close-btn" onClick={onDismissError}>×</button>
+                  </div>
+                  <div className="error-body">
+                    {error}
+                  </div>
+                  <div className="error-footer">
+                    <button className="dismiss-btn" onClick={onDismissError}>Dismiss</button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
