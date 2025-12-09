@@ -309,9 +309,9 @@ function App() {
         setTabs(prev => {
             const existingTab = prev.find(t => t.id === tabId);
             if (existingTab) {
-                // Update existing tab with the history item's query
+                // Append history item's query to existing tab's query
                 return prev.map(t =>
-                    t.id === tabId ? { ...t, query: item.query } : t
+                    t.id === tabId ? { ...t, query: t.query ? `${t.query}\n\n${item.query}` : item.query } : t
                 );
             } else {
                 // Create new tab with the history item's query
