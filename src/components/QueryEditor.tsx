@@ -180,7 +180,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
                                 key={tab.id}
                                 className={`tab ${tab.id === activeTabId ? 'active' : ''}`}
                                 onClick={() => onTabSelect(tab.id)}
-                                title={`Query ${tab.containerId}${shortcut}`}
+                                title={`${tab.databaseId} / ${tab.containerId}${shortcut}`}
                             >
                                 {tab.containerId}
                                 <button
@@ -217,6 +217,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
                                             onTabSelect(tab.id);
                                             setShowDropdown(false);
                                         }}
+                                        title={`${tab.databaseId} / ${tab.containerId}`}
                                     >
                                         {tab.containerId}
                                     </div>

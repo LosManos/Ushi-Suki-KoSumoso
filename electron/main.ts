@@ -238,8 +238,30 @@ app.whenReady().then(() => {
         try {
             try {
                 const data = await fs.promises.readFile(historyPath, 'utf8');
-                const history = JSON.parse(data);
-                return { success: true, data: history };
+                let history: any[] = JSON.parse(data);
+
+                // Filter out items missing required fields
+                const validHistory = history.filter(h =>
+                    h.accountName && h.databaseId && h.containerId && h.query
+                );
+
+                // Deduplicate by (accountName, databaseId, containerId, query), keeping newest (first occurrence since sorted by timestamp desc)
+                const seen = new Set<string>();
+                const deduped: any[] = [];
+                for (const h of validHistory) {
+                    const key = `${h.accountName}|${h.databaseId}|${h.containerId}|${h.query}`;
+                    if (!seen.has(key)) {
+                        seen.add(key);
+                        deduped.push(h);
+                    }
+                }
+
+                // If we cleaned anything, save the cleaned version
+                if (deduped.length !== history.length) {
+                    await fs.promises.writeFile(historyPath, JSON.stringify(deduped, null, 2));
+                }
+
+                return { success: true, data: deduped };
             } catch (error) {
                 return { success: true, data: [] };
             }

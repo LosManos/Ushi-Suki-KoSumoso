@@ -342,7 +342,12 @@ function App() {
     };
 
     const handleCopyHistoryQuery = (item: HistoryItem) => {
-        if (!activeTabId) return;
+        // If no active tab, open the history item in a new tab instead
+        if (!activeTabId) {
+            handleSelectHistory(item);
+            return;
+        }
+
         setTabs(prev => prev.map(t => {
             if (t.id === activeTabId) {
                 return { ...t, query: t.query ? `${t.query}\n\n${item.query}` : item.query };

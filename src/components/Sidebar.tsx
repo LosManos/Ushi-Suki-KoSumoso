@@ -148,7 +148,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onSelectDatabase(item.id); // Expand
             }
           } else if (item.type === 'history' && item.data) {
-            onCopyHistory(item.data);
+            onSelectHistory(item.data);
           } else if (item.type === 'filter') {
             historyFilterRef.current?.focus();
           } else {
@@ -165,7 +165,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
         e.preventDefault();
         const item = flatItems[idx];
         if (item && item.type === 'history' && item.data) {
-          onDeleteHistory(item.data);
+          const h = item.data;
+          const confirmed = window.confirm(`Delete this history item?\n\n"${h.query.substring(0, 100)}${h.query.length > 100 ? '...' : ''}"`);
+          if (confirmed) {
+            onDeleteHistory(h);
+          }
         }
         break;
       }
@@ -539,7 +543,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   key={item.id}
                   className={`nav-item history-item ${focusedId === item.id ? 'focused' : ''}`}
                   onClick={() => onSelectHistory(h)}
-                  title={`${h.query}\n${new Date(h.timestamp).toLocaleString()}\n(Enter to copy, Delete to remove)`}
+                  title={`${h.query}\n${h.databaseId}/${h.containerId}\n${new Date(h.timestamp).toLocaleString()}\n\nClick/Enter: Open in tab\nDelete/Backspace: Remove`}
                 >
                   <div className="history-query-text">{h.query}</div>
                   <div className="history-meta">{h.databaseId}/{h.containerId}</div>
