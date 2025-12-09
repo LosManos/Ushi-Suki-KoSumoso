@@ -308,9 +308,12 @@ function App() {
         setTabs(prev => {
             const existingTab = prev.find(t => t.id === tabId);
             if (existingTab) {
-                // Just select it, do NOT update query
-                return prev;
+                // Update existing tab with the history item's query
+                return prev.map(t =>
+                    t.id === tabId ? { ...t, query: item.query } : t
+                );
             } else {
+                // Create new tab with the history item's query
                 const newTab: QueryTab = {
                     id: tabId,
                     databaseId: item.databaseId,
