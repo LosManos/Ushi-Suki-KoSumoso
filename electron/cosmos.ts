@@ -52,15 +52,19 @@ export const cosmosService = {
             const container = database.container(containerId);
 
             let resources;
+            let hasMoreResults = false;
             if (pageSize === 'All') {
                 const result = await container.items.query(query).fetchAll();
                 resources = result.resources;
+                // fetchAll returns everything, so no more results
+                hasMoreResults = false;
             } else {
                 const result = await container.items.query(query, { maxItemCount: pageSize }).fetchNext();
                 resources = result.resources;
+                hasMoreResults = result.hasMoreResults;
             }
 
-            return { success: true, data: resources };
+            return { success: true, data: { items: resources, hasMoreResults } };
         } catch (error: any) {
             console.error('Query Error:', error);
             let errorMessage = error.message;

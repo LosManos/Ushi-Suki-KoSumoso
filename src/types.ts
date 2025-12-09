@@ -8,6 +8,7 @@ export interface QueryTab {
     isQuerying: boolean;
     pageSize: number | 'All';
     error?: string;
+    hasMoreResults?: boolean;
 }
 
 export interface HistoryItem {

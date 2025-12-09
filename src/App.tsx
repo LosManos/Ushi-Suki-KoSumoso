@@ -271,7 +271,8 @@ function App() {
             return {
                 ...t,
                 isQuerying: false,
-                results: result.success ? (result.data || []) : t.results,
+                results: result.success ? (result.data?.items || []) : t.results,
+                hasMoreResults: result.success ? (result.data?.hasMoreResults || false) : t.hasMoreResults,
                 error: result.success ? undefined : result.error
             };
         }));
@@ -463,6 +464,7 @@ function App() {
                             onPageSizeChange={handlePageSizeChange}
                             error={activeTab?.error}
                             onDismissError={handleDismissError}
+                            hasMoreResults={activeTab?.hasMoreResults}
                         />
                     </>
                 }
