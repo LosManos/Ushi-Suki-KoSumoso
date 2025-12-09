@@ -34,8 +34,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const [focusedId, setFocusedId] = React.useState<string | null>(null);
   const [historyFilter, setHistoryFilter] = React.useState<string>('');
+  const [isHistoryDropdownOpen, setIsHistoryDropdownOpen] = React.useState(false);
+  const [focusedOptionIndex, setFocusedOptionIndex] = React.useState(0);
   const sidebarRef = React.useRef<HTMLDivElement>(null);
-  const historyFilterRef = React.useRef<HTMLSelectElement>(null);
+  const historyFilterRef = React.useRef<HTMLDivElement>(null);
+  const optionRefs = React.useRef<(HTMLDivElement | null)[]>([]);
 
   // Sync history filter with active selection
   React.useEffect(() => {
@@ -150,7 +153,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           } else if (item.type === 'history' && item.data) {
             onSelectHistory(item.data);
           } else if (item.type === 'filter') {
-            historyFilterRef.current?.focus();
+            setIsHistoryDropdownOpen(true);
+            // Focus the button inside the dropdown container
+            const button = historyFilterRef.current?.querySelector('button');
+            button?.focus();
           } else {
             // Select collection (and thus load query editor)
             if (item.parentId) {
@@ -236,6 +242,37 @@ export const Sidebar: React.FC<SidebarProps> = ({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isSettingsOpen]);
+
+  // Close history dropdown when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (historyFilterRef.current && !historyFilterRef.current.contains(event.target as Node)) {
+        setIsHistoryDropdownOpen(false);
+      }
+    };
+
+    if (isHistoryDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isHistoryDropdownOpen]);
+
+  // Focus first/selected option when history dropdown opens
+  React.useEffect(() => {
+    if (isHistoryDropdownOpen) {
+      // Find the currently selected option index
+      const options = ['', ...Array.from(new Set(history.map(h => `${h.databaseId}/${h.containerId}`))).sort()];
+      const selectedIndex = options.findIndex(val => val === historyFilter);
+      const indexToFocus = selectedIndex >= 0 ? selectedIndex : 0;
+      setFocusedOptionIndex(indexToFocus);
+      // Focus with a slight delay to ensure DOM is ready
+      setTimeout(() => {
+        optionRefs.current[indexToFocus]?.focus();
+      }, 50);
+    }
+  }, [isHistoryDropdownOpen, history, historyFilter]);
 
   // Settings focus management
   const [menuView, setMenuView] = React.useState<'main' | 'theme'>('main');
@@ -522,19 +559,115 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {history.length > 0 && (
           <div className="history-section">
             <div className="history-header">
-              <select
+              <div
+                className={`history-filter-dropdown ${focusedId === 'history-filter-ddl' ? 'focused' : ''}`}
                 ref={historyFilterRef}
-                className={`history-filter-select ${focusedId === 'history-filter-ddl' ? 'focused' : ''}`}
-                value={historyFilter}
-                onChange={(e) => setHistoryFilter(e.target.value)}
-                onKeyDown={handleFilterKeyDown}
-                title="Filter history by Database/Container (Space to change)"
               >
-                <option value="">History (All)</option>
-                {Array.from(new Set(history.map(h => `${h.databaseId}/${h.containerId}`))).sort().map(val => (
-                  <option key={val} value={val}>{val}</option>
-                ))}
-              </select>
+                <button
+                  className="history-filter-button"
+                  onClick={() => setIsHistoryDropdownOpen(!isHistoryDropdownOpen)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsHistoryDropdownOpen(!isHistoryDropdownOpen);
+                    } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      // Open dropdown on arrow keys
+                      if (!isHistoryDropdownOpen) {
+                        setIsHistoryDropdownOpen(true);
+                      }
+                    } else {
+                      handleFilterKeyDown(e);
+                    }
+                  }}
+                  title="Filter history by Database/Container"
+                  aria-expanded={isHistoryDropdownOpen}
+                  aria-haspopup="listbox"
+                >
+                  {historyFilter ? (
+                    <span className="history-filter-value">
+                      <span className="history-filter-db">{historyFilter.split('/')[0]}</span>
+                      <span className="history-filter-container">{historyFilter.split('/')[1]}</span>
+                    </span>
+                  ) : (
+                    <span className="history-filter-all">History (All)</span>
+                  )}
+                  <span className="history-filter-arrow">{isHistoryDropdownOpen ? '▲' : '▼'}</span>
+                </button>
+                {isHistoryDropdownOpen && (() => {
+                  const allOptions = ['', ...Array.from(new Set(history.map(h => `${h.databaseId}/${h.containerId}`))).sort()];
+                  const handleOptionKeyDown = (e: React.KeyboardEvent, index: number, value: string) => {
+                    // Stop propagation to prevent parent sidebar from handling these keys
+                    e.stopPropagation();
+
+                    switch (e.key) {
+                      case 'ArrowDown':
+                        e.preventDefault();
+                        const nextIndex = Math.min(allOptions.length - 1, index + 1);
+                        setFocusedOptionIndex(nextIndex);
+                        optionRefs.current[nextIndex]?.focus();
+                        break;
+                      case 'ArrowUp':
+                        e.preventDefault();
+                        const prevIndex = Math.max(0, index - 1);
+                        setFocusedOptionIndex(prevIndex);
+                        optionRefs.current[prevIndex]?.focus();
+                        break;
+                      case 'Enter':
+                      case ' ':
+                        e.preventDefault();
+                        setHistoryFilter(value);
+                        setIsHistoryDropdownOpen(false);
+                        // Return focus to the button
+                        setTimeout(() => {
+                          const button = historyFilterRef.current?.querySelector('button');
+                          button?.focus();
+                        }, 0);
+                        break;
+                      case 'Escape':
+                        e.preventDefault();
+                        setIsHistoryDropdownOpen(false);
+                        setTimeout(() => {
+                          const btn = historyFilterRef.current?.querySelector('button');
+                          btn?.focus();
+                        }, 0);
+                        break;
+                      case 'Tab':
+                        // Close dropdown on tab
+                        setIsHistoryDropdownOpen(false);
+                        break;
+                    }
+                  };
+
+                  return (
+                    <div className="history-filter-options" role="listbox">
+                      {allOptions.map((val, index) => (
+                        <div
+                          key={val || 'all'}
+                          ref={(el) => (optionRefs.current[index] = el)}
+                          className={`history-filter-option ${historyFilter === val ? 'selected' : ''} ${focusedOptionIndex === index ? 'focused' : ''}`}
+                          onClick={() => { setHistoryFilter(val); setIsHistoryDropdownOpen(false); }}
+                          onKeyDown={(e) => handleOptionKeyDown(e, index, val)}
+                          role="option"
+                          aria-selected={historyFilter === val}
+                          tabIndex={0}
+                        >
+                          {val === '' ? (
+                            <span className="history-filter-all">History (All)</span>
+                          ) : (
+                            <>
+                              <span className="history-filter-db">{val.split('/')[0]}</span>
+                              <span className="history-filter-container">{val.split('/')[1]}</span>
+                            </>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
             </div>
             {flatItems.filter(i => i.type === 'history').map(item => {
               const h = item.data!;
