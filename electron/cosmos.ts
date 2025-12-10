@@ -51,17 +51,45 @@ export const cosmosService = {
             const database = client.database(databaseId);
             const container = database.container(containerId);
 
-            let resources;
+            let resources: any[] = [];
             let hasMoreResults = false;
+
             if (pageSize === 'All') {
+                // Fetch everything for 'All'
                 const result = await container.items.query(query).fetchAll();
                 resources = result.resources;
-                // fetchAll returns everything, so no more results
                 hasMoreResults = false;
             } else {
-                const result = await container.items.query(query, { maxItemCount: pageSize }).fetchNext();
-                resources = result.resources;
-                hasMoreResults = result.hasMoreResults;
+                // Iterate through pages until we have enough results or no more pages.
+                // This is necessary for cross-partition queries where the target document
+                // might not be in the first batch of partitions scanned.
+                const queryIterator = container.items.query(query, { maxItemCount: pageSize });
+
+                while (resources.length < pageSize) {
+                    const { resources: batch, hasMoreResults: more } = await queryIterator.fetchNext();
+
+                    if (batch && batch.length > 0) {
+                        resources.push(...batch);
+                    }
+
+                    // If no more results available, stop
+                    if (!more) {
+                        hasMoreResults = false;
+                        break;
+                    }
+
+                    // If we've collected enough, there might be more
+                    if (resources.length >= pageSize) {
+                        hasMoreResults = more;
+                        break;
+                    }
+                }
+
+                // Trim to exactly pageSize if we got more
+                if (resources.length > pageSize) {
+                    hasMoreResults = true;
+                    resources = resources.slice(0, pageSize);
+                }
             }
 
             return { success: true, data: { items: resources, hasMoreResults } };
