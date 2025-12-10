@@ -179,6 +179,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
         }
         break;
       }
+      case ' ': {
+        e.preventDefault();
+        const item = flatItems[idx];
+        if (item && item.type === 'history' && item.data) {
+          const h = item.data;
+          alert(`${h.query}\n\n${h.databaseId}/${h.containerId}\n${new Date(h.timestamp).toLocaleString()}\n\nClick/Enter: Open in tab\nDelete/Backspace: Remove`);
+        }
+        break;
+      }
       case 'ArrowRight':
       case 'l': {
         e.preventDefault();
