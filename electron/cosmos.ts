@@ -3,6 +3,9 @@ import { DefaultAzureCredential } from '@azure/identity';
 
 let client: CosmosClient | null = null;
 
+// Track active query operations for cancellation support
+const activeQueries = new Map<string, AbortController>();
+
 export const cosmosService = {
     connect: async (connectionStringOrEndpoint: string) => {
         try {
@@ -44,9 +47,16 @@ export const cosmosService = {
         }
     },
 
-    query: async (databaseId: string, containerId: string, query: string, pageSize: number | 'All' = 10) => {
-        console.log('Main: Received query request. PageSize:', pageSize);
+    query: async (databaseId: string, containerId: string, query: string, pageSize: number | 'All' = 10, queryId?: string) => {
+        console.log('Main: Received query request. PageSize:', pageSize, 'QueryId:', queryId);
         if (!client) return { success: false, error: 'Not connected' };
+
+        // Set up abort controller for this query
+        const abortController = new AbortController();
+        if (queryId) {
+            activeQueries.set(queryId, abortController);
+        }
+
         try {
             const database = client.database(databaseId);
             const container = database.container(containerId);
@@ -54,18 +64,33 @@ export const cosmosService = {
             let resources: any[] = [];
             let hasMoreResults = false;
 
+            // Check if cancelled before starting
+            if (abortController.signal.aborted) {
+                return { success: false, error: 'Query cancelled', cancelled: true };
+            }
+
             if (pageSize === 'All') {
                 // Fetch everything for 'All'
-                const result = await container.items.query(query).fetchAll();
+                const result = await container.items.query(query, {
+                    abortSignal: abortController.signal
+                }).fetchAll();
                 resources = result.resources;
                 hasMoreResults = false;
             } else {
                 // Iterate through pages until we have enough results or no more pages.
                 // This is necessary for cross-partition queries where the target document
                 // might not be in the first batch of partitions scanned.
-                const queryIterator = container.items.query(query, { maxItemCount: pageSize });
+                const queryIterator = container.items.query(query, {
+                    maxItemCount: pageSize,
+                    abortSignal: abortController.signal
+                });
 
                 while (resources.length < pageSize) {
+                    // Check if cancelled before each fetch
+                    if (abortController.signal.aborted) {
+                        return { success: false, error: 'Query cancelled', cancelled: true };
+                    }
+
                     const { resources: batch, hasMoreResults: more } = await queryIterator.fetchNext();
 
                     if (batch && batch.length > 0) {
@@ -94,6 +119,12 @@ export const cosmosService = {
 
             return { success: true, data: { items: resources, hasMoreResults } };
         } catch (error: any) {
+            // Check if this was an abort error
+            if (error.name === 'AbortError' || abortController.signal.aborted) {
+                console.log('Query was cancelled');
+                return { success: false, error: 'Query cancelled', cancelled: true };
+            }
+
             console.error('Query Error:', error);
             let errorMessage = error.message;
 
@@ -111,7 +142,23 @@ export const cosmosService = {
                 }
             }
             return { success: false, error: errorMessage };
+        } finally {
+            // Clean up the abort controller
+            if (queryId) {
+                activeQueries.delete(queryId);
+            }
         }
+    },
+
+    cancelQuery: (queryId: string) => {
+        console.log('Main: Cancelling query:', queryId);
+        const controller = activeQueries.get(queryId);
+        if (controller) {
+            controller.abort();
+            activeQueries.delete(queryId);
+            return { success: true };
+        }
+        return { success: false, error: 'Query not found or already completed' };
     },
 
     getContainers: async (databaseId: string) => {

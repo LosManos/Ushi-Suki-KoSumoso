@@ -9,8 +9,12 @@ export const cosmos = {
         return await window.ipcRenderer.invoke('cosmos:connect', connectionString);
     },
 
-    query: async (databaseId: string, containerId: string, query: string, pageSize: number | 'All' = 10): Promise<CosmosResponse<{ items: any[], hasMoreResults: boolean }>> => {
-        return await window.ipcRenderer.invoke('cosmos:query', databaseId, containerId, query, pageSize);
+    query: async (databaseId: string, containerId: string, query: string, pageSize: number | 'All' = 10, queryId?: string): Promise<CosmosResponse<{ items: any[], hasMoreResults: boolean }>> => {
+        return await window.ipcRenderer.invoke('cosmos:query', databaseId, containerId, query, pageSize, queryId);
+    },
+
+    cancelQuery: async (queryId: string): Promise<CosmosResponse<void>> => {
+        return await window.ipcRenderer.invoke('cosmos:cancelQuery', queryId);
     },
 
     getDocument: async (databaseId: string, containerId: string, docId: string): Promise<CosmosResponse<any>> => {

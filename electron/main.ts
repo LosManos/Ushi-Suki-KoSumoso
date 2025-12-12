@@ -306,8 +306,12 @@ app.whenReady().then(() => {
         return await cosmosService.connect(connectionString);
     });
 
-    ipcMain.handle('cosmos:query', async (_, dbId, containerId, query, pageSize) => {
-        return await cosmosService.query(dbId, containerId, query, pageSize);
+    ipcMain.handle('cosmos:query', async (_, dbId, containerId, query, pageSize, queryId) => {
+        return await cosmosService.query(dbId, containerId, query, pageSize, queryId);
+    });
+
+    ipcMain.handle('cosmos:cancelQuery', (_, queryId) => {
+        return cosmosService.cancelQuery(queryId);
     });
 
     ipcMain.handle('cosmos:getDocument', async (_, dbId, containerId, docId) => {

@@ -8,6 +8,7 @@ interface ResultsViewProps {
   results: any[];
   loading: boolean;
   onRunQuery: () => void;
+  onCancelQuery: () => void;
   pageSize: number | 'All';
   onPageSizeChange: (pageSize: number | 'All') => void;
   error?: string;
@@ -21,6 +22,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
   results,
   loading,
   onRunQuery,
+  onCancelQuery,
   pageSize,
   onPageSizeChange,
   error,
@@ -149,11 +151,12 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
         <div className="header-controls">
           <div className="control-group">
             <button
-              className="run-btn-small"
-              onClick={onRunQuery}
-              title="Run Query (Cmd+Enter)"
+              key="run-cancel-btn"
+              className={`run-btn-small ${loading ? 'cancel' : ''}`}
+              onClick={loading ? onCancelQuery : onRunQuery}
+              title={loading ? "Cancel Query (Cmd+Enter)" : "Run Query (Cmd+Enter)"}
             >
-              Run
+              {loading ? 'Cancel' : 'Run'}
             </button>
             <div className="page-size-selector-small">
               <label htmlFor="page-size-select" title="Change page size (Cmd+Shift+R)">Rows:</label>

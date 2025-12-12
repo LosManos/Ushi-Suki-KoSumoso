@@ -80,11 +80,21 @@
     font-weight: 500;
     font-size: 0.8rem;
     cursor: pointer;
+    min-width: 60px;
+    text-align: center;
 }
 
 
 .run-btn-small:hover {
     background-color: var(--accent-hover);
+}
+
+.run-btn-small.cancel {
+    background-color: #dc2626;
+}
+
+.run-btn-small.cancel:hover {
+    background-color: #b91c1c;
 }
 
 .page-size-selector-small {
@@ -155,6 +165,8 @@
 .results-meta {
     font-size: 0.8rem;
     color: var(--text-secondary);
+    min-width: 140px;
+    text-align: right;
 }
 
 .results-content {

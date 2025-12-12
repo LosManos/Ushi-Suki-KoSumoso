@@ -28,6 +28,9 @@ function App() {
 
     const cursorPositionRef = React.useRef<number | null>(null);
 
+    // Track active query IDs per tab for cancellation
+    const activeQueryIdsRef = React.useRef<Map<string, string>>(new Map());
+
     useEffect(() => {
         historyService.getHistory().then(res => {
             if (res.success && res.data) {
@@ -241,12 +244,25 @@ function App() {
     const handleRunQuery = async (query: string, pageSize: number | 'All') => {
         if (!activeTab || !activeTabId) return;
 
+        // Generate a unique query ID for cancellation support
+        const queryId = crypto.randomUUID();
+        activeQueryIdsRef.current.set(activeTabId, queryId);
+
         // Set isQuerying
         setTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, isQuerying: true } : t));
 
-        const result = await cosmos.query(activeTab.databaseId, activeTab.containerId, query, pageSize);
+        const result = await cosmos.query(activeTab.databaseId, activeTab.containerId, query, pageSize, queryId);
 
-        // Add to history
+        // Clean up query ID
+        activeQueryIdsRef.current.delete(activeTabId);
+
+        // If the query was cancelled, don't update state with error or add to history
+        if (!result.success && (result as any).cancelled) {
+            setTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, isQuerying: false } : t));
+            return;
+        }
+
+        // Add to history (only for successful or non-cancelled queries)
         const historyItem: HistoryItem = {
             id: crypto.randomUUID(),
             accountName,
@@ -276,6 +292,16 @@ function App() {
                 error: result.success ? undefined : result.error
             };
         }));
+    };
+
+    const handleCancelQuery = async () => {
+        if (!activeTabId) return;
+
+        const queryId = activeQueryIdsRef.current.get(activeTabId);
+        if (queryId) {
+            await cosmos.cancelQuery(queryId);
+            activeQueryIdsRef.current.delete(activeTabId);
+        }
     };
 
     const handleGetDocument = async (docId: string) => {
@@ -364,6 +390,12 @@ function App() {
 
     const executeActiveQuery = () => {
         if (!activeTab || !activeTabId) return;
+
+        // If already querying, cancel instead of running
+        if (activeTab.isQuerying) {
+            handleCancelQuery();
+            return;
+        }
 
         let queryToRun = activeTab.query;
         if (cursorPositionRef.current !== null) {
@@ -465,6 +497,7 @@ function App() {
                             results={activeTab?.results || []}
                             loading={activeTab?.isQuerying || false}
                             onRunQuery={executeActiveQuery}
+                            onCancelQuery={handleCancelQuery}
                             pageSize={activeTab?.pageSize || 10}
                             onPageSizeChange={handlePageSizeChange}
                             error={activeTab?.error}
