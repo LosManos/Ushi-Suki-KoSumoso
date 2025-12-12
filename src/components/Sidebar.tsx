@@ -25,6 +25,7 @@ interface SidebarProps {
   containers: Record<string, string[]>; // Map dbId -> containerIds
   accountName?: string;
   onChangeConnection: () => void;
+  onOpenCommandPalette: () => void;
   history: HistoryItem[];
   onSelectHistory: (item: HistoryItem) => void;
   onCopyHistory: (item: HistoryItem) => void;
@@ -40,6 +41,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   containers,
   accountName = 'Cosmos DB',
   onChangeConnection,
+  onOpenCommandPalette,
   history,
   onSelectHistory,
   onCopyHistory,
@@ -401,15 +403,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         onChangeConnection();
                         setIsSettingsOpen(false);
                       }}
-                      onKeyDown={(e) => handleMenuKeyDown(e, 0, 5)}
+                      onKeyDown={(e) => handleMenuKeyDown(e, 0, 6)}
                     >
                       Account...
+                    </button>
+
+                    <button
+                      ref={(el) => (menuItemsRef.current[1] = el)}
+                      className="menu-item"
+                      onClick={() => {
+                        onOpenCommandPalette();
+                        setIsSettingsOpen(false);
+                      }}
+                      onKeyDown={(e) => handleMenuKeyDown(e, 1, 6)}
+                      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                    >
+                      <span>Go to Container...</span>
+                      <span style={{ opacity: 0.6, fontSize: '0.85em' }}>⌘P</span>
                     </button>
 
                     <div className="menu-separator"></div>
 
                     <button
-                      ref={(el) => (menuItemsRef.current[1] = el)}
+                      ref={(el) => (menuItemsRef.current[2] = el)}
                       className="menu-item"
                       onClick={() => {
                         setMenuView('theme');
@@ -420,7 +436,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           e.preventDefault();
                           setMenuView('theme');
                         } else {
-                          handleMenuKeyDown(e, 1, 5);
+                          handleMenuKeyDown(e, 2, 6);
                         }
                       }}
                       style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
@@ -432,25 +448,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <div className="menu-separator"></div>
 
                     <button
-                      ref={(el) => (menuItemsRef.current[2] = el)}
+                      ref={(el) => (menuItemsRef.current[3] = el)}
                       className="menu-item"
                       onClick={() => {
                         window.ipcRenderer.invoke('storage:showHistoryFile');
                         setIsSettingsOpen(false);
                       }}
-                      onKeyDown={(e) => handleMenuKeyDown(e, 2, 5)}
+                      onKeyDown={(e) => handleMenuKeyDown(e, 3, 6)}
                     >
                       View History File...
                     </button>
 
                     <button
-                      ref={(el) => (menuItemsRef.current[3] = el)}
+                      ref={(el) => (menuItemsRef.current[4] = el)}
                       className="menu-item"
                       onClick={() => {
                         window.ipcRenderer.invoke('storage:showConnectionsFile');
                         setIsSettingsOpen(false);
                       }}
-                      onKeyDown={(e) => handleMenuKeyDown(e, 3, 5)}
+                      onKeyDown={(e) => handleMenuKeyDown(e, 4, 6)}
                     >
                       View Connections File...
                     </button>
@@ -458,15 +474,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <div className="menu-separator"></div>
 
                     <button
-                      ref={(el) => (menuItemsRef.current[4] = el)}
+                      ref={(el) => (menuItemsRef.current[5] = el)}
                       className="menu-item"
                       onClick={() => {
                         window.ipcRenderer.send('app:quit');
                         setIsSettingsOpen(false);
                       }}
-                      onKeyDown={(e) => handleMenuKeyDown(e, 4, 5)}
+                      onKeyDown={(e) => handleMenuKeyDown(e, 5, 6)}
+                      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                     >
-                      Quit Cmd-Q
+                      <span>Quit</span>
+                      <span style={{ opacity: 0.6, fontSize: '0.85em' }}>⌘Q</span>
                     </button>
                   </>
                 ) : (

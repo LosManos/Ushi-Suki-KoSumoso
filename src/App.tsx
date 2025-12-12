@@ -4,6 +4,7 @@ import { Sidebar } from './components/Sidebar';
 import { QueryEditor } from './components/QueryEditor';
 import { ResultsView } from './components/ResultsView';
 import { ConnectionForm } from './components/ConnectionForm';
+import { CommandPalette } from './components/CommandPalette';
 import { cosmos } from './services/cosmos';
 import { ThemeProvider } from './context/ThemeContext';
 import { QueryTab, HistoryItem } from './types';
@@ -25,6 +26,9 @@ function App() {
 
     const [accountName, setAccountName] = useState('Cosmos DB');
     const [history, setHistory] = useState<HistoryItem[]>([]);
+
+    // Command Palette State
+    const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
     const cursorPositionRef = React.useRef<number | null>(null);
 
@@ -109,6 +113,11 @@ function App() {
 
     useEffect(() => {
         const handleWindowKeyDown = (e: KeyboardEvent) => {
+            // Handle Ctrl+P (or Cmd+P) to open command palette
+            if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'p') {
+                e.preventDefault();
+                setIsCommandPaletteOpen(true);
+            }
             // Handle Ctrl+M (or Cmd+M) to focus query resize handle
             if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'm') {
                 e.preventDefault();
@@ -193,6 +202,16 @@ function App() {
             }
         }
     };
+
+    // Load containers for a database (used by command palette)
+    const loadContainersForPalette = React.useCallback(async (dbId: string) => {
+        if (!containers[dbId]) {
+            const result = await cosmos.getContainers(dbId);
+            if (result.success && result.data) {
+                setContainers(prev => ({ ...prev, [dbId]: result.data! }));
+            }
+        }
+    }, [containers]);
 
     const handleSelectContainer = (dbId: string, containerId: string) => {
         if (!containerId || !dbId) return;
@@ -461,6 +480,7 @@ function App() {
                         containers={containers}
                         accountName={accountName}
                         onChangeConnection={handleChangeConnection}
+                        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
                         history={history.filter(h => h.accountName === accountName)}
                         onSelectHistory={handleSelectHistory}
                         onCopyHistory={handleCopyHistoryQuery}
@@ -506,6 +526,14 @@ function App() {
                         />
                     </>
                 }
+            />
+            <CommandPalette
+                isOpen={isCommandPaletteOpen}
+                onClose={() => setIsCommandPaletteOpen(false)}
+                databases={databases}
+                containers={containers}
+                onSelectContainer={handleSelectContainer}
+                loadContainers={loadContainersForPalette}
             />
         </ThemeProvider>
     );
