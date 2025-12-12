@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { ChevronRight, ChevronDown } from 'lucide-react';
 import './JsonTreeView.css';
 
 interface JsonTreeViewProps {
@@ -243,7 +244,7 @@ const JsonNode: React.FC<{ item: FlattenedItem; isFocused: boolean; onSelect: (i
             }}
         >
             <span className="arrow">
-                {item.hasChildren ? (item.expanded ? '▼' : '▶') : <span style={{ display: 'inline-block', width: '1em' }}></span>}
+                {item.hasChildren ? (item.expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />) : <span style={{ display: 'inline-block', width: '1em' }}></span>}
             </span>
             <span className="json-key">{item.key === 'root' ? 'root' : item.key}: </span>
             {valueDisplay}

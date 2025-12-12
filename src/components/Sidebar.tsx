@@ -1,4 +1,17 @@
 import React from 'react';
+import {
+  Menu,
+  FolderOpen,
+  Folder,
+  FileText,
+  Copy,
+  Trash2,
+  Sun,
+  Moon,
+  Monitor,
+  ChevronUp,
+  ChevronDown
+} from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { HistoryItem } from '../types';
 import './Sidebar.css';
@@ -375,7 +388,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               ref={settingsBtnRef}
               onKeyDown={handleToggleKeyDown}
             >
-              ☰
+              <Menu size={16} />
             </button>
             {isSettingsOpen && (
               <div className="settings-dropdown">
@@ -489,7 +502,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           }
                         }}
                       >
-                        ☀️ Light
+                        <Sun size={14} style={{ marginRight: '8px' }} /> Light
                       </button>
                       <button
                         ref={(el) => (menuItemsRef.current[2] = el)}
@@ -504,7 +517,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           }
                         }}
                       >
-                        🌙 Dark
+                        <Moon size={14} style={{ marginRight: '8px' }} /> Dark
                       </button>
                       <button
                         ref={(el) => (menuItemsRef.current[3] = el)}
@@ -519,7 +532,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           }
                         }}
                       >
-                        💻 System
+                        <Monitor size={14} style={{ marginRight: '8px' }} /> System
                       </button>
                     </div>
                   </>
@@ -547,7 +560,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               className={`nav-item ${selectedDatabase === db ? 'active' : ''} ${focusedId === db ? 'focused' : ''}`}
               onClick={() => onSelectDatabase(db)}
             >
-              {selectedDatabase === db ? '📂' : '📁'} {db}
+              {selectedDatabase === db ? <FolderOpen size={16} style={{ marginRight: '6px' }} /> : <Folder size={16} style={{ marginRight: '6px' }} />} {db}
             </div>
             {selectedDatabase === db && containers[db] && (
               <div className="container-list">
@@ -557,7 +570,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     className={`nav-item sub-item ${selectedContainer === container ? 'active' : ''} ${focusedId === container ? 'focused' : ''}`}
                     onClick={() => onSelectContainer(db, container)}
                   >
-                    📄 {container}
+                    <FileText size={14} style={{ marginRight: '6px' }} /> {container}
                   </div>
                 ))}
               </div>
@@ -603,7 +616,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   ) : (
                     <span className="history-filter-all">History (All)</span>
                   )}
-                  <span className="history-filter-arrow">{isHistoryDropdownOpen ? '▲' : '▼'}</span>
+                  <span className="history-filter-arrow">{isHistoryDropdownOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}</span>
                 </button>
                 {isHistoryDropdownOpen && (() => {
                   const allOptions = ['', ...Array.from(new Set(history.map(h => `${h.databaseId}/${h.containerId}`))).sort()];
@@ -698,7 +711,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       }}
                       title="Copy to Query Editor"
                     >
-                      📋
+                      <Copy size={14} />
                     </button>
                     <button
                       className="history-action-btn delete"
@@ -708,7 +721,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       }}
                       title="Delete from History"
                     >
-                      🗑️
+                      <Trash2 size={14} />
                     </button>
                   </div>
                 </div>

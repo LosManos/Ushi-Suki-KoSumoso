@@ -1,4 +1,5 @@
 import React from 'react';
+import { Copy, Save, X } from 'lucide-react';
 import { JsonTreeView } from './JsonTreeView';
 import { useTheme } from '../context/ThemeContext';
 import './ResultsView.css';
@@ -146,7 +147,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
             title="Copy results to clipboard (Cmd+Shift+S)"
             disabled={results.length === 0}
           >
-            📋
+            <Copy size={16} />
           </button>
           <button
             className="action-btn"
@@ -154,7 +155,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
             title="Save results to file (Cmd+S)"
             disabled={results.length === 0}
           >
-            💾
+            <Save size={16} />
           </button>
         </div>
         <div className="header-controls">
@@ -241,7 +242,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                 <div className="error-dialog">
                   <div className="error-header">
                     <span>Query Error</span>
-                    <button className="close-btn" onClick={onDismissError}>×</button>
+                    <button className="close-btn" onClick={onDismissError}><X size={16} /></button>
                   </div>
                   <div className="error-body">
                     {error}
