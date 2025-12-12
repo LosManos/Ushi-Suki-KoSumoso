@@ -37,6 +37,9 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
   /* New Ref for JsonTreeView */
   const jsonViewRef = React.useRef<HTMLDivElement>(null);
 
+  /* Ref for page size selector */
+  const pageSizeSelectRef = React.useRef<HTMLSelectElement>(null);
+
   React.useEffect(() => {
     if (results) {
       setContent(JSON.stringify(results, null, 2));
@@ -95,6 +98,12 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
             console.error('Failed to save to file:', err);
           });
         }
+      }
+
+      // Cmd/Ctrl + Shift + R to focus page size selector
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'r') {
+        e.preventDefault();
+        pageSizeSelectRef.current?.focus();
       }
     };
 
@@ -161,6 +170,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
             <div className="page-size-selector-small">
               <label htmlFor="page-size-select" title="Change page size (Cmd+Shift+R)">Rows:</label>
               <select
+                ref={pageSizeSelectRef}
                 id="page-size-select"
                 value={pageSize}
                 onChange={(e) => {
