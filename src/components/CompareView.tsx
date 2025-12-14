@@ -710,30 +710,30 @@ export const CompareView: React.FC<CompareViewProps> = ({ documents }) => {
                             </div>
                         )}
                     </div>
-                    <label className="sync-toggle" title="Alt+S">
+                    <label className="sync-toggle" title="Toggle synchronized scrolling (Alt+S)">
                         <input
                             type="checkbox"
                             checked={isSyncEnabled}
                             onChange={(e) => setIsSyncEnabled(e.target.checked)}
                         />
-                        <span>Sync Scroll</span>
+                        <span><u>S</u>ync Scroll</span>
                     </label>
-                    <label className="sync-toggle" title="Alt+D">
+                    <label className="sync-toggle" title="Show only lines with differences (Alt+D)">
                         <input
                             type="checkbox"
                             checked={showDiffOnly}
                             onChange={(e) => setShowDiffOnly(e.target.checked)}
                         />
-                        <span>Show Differences Only</span>
+                        <span>Show <u>D</u>ifferences Only</span>
                     </label>
                     {diffMode === 'semantic' && (
-                        <label className="sync-toggle array-order-toggle" title="Alt+O">
+                        <label className="sync-toggle array-order-toggle" title="Treat arrays as equal regardless of element order (Alt+O)">
                             <input
                                 type="checkbox"
                                 checked={ignoreArrayOrder}
                                 onChange={(e) => setIgnoreArrayOrder(e.target.checked)}
                             />
-                            <span>Ignore Array Order</span>
+                            <span>Ignore Array <u>O</u>rder</span>
                         </label>
                     )}
                     <span className="diff-count">
