@@ -170,18 +170,39 @@ function extractPaths(obj: any, prefix: string = '', ignoreArrayOrder: boolean =
 
     if (Array.isArray(obj)) {
         if (ignoreArrayOrder) {
-            // For order-ignorant comparison, store a normalized/sorted representation
-            const normalizedArray = normalizeForComparison(obj);
-            paths.set(prefix || '(root)', `[Array(${obj.length}): ${JSON.stringify(normalizedArray)}]`);
-            // Still extract child paths but with normalized indices based on sorted order
-            const sortedWithIndices = obj
-                .map((item, originalIndex) => ({ item, originalIndex }))
-                .sort((a, b) => JSON.stringify(a.item).localeCompare(JSON.stringify(b.item)));
-            sortedWithIndices.forEach(({ item }, sortedIndex) => {
-                const childPaths = extractPaths(item, `${prefix}[${sortedIndex}]`, ignoreArrayOrder);
-                childPaths.forEach((value, key) => paths.set(key, value));
+            // When ignoring array order, we use a content-based approach:
+            // Each element is stored with a key based on its content hash (JSON string)
+            // This allows matching elements regardless of their position in the array
+            paths.set(prefix || '(root)', `[Array(${obj.length})]`);
+
+            // Create a map of element content -> list of indices with that content
+            // This handles duplicate elements correctly
+            const elementMap = new Map<string, number[]>();
+            obj.forEach((item, index) => {
+                const key = JSON.stringify(normalizeForComparison(item));
+                if (!elementMap.has(key)) {
+                    elementMap.set(key, []);
+                }
+                elementMap.get(key)!.push(index);
+            });
+
+            // For each unique element content, extract paths using a stable synthetic index
+            // The synthetic index is based on sorted order of the content keys
+            const sortedKeys = [...elementMap.keys()].sort();
+            let syntheticIndex = 0;
+            sortedKeys.forEach(contentKey => {
+                const indices = elementMap.get(contentKey)!;
+                indices.forEach(() => {
+                    // Use the actual element (from first occurrence with this content)
+                    const actualIndex = indices[0];
+                    const item = obj[actualIndex];
+                    const childPaths = extractPaths(item, `${prefix}[${syntheticIndex}]`, ignoreArrayOrder);
+                    childPaths.forEach((value, key) => paths.set(key, value));
+                    syntheticIndex++;
+                });
             });
         } else {
+            // When respecting array order, compare element-by-element at matching indices
             paths.set(prefix || '(root)', `[Array(${obj.length})]`);
             obj.forEach((item, index) => {
                 const childPaths = extractPaths(item, `${prefix}[${index}]`, ignoreArrayOrder);
