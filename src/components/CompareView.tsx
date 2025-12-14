@@ -1,9 +1,17 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react';
-import { X } from 'lucide-react';
+import { X, Clock, ArrowUp, ArrowDown } from 'lucide-react';
 import './CompareView.css';
 
 interface CompareViewProps {
     documents: any[];
+}
+
+interface AgeInfo {
+    timestamp: number | null;
+    rank: number; // 1 = oldest, higher = newer
+    label: 'oldest' | 'newest' | 'middle' | null;
+    formattedDate: string | null;
+    relativeAge: string | null;
 }
 
 interface DiffLine {
@@ -142,6 +150,89 @@ export const CompareView: React.FC<CompareViewProps> = ({ documents }) => {
         return `Document`;
     };
 
+    // Format timestamp to readable date
+    const formatTimestamp = (ts: number): string => {
+        const date = new Date(ts * 1000);
+        return date.toLocaleString(undefined, {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+    };
+
+    // Calculate relative age string
+    const getRelativeAge = (ts: number): string => {
+        const now = Date.now();
+        const diffMs = now - (ts * 1000);
+        const diffSeconds = Math.floor(diffMs / 1000);
+        const diffMinutes = Math.floor(diffSeconds / 60);
+        const diffHours = Math.floor(diffMinutes / 60);
+        const diffDays = Math.floor(diffHours / 24);
+
+        if (diffDays > 0) return `${diffDays}d ago`;
+        if (diffHours > 0) return `${diffHours}h ago`;
+        if (diffMinutes > 0) return `${diffMinutes}m ago`;
+        return `${diffSeconds}s ago`;
+    };
+
+    // Compute age info for all documents
+    const ageInfos = useMemo((): AgeInfo[] => {
+        const timestamps = documents.map(doc => {
+            const ts = doc._ts;
+            return typeof ts === 'number' ? ts : null;
+        });
+
+        // Get valid timestamps for ranking
+        const validTimestamps = timestamps.filter((ts): ts is number => ts !== null);
+        if (validTimestamps.length === 0) {
+            return documents.map(() => ({
+                timestamp: null,
+                rank: 0,
+                label: null,
+                formattedDate: null,
+                relativeAge: null
+            }));
+        }
+
+        const minTs = Math.min(...validTimestamps);
+        const maxTs = Math.max(...validTimestamps);
+
+        return timestamps.map((ts): AgeInfo => {
+            if (ts === null) {
+                return {
+                    timestamp: null,
+                    rank: 0,
+                    label: null,
+                    formattedDate: null,
+                    relativeAge: null
+                };
+            }
+
+            // Calculate rank (1 = oldest)
+            const sortedUnique = [...new Set(validTimestamps)].sort((a, b) => a - b);
+            const rank = sortedUnique.indexOf(ts) + 1;
+
+            // Determine label
+            let label: 'oldest' | 'newest' | 'middle' | null = null;
+            if (validTimestamps.length > 1) {
+                if (ts === minTs) label = 'oldest';
+                else if (ts === maxTs) label = 'newest';
+                else label = 'middle';
+            }
+
+            return {
+                timestamp: ts,
+                rank,
+                label,
+                formattedDate: formatTimestamp(ts),
+                relativeAge: getRelativeAge(ts)
+            };
+        });
+    }, [documents]);
+
     // Render lines with diff highlighting
     const renderLines = (docIndex: number) => {
         const lines = diffLines[docIndex] || [];
@@ -201,23 +292,53 @@ export const CompareView: React.FC<CompareViewProps> = ({ documents }) => {
             <div className="compare-container" style={{
                 gridTemplateColumns: `repeat(${documents.length}, 1fr)`
             }}>
-                {documents.map((doc, index) => (
-                    <div key={index} className="compare-pane">
-                        <div className="pane-header">
-                            <span className="pane-title">
-                                {getDocumentId(doc)}
-                            </span>
-                            <span className="pane-index">#{index + 1}</span>
+                {documents.map((doc, index) => {
+                    const ageInfo = ageInfos[index];
+                    return (
+                        <div key={index} className="compare-pane">
+                            <div className="pane-header">
+                                <div className="pane-header-left">
+                                    <span className="pane-title">
+                                        {getDocumentId(doc)}
+                                    </span>
+                                    <span className="pane-index">#{index + 1}</span>
+                                </div>
+                                {ageInfo.timestamp !== null && (
+                                    <div className="age-indicator">
+                                        {ageInfo.label === 'oldest' && (
+                                            <span className="age-badge age-oldest" title="Oldest document">
+                                                <ArrowDown size={12} />
+                                                Oldest
+                                            </span>
+                                        )}
+                                        {ageInfo.label === 'newest' && (
+                                            <span className="age-badge age-newest" title="Newest document">
+                                                <ArrowUp size={12} />
+                                                Newest
+                                            </span>
+                                        )}
+                                        {ageInfo.label === 'middle' && (
+                                            <span className="age-badge age-middle" title={`Age rank: ${ageInfo.rank}`}>
+                                                #{ageInfo.rank}
+                                            </span>
+                                        )}
+                                        <span className="age-time" title={ageInfo.formattedDate || ''}>
+                                            <Clock size={12} />
+                                            {ageInfo.relativeAge}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                            <div
+                                ref={(el) => (containerRefs.current[index] = el)}
+                                className="pane-content"
+                                onScroll={() => handleScroll(index)}
+                            >
+                                {renderLines(index)}
+                            </div>
                         </div>
-                        <div
-                            ref={(el) => (containerRefs.current[index] = el)}
-                            className="pane-content"
-                            onScroll={() => handleScroll(index)}
-                        >
-                            {renderLines(index)}
-                        </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
         </div>
     );

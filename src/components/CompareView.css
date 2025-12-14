@@ -105,6 +105,16 @@
     background-color: var(--bg-tertiary);
     border-bottom: 1px solid var(--border-color);
     flex-shrink: 0;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.pane-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
 }
 
 .pane-title {
@@ -114,7 +124,6 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    max-width: 80%;
 }
 
 .pane-index {
@@ -124,6 +133,73 @@
     padding: 2px 8px;
     border-radius: 10px;
     border: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+/* Age indicator styles */
+.age-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.age-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.age-badge.age-oldest {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.2), rgba(234, 88, 12, 0.25));
+    color: #f97316;
+    border: 1px solid rgba(249, 115, 22, 0.4);
+}
+
+.age-badge.age-newest {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(22, 163, 74, 0.25));
+    color: #22c55e;
+    border: 1px solid rgba(34, 197, 94, 0.4);
+}
+
+.age-badge.age-middle {
+    background: linear-gradient(135deg, rgba(148, 163, 184, 0.15), rgba(100, 116, 139, 0.2));
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    font-weight: 500;
+}
+
+.age-time {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    padding: 2px 6px;
+    border-radius: 6px;
+    background-color: var(--bg-secondary);
+    cursor: help;
+}
+
+.age-time svg {
+    opacity: 0.7;
+}
+
+/* Dark theme adjustments for age badges */
+[data-theme="dark"] .age-badge.age-oldest {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.15), rgba(234, 88, 12, 0.2));
+    color: #fb923c;
+}
+
+[data-theme="dark"] .age-badge.age-newest {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(22, 163, 74, 0.2));
+    color: #4ade80;
 }
 
 .pane-content {
