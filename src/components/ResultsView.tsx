@@ -134,6 +134,16 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
     }
   };
 
+  // Handler for opening compare view
+  const handleCompare = async () => {
+    if (results.length < 2 || results.length > 5) return;
+    try {
+      await (window as any).ipcRenderer.invoke('compare:open', results);
+    } catch (err) {
+      console.error('Failed to open compare window:', err);
+    }
+  };
+
   /* ... */
 
   return (
@@ -205,6 +215,15 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
               Hierarchical
             </button>
           </div>
+          {results.length >= 2 && results.length <= 5 && (
+            <button
+              className="compare-btn"
+              onClick={handleCompare}
+              title="Compare documents side by side"
+            >
+              Compare
+            </button>
+          )}
           <div className="results-meta">{loading ? 'Running...' : `${results.length}${hasMoreResults ? '+' : ''} documents found`}</div>
         </div>
       </div>

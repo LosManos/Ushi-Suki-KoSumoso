@@ -56,6 +56,47 @@ ipcMain.on('app:quit', () => {
     app.quit();
 });
 
+// Store documents for compare window
+let pendingCompareDocuments: any[] | null = null;
+
+// Open comparison window
+ipcMain.handle('compare:open', async (_, documents: any[]) => {
+    try {
+        // Store documents for the compare window to fetch
+        pendingCompareDocuments = documents;
+
+        const compareWin = new BrowserWindow({
+            width: Math.min(400 * documents.length, 1600),
+            height: 800,
+            icon: path.join(getVitePublicPath(), 'electron-vite.svg'),
+            webPreferences: {
+                preload: path.join(__dirname, 'preload.js'),
+            },
+            title: 'Compare Documents',
+        });
+
+        console.log('[Main] Opening compare window with', documents.length, 'documents');
+
+        if (VITE_DEV_SERVER_URL) {
+            await compareWin.loadURL(`${VITE_DEV_SERVER_URL}/compare.html`);
+        } else {
+            await compareWin.loadFile(path.join(process.env.DIST || '', 'compare.html'));
+        }
+
+        return { success: true };
+    } catch (error: any) {
+        console.error('[Main] Failed to open compare window:', error);
+        return { success: false, error: error.message };
+    }
+});
+
+// Handler for compare window to get documents
+ipcMain.handle('compare:getDocuments', () => {
+    const docs = pendingCompareDocuments;
+    console.log('[Main] compare:getDocuments called, returning', docs?.length || 0, 'documents');
+    return docs || [];
+});
+
 app.whenReady().then(() => {
     createWindow();
 

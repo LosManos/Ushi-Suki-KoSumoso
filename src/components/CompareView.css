@@ -1,0 +1,237 @@
+.compare-view {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    overflow: hidden;
+}
+
+.compare-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    background: linear-gradient(to bottom, var(--bg-tertiary), var(--bg-secondary));
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.compare-header h1 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.compare-controls {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.sync-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.sync-toggle input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--accent-color);
+}
+
+.sync-toggle:hover {
+    color: var(--text-primary);
+}
+
+.doc-count {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    background-color: var(--bg-primary);
+    padding: 4px 10px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+}
+
+.compare-header .close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 6px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all 0.15s ease;
+}
+
+.compare-header .close-btn:hover {
+    background-color: rgba(239, 68, 68, 0.1);
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+.compare-header .close-btn:active {
+    transform: scale(0.95);
+}
+
+.compare-container {
+    display: grid;
+    flex: 1;
+    gap: 1px;
+    background-color: var(--border-color);
+    overflow: hidden;
+}
+
+.compare-pane {
+    display: flex;
+    flex-direction: column;
+    background-color: var(--bg-primary);
+    overflow: hidden;
+}
+
+.pane-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background-color: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.pane-title {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 80%;
+}
+
+.pane-index {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    background-color: var(--bg-secondary);
+    padding: 2px 8px;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+}
+
+.pane-content {
+    flex: 1;
+    overflow: auto;
+    padding: 12px;
+}
+
+.pane-content pre {
+    margin: 0;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.pane-content code {
+    color: var(--text-primary);
+}
+
+/* Scrollbar styling */
+.pane-content::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.pane-content::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+}
+
+.pane-content::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb);
+    border-radius: 4px;
+}
+
+.pane-content::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-thumb-hover);
+}
+
+/* Diff highlighting */
+.diff-content {
+    margin: 0;
+    padding: 0;
+}
+
+.diff-line {
+    display: flex;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    border-radius: 2px;
+    margin: 0;
+    padding: 0 4px;
+}
+
+.diff-line code {
+    color: var(--text-primary);
+    white-space: pre;
+    flex: 1;
+}
+
+.diff-line.diff-highlight {
+    background-color: rgba(251, 191, 36, 0.2);
+    border-left: 3px solid #f59e0b;
+    margin-left: -3px;
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .diff-line.diff-highlight {
+    background-color: rgba(251, 191, 36, 0.15);
+}
+
+.line-number {
+    display: inline-block;
+    min-width: 32px;
+    padding-right: 12px;
+    text-align: right;
+    color: var(--text-secondary);
+    opacity: 0.5;
+    font-size: 11px;
+    user-select: none;
+    flex-shrink: 0;
+}
+
+.diff-line.diff-highlight .line-number {
+    opacity: 0.8;
+    color: #f59e0b;
+}
+
+/* Diff count badge */
+.diff-count {
+    font-size: 0.85rem;
+    color: #f59e0b;
+    background-color: rgba(251, 191, 36, 0.15);
+    padding: 4px 10px;
+    border-radius: 12px;
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    font-weight: 500;
+}
+
+/* Responsive adjustments for many documents */
+@media (max-width: 1200px) {
+    .diff-line {
+        font-size: 11px;
+    }
+
+    .line-number {
+        min-width: 28px;
+        padding-right: 8px;
+        font-size: 10px;
+    }
+}
