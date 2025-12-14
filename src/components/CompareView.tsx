@@ -120,9 +120,42 @@ function computeCharacterDiff(formattedDocs: string[]): CharDiffPart[][][] {
 }
 
 /**
- * Extract all paths from a JSON object with their values
+ * Normalize a value for order-ignorant comparison
+ * Arrays are sorted by their JSON representation to allow order-independent comparison
  */
-function extractPaths(obj: any, prefix: string = ''): Map<string, any> {
+function normalizeForComparison(value: any): any {
+    if (value === null || value === undefined) {
+        return value;
+    }
+
+    if (Array.isArray(value)) {
+        // Sort array elements by their JSON string representation
+        // This allows comparing arrays regardless of order
+        const normalized = value.map(item => normalizeForComparison(item));
+        return normalized.sort((a, b) =>
+            JSON.stringify(a).localeCompare(JSON.stringify(b))
+        );
+    }
+
+    if (typeof value === 'object') {
+        // Recursively normalize object properties
+        const normalized: Record<string, any> = {};
+        for (const key of Object.keys(value).sort()) {
+            normalized[key] = normalizeForComparison(value[key]);
+        }
+        return normalized;
+    }
+
+    return value;
+}
+
+/**
+ * Extract all paths from a JSON object with their values
+ * @param obj The object to extract paths from
+ * @param prefix Current path prefix
+ * @param ignoreArrayOrder If true, arrays are represented as sorted sets for comparison
+ */
+function extractPaths(obj: any, prefix: string = '', ignoreArrayOrder: boolean = false): Map<string, any> {
     const paths = new Map<string, any>();
 
     if (obj === null || obj === undefined) {
@@ -136,11 +169,25 @@ function extractPaths(obj: any, prefix: string = ''): Map<string, any> {
     }
 
     if (Array.isArray(obj)) {
-        paths.set(prefix || '(root)', `[Array(${obj.length})]`);
-        obj.forEach((item, index) => {
-            const childPaths = extractPaths(item, `${prefix}[${index}]`);
-            childPaths.forEach((value, key) => paths.set(key, value));
-        });
+        if (ignoreArrayOrder) {
+            // For order-ignorant comparison, store a normalized/sorted representation
+            const normalizedArray = normalizeForComparison(obj);
+            paths.set(prefix || '(root)', `[Array(${obj.length}): ${JSON.stringify(normalizedArray)}]`);
+            // Still extract child paths but with normalized indices based on sorted order
+            const sortedWithIndices = obj
+                .map((item, originalIndex) => ({ item, originalIndex }))
+                .sort((a, b) => JSON.stringify(a.item).localeCompare(JSON.stringify(b.item)));
+            sortedWithIndices.forEach(({ item }, sortedIndex) => {
+                const childPaths = extractPaths(item, `${prefix}[${sortedIndex}]`, ignoreArrayOrder);
+                childPaths.forEach((value, key) => paths.set(key, value));
+            });
+        } else {
+            paths.set(prefix || '(root)', `[Array(${obj.length})]`);
+            obj.forEach((item, index) => {
+                const childPaths = extractPaths(item, `${prefix}[${index}]`, ignoreArrayOrder);
+                childPaths.forEach((value, key) => paths.set(key, value));
+            });
+        }
     } else {
         const keys = Object.keys(obj).sort();
         keys.forEach(key => {
@@ -148,7 +195,7 @@ function extractPaths(obj: any, prefix: string = ''): Map<string, any> {
             const value = obj[key];
 
             if (typeof value === 'object' && value !== null) {
-                const childPaths = extractPaths(value, newPrefix);
+                const childPaths = extractPaths(value, newPrefix, ignoreArrayOrder);
                 childPaths.forEach((v, k) => paths.set(k, v));
             } else {
                 paths.set(newPrefix, value);
@@ -161,13 +208,15 @@ function extractPaths(obj: any, prefix: string = ''): Map<string, any> {
 
 /**
  * Compute semantic diff between documents by comparing JSON paths
+ * @param documents Documents to compare
+ * @param ignoreArrayOrder If true, arrays are compared regardless of element order
  */
-function computeSemanticDiff(documents: any[]): SemanticDiff[][] {
+function computeSemanticDiff(documents: any[], ignoreArrayOrder: boolean = false): SemanticDiff[][] {
     if (documents.length < 2) {
         return documents.map(() => []);
     }
 
-    const allPaths = documents.map(doc => extractPaths(doc));
+    const allPaths = documents.map(doc => extractPaths(doc, '', ignoreArrayOrder));
     const basePaths = allPaths[0];
 
     return documents.map((_, docIndex) => {
@@ -261,6 +310,7 @@ export const CompareView: React.FC<CompareViewProps> = ({ documents }) => {
     const [isSyncEnabled, setIsSyncEnabled] = useState(true);
     const [showDiffOnly, setShowDiffOnly] = useState(false);
     const [diffMode, setDiffMode] = useState<DiffMode>('line');
+    const [ignoreArrayOrder, setIgnoreArrayOrder] = useState(false);
     const [isModeDropdownOpen, setIsModeDropdownOpen] = useState(false);
     const isScrollingRef = useRef(false);
     const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -286,8 +336,8 @@ export const CompareView: React.FC<CompareViewProps> = ({ documents }) => {
 
     // Compute semantic diff
     const semanticDiffs = useMemo(() =>
-        computeSemanticDiff(documents),
-        [documents]
+        computeSemanticDiff(documents, ignoreArrayOrder),
+        [documents, ignoreArrayOrder]
     );
 
     // Count differences based on mode
@@ -384,12 +434,20 @@ export const CompareView: React.FC<CompareViewProps> = ({ documents }) => {
                         setShowDiffOnly(current => !current);
                         break;
                     }
+                    case 'KeyO': {
+                        // Alt+O: Toggle order-ignorant array comparison (only in semantic mode)
+                        if (diffMode === 'semantic') {
+                            e.preventDefault();
+                            setIgnoreArrayOrder(current => !current);
+                        }
+                        break;
+                    }
                 }
             }
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, []);
+    }, [diffMode]);
 
     // Close window handler
     const handleClose = () => {
@@ -625,11 +683,11 @@ export const CompareView: React.FC<CompareViewProps> = ({ documents }) => {
                 <h1>Document Comparison</h1>
                 <div className="compare-controls">
                     {/* Diff Mode Selector */}
-                    <div className="diff-mode-selector" ref={dropdownRef}>
+                    <div className="diff-mode-selector" ref={dropdownRef} title="Select comparison mode (Alt+M to cycle)">
+                        <span className="diff-mode-label">Comparison <u>m</u>ode:</span>
                         <button
                             className="diff-mode-button"
                             onClick={() => setIsModeDropdownOpen(!isModeDropdownOpen)}
-                            title="Select comparison mode (Alt+M to cycle)"
                         >
                             <span>{DIFF_MODES.find(m => m.value === diffMode)?.label}</span>
                             <ChevronDown size={14} className={isModeDropdownOpen ? 'rotated' : ''} />
@@ -668,6 +726,16 @@ export const CompareView: React.FC<CompareViewProps> = ({ documents }) => {
                         />
                         <span>Show Differences Only</span>
                     </label>
+                    {diffMode === 'semantic' && (
+                        <label className="sync-toggle array-order-toggle" title="Alt+O">
+                            <input
+                                type="checkbox"
+                                checked={ignoreArrayOrder}
+                                onChange={(e) => setIgnoreArrayOrder(e.target.checked)}
+                            />
+                            <span>Ignore Array Order</span>
+                        </label>
+                    )}
                     <span className="diff-count">
                         {diffCount} {diffCount === 1 ? 'difference' : 'differences'}
                     </span>

@@ -315,6 +315,18 @@
 /* Diff Mode Selector */
 .diff-mode-selector {
     position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.diff-mode-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.diff-mode-label u {
+    text-decoration: underline;
 }
 
 .diff-mode-button {
@@ -494,4 +506,29 @@
 
 [data-theme="dark"] .semantic-line.semantic-removed {
     background-color: rgba(239, 68, 68, 0.1);
+}
+
+/* Array order toggle - subtle styling for semantic mode option */
+.array-order-toggle {
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+}
+
+.array-order-toggle:has(input:checked) {
+    background-color: rgba(139, 92, 246, 0.1);
+    border-color: rgba(139, 92, 246, 0.3);
+}
+
+.array-order-toggle:has(input:checked) span {
+    color: #8b5cf6;
+}
+
+[data-theme="dark"] .array-order-toggle:has(input:checked) {
+    background-color: rgba(139, 92, 246, 0.15);
+}
+
+[data-theme="dark"] .array-order-toggle:has(input:checked) span {
+    color: #a78bfa;
 }
