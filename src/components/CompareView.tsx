@@ -349,11 +349,42 @@ export const CompareView: React.FC<CompareViewProps> = ({ documents }) => {
         };
     }, []);
 
-    // Handle Esc key to close window
+    // Handle keyboard shortcuts
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
+            // Close window on Escape
             if (e.key === 'Escape') {
                 window.close();
+                return;
+            }
+
+            // On Mac, Alt (Option) produces special characters in e.key (e.g. µ for m),
+            // so we use e.code to reliably detect the physical key pressed.
+            if (e.altKey && !e.ctrlKey && !e.metaKey) {
+                switch (e.code) {
+                    case 'KeyM': {
+                        // Alt+M: Cycle through diff modes
+                        e.preventDefault();
+                        setDiffMode(current => {
+                            const currentIndex = DIFF_MODES.findIndex(m => m.value === current);
+                            const nextIndex = (currentIndex + 1) % DIFF_MODES.length;
+                            return DIFF_MODES[nextIndex].value;
+                        });
+                        break;
+                    }
+                    case 'KeyS': {
+                        // Alt+S: Toggle sync scroll
+                        e.preventDefault();
+                        setIsSyncEnabled(current => !current);
+                        break;
+                    }
+                    case 'KeyD': {
+                        // Alt+D: Toggle show differences only
+                        e.preventDefault();
+                        setShowDiffOnly(current => !current);
+                        break;
+                    }
+                }
             }
         };
         window.addEventListener('keydown', handleKeyDown);
@@ -598,7 +629,7 @@ export const CompareView: React.FC<CompareViewProps> = ({ documents }) => {
                         <button
                             className="diff-mode-button"
                             onClick={() => setIsModeDropdownOpen(!isModeDropdownOpen)}
-                            title="Select comparison mode"
+                            title="Select comparison mode (Alt+M to cycle)"
                         >
                             <span>{DIFF_MODES.find(m => m.value === diffMode)?.label}</span>
                             <ChevronDown size={14} className={isModeDropdownOpen ? 'rotated' : ''} />
@@ -621,7 +652,7 @@ export const CompareView: React.FC<CompareViewProps> = ({ documents }) => {
                             </div>
                         )}
                     </div>
-                    <label className="sync-toggle">
+                    <label className="sync-toggle" title="Alt+S">
                         <input
                             type="checkbox"
                             checked={isSyncEnabled}
@@ -629,7 +660,7 @@ export const CompareView: React.FC<CompareViewProps> = ({ documents }) => {
                         />
                         <span>Sync Scroll</span>
                     </label>
-                    <label className="sync-toggle">
+                    <label className="sync-toggle" title="Alt+D">
                         <input
                             type="checkbox"
                             checked={showDiffOnly}
