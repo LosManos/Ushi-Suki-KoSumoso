@@ -106,6 +106,16 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
         e.preventDefault();
         pageSizeSelectRef.current?.focus();
       }
+
+      // Cmd/Ctrl + Alt + C to open compare view
+      // Note: On Mac, Alt (Option) produces special characters in e.key (e.g. ç for c),
+      // so we use e.code (e.g. KeyC) to reliably detect the physical key pressed.
+      if ((e.metaKey || e.ctrlKey) && e.altKey && e.code === 'KeyC') {
+        e.preventDefault();
+        if (results.length >= 2 && results.length <= 5) {
+          handleCompare();
+        }
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -219,7 +229,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
             <button
               className="compare-btn"
               onClick={handleCompare}
-              title="Compare documents side by side"
+              title="Compare documents side by side (Cmd+Alt+C)"
             >
               Compare
             </button>
