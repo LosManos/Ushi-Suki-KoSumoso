@@ -69,3 +69,42 @@ if (e.altKey && !e.ctrlKey && !e.metaKey) {
     }
 }
 ```
+
+## UI Convention: Underlined Shortcut Letters
+
+Following the Windows/accessibility convention, **underline the shortcut letter** in control labels to indicate Alt-accessible shortcuts. This helps users discover keyboard shortcuts visually.
+
+### Implementation
+
+Use the `<u>` tag to underline the shortcut letter:
+
+```tsx
+// For a toggle/checkbox with Alt+S shortcut
+<label title="Toggle synchronized scrolling (Alt+S)">
+    <input type="checkbox" ... />
+    <span><u>S</u>ync Scroll</span>
+</label>
+
+// For a labeled dropdown with Alt+M shortcut
+<span className="label">Comparison <u>m</u>ode:</span>
+<button>...</button>
+```
+
+### Styling
+
+Add subtle underline styling in CSS:
+
+```css
+.sync-toggle u,
+.diff-mode-label u {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+```
+
+### Guidelines
+
+1. **Choose meaningful letters**: Pick the first letter of a key word (e.g., **S**ync, **D**ifferences, **O**rder)
+2. **Avoid conflicts**: Ensure shortcut letters don't conflict within the same view
+3. **Include descriptive tooltips**: The `title` attribute should explain what the control does AND mention the shortcut (e.g., `"Toggle synchronized scrolling (Alt+S)"`)
+4. **Be consistent**: Apply this pattern to all Alt-accessible controls in the same view
