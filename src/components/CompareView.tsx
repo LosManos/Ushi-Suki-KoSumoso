@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react';
-import { X, Clock, ArrowUp, ArrowDown } from 'lucide-react';
+import { X, Clock, ArrowUp, ArrowDown, ChevronDown } from 'lucide-react';
+import * as Diff from 'diff';
 import './CompareView.css';
 
 interface CompareViewProps {
@@ -19,6 +20,28 @@ interface DiffLine {
     isDifferent: boolean;
     lineNumber: number;
 }
+
+interface CharDiffPart {
+    value: string;
+    added?: boolean;
+    removed?: boolean;
+}
+
+interface SemanticDiff {
+    path: string;
+    type: 'added' | 'removed' | 'changed' | 'unchanged';
+    oldValue?: any;
+    newValue?: any;
+    docIndex: number;
+}
+
+type DiffMode = 'line' | 'character' | 'semantic';
+
+const DIFF_MODES: { value: DiffMode; label: string; description: string }[] = [
+    { value: 'line', label: 'Line-by-Line', description: 'Compare lines at same positions' },
+    { value: 'character', label: 'Character Diff', description: 'Show exact character changes' },
+    { value: 'semantic', label: 'Semantic (JSON)', description: 'Compare by JSON keys, ignoring order' },
+];
 
 /**
  * Compare lines across all documents and mark which ones differ
@@ -55,6 +78,167 @@ function computeDiffLines(formattedDocs: string[]): DiffLine[][] {
 }
 
 /**
+ * Compute character-level diff between first document and each other document
+ */
+function computeCharacterDiff(formattedDocs: string[]): CharDiffPart[][][] {
+    if (formattedDocs.length < 2) {
+        return formattedDocs.map(doc => [[{ value: doc }]]);
+    }
+
+    const baseDoc = formattedDocs[0];
+    const baseLines = baseDoc.split('\n');
+
+    return formattedDocs.map((doc, docIndex) => {
+        if (docIndex === 0) {
+            // For the base document, just return plain lines
+            return baseLines.map(line => [{ value: line }]);
+        }
+
+        const docLines = doc.split('\n');
+        const maxLines = Math.max(baseLines.length, docLines.length);
+        const result: CharDiffPart[][] = [];
+
+        for (let i = 0; i < maxLines; i++) {
+            const baseLine = baseLines[i] || '';
+            const docLine = docLines[i] || '';
+
+            if (baseLine === docLine) {
+                result.push([{ value: docLine }]);
+            } else {
+                // Compute character diff for this line
+                const diff = Diff.diffChars(baseLine, docLine);
+                result.push(diff.map(part => ({
+                    value: part.value,
+                    added: part.added,
+                    removed: part.removed
+                })));
+            }
+        }
+
+        return result;
+    });
+}
+
+/**
+ * Extract all paths from a JSON object with their values
+ */
+function extractPaths(obj: any, prefix: string = ''): Map<string, any> {
+    const paths = new Map<string, any>();
+
+    if (obj === null || obj === undefined) {
+        paths.set(prefix || '(root)', obj);
+        return paths;
+    }
+
+    if (typeof obj !== 'object') {
+        paths.set(prefix || '(root)', obj);
+        return paths;
+    }
+
+    if (Array.isArray(obj)) {
+        paths.set(prefix || '(root)', `[Array(${obj.length})]`);
+        obj.forEach((item, index) => {
+            const childPaths = extractPaths(item, `${prefix}[${index}]`);
+            childPaths.forEach((value, key) => paths.set(key, value));
+        });
+    } else {
+        const keys = Object.keys(obj).sort();
+        keys.forEach(key => {
+            const newPrefix = prefix ? `${prefix}.${key}` : key;
+            const value = obj[key];
+
+            if (typeof value === 'object' && value !== null) {
+                const childPaths = extractPaths(value, newPrefix);
+                childPaths.forEach((v, k) => paths.set(k, v));
+            } else {
+                paths.set(newPrefix, value);
+            }
+        });
+    }
+
+    return paths;
+}
+
+/**
+ * Compute semantic diff between documents by comparing JSON paths
+ */
+function computeSemanticDiff(documents: any[]): SemanticDiff[][] {
+    if (documents.length < 2) {
+        return documents.map(() => []);
+    }
+
+    const allPaths = documents.map(doc => extractPaths(doc));
+    const basePaths = allPaths[0];
+
+    return documents.map((_, docIndex) => {
+        if (docIndex === 0) {
+            // For base document, show all paths as context
+            const diffs: SemanticDiff[] = [];
+            basePaths.forEach((value, path) => {
+                diffs.push({
+                    path,
+                    type: 'unchanged',
+                    oldValue: value,
+                    docIndex: 0
+                });
+            });
+            return diffs;
+        }
+
+        const docPaths = allPaths[docIndex];
+        const diffs: SemanticDiff[] = [];
+        const processedPaths = new Set<string>();
+
+        // Find changed and removed paths
+        basePaths.forEach((baseValue, path) => {
+            processedPaths.add(path);
+            const docValue = docPaths.get(path);
+
+            if (!docPaths.has(path)) {
+                diffs.push({
+                    path,
+                    type: 'removed',
+                    oldValue: baseValue,
+                    docIndex
+                });
+            } else if (JSON.stringify(baseValue) !== JSON.stringify(docValue)) {
+                diffs.push({
+                    path,
+                    type: 'changed',
+                    oldValue: baseValue,
+                    newValue: docValue,
+                    docIndex
+                });
+            } else {
+                diffs.push({
+                    path,
+                    type: 'unchanged',
+                    oldValue: baseValue,
+                    docIndex
+                });
+            }
+        });
+
+        // Find added paths
+        docPaths.forEach((value, path) => {
+            if (!processedPaths.has(path)) {
+                diffs.push({
+                    path,
+                    type: 'added',
+                    newValue: value,
+                    docIndex
+                });
+            }
+        });
+
+        // Sort by path
+        diffs.sort((a, b) => a.path.localeCompare(b.path));
+
+        return diffs;
+    });
+}
+
+/**
  * Count the number of different lines
  */
 function countDifferences(diffLines: DiffLine[][]): number {
@@ -62,12 +246,25 @@ function countDifferences(diffLines: DiffLine[][]): number {
     return diffLines[0].filter(line => line.isDifferent).length;
 }
 
+/**
+ * Count semantic differences
+ */
+function countSemanticDifferences(semanticDiffs: SemanticDiff[][]): number {
+    if (semanticDiffs.length < 2) return 0;
+    return semanticDiffs.slice(1).reduce((total, diffs) => {
+        return total + diffs.filter(d => d.type !== 'unchanged').length;
+    }, 0);
+}
+
 export const CompareView: React.FC<CompareViewProps> = ({ documents }) => {
     const containerRefs = useRef<(HTMLDivElement | null)[]>([]);
     const [isSyncEnabled, setIsSyncEnabled] = useState(true);
     const [showDiffOnly, setShowDiffOnly] = useState(false);
+    const [diffMode, setDiffMode] = useState<DiffMode>('line');
+    const [isModeDropdownOpen, setIsModeDropdownOpen] = useState(false);
     const isScrollingRef = useRef(false);
     const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const dropdownRef = useRef<HTMLDivElement>(null);
 
     // Format documents as pretty JSON
     const formattedDocs = useMemo(() =>
@@ -75,17 +272,42 @@ export const CompareView: React.FC<CompareViewProps> = ({ documents }) => {
         [documents]
     );
 
-    // Compute diff lines
+    // Compute line-by-line diff
     const diffLines = useMemo(() =>
         computeDiffLines(formattedDocs),
         [formattedDocs]
     );
 
-    // Count differences
-    const diffCount = useMemo(() =>
-        countDifferences(diffLines),
-        [diffLines]
+    // Compute character diff
+    const charDiffs = useMemo(() =>
+        computeCharacterDiff(formattedDocs),
+        [formattedDocs]
     );
+
+    // Compute semantic diff
+    const semanticDiffs = useMemo(() =>
+        computeSemanticDiff(documents),
+        [documents]
+    );
+
+    // Count differences based on mode
+    const diffCount = useMemo(() => {
+        if (diffMode === 'semantic') {
+            return countSemanticDifferences(semanticDiffs);
+        }
+        return countDifferences(diffLines);
+    }, [diffMode, diffLines, semanticDiffs]);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+                setIsModeDropdownOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     // Synchronized scrolling handler
     const handleScroll = (sourceIndex: number) => {
@@ -233,8 +455,8 @@ export const CompareView: React.FC<CompareViewProps> = ({ documents }) => {
         });
     }, [documents]);
 
-    // Render lines with diff highlighting
-    const renderLines = (docIndex: number) => {
+    // Render line-by-line diff (original mode)
+    const renderLineDiff = (docIndex: number) => {
         const lines = diffLines[docIndex] || [];
         const linesToShow = showDiffOnly
             ? lines.filter(line => line.isDifferent)
@@ -255,11 +477,150 @@ export const CompareView: React.FC<CompareViewProps> = ({ documents }) => {
         );
     };
 
+    // Render character-level diff
+    const renderCharacterDiff = (docIndex: number) => {
+        const lines = charDiffs[docIndex] || [];
+        const lineNumbers = diffLines[docIndex] || [];
+
+        // Filter to only different lines if showDiffOnly is enabled
+        const indicesToShow = showDiffOnly
+            ? lineNumbers.map((l, i) => l.isDifferent ? i : -1).filter(i => i >= 0)
+            : lines.map((_, i) => i);
+
+        return (
+            <pre className="diff-content">
+                {indicesToShow.map((lineIdx) => {
+                    const parts = lines[lineIdx] || [];
+                    const lineInfo = lineNumbers[lineIdx];
+                    const hasDiff = parts.some(p => p.added || p.removed);
+
+                    return (
+                        <div
+                            key={lineIdx}
+                            className={`diff-line ${hasDiff ? 'diff-highlight' : ''}`}
+                        >
+                            <span className="line-number">{lineInfo?.lineNumber || lineIdx + 1}</span>
+                            <code>
+                                {parts.map((part, partIdx) => {
+                                    if (part.removed) {
+                                        return (
+                                            <span key={partIdx} className="char-removed">
+                                                {part.value}
+                                            </span>
+                                        );
+                                    }
+                                    if (part.added) {
+                                        return (
+                                            <span key={partIdx} className="char-added">
+                                                {part.value}
+                                            </span>
+                                        );
+                                    }
+                                    return <span key={partIdx}>{part.value}</span>;
+                                })}
+                            </code>
+                        </div>
+                    );
+                })}
+            </pre>
+        );
+    };
+
+    // Render semantic diff (by JSON paths)
+    const renderSemanticDiff = (docIndex: number) => {
+        const diffs = semanticDiffs[docIndex] || [];
+        const diffsToShow = showDiffOnly
+            ? diffs.filter(d => d.type !== 'unchanged')
+            : diffs;
+
+        const formatValue = (val: any): string => {
+            if (val === null) return 'null';
+            if (val === undefined) return 'undefined';
+            if (typeof val === 'string') return `"${val}"`;
+            return String(val);
+        };
+
+        return (
+            <div className="semantic-content">
+                {diffsToShow.length === 0 && showDiffOnly ? (
+                    <div className="no-diff-message">
+                        {docIndex === 0 ? 'Base document' : 'No differences from base'}
+                    </div>
+                ) : (
+                    diffsToShow.map((diff, idx) => (
+                        <div
+                            key={idx}
+                            className={`semantic-line semantic-${diff.type}`}
+                        >
+                            <span className="semantic-path">{diff.path}</span>
+                            <span className="semantic-value">
+                                {diff.type === 'changed' ? (
+                                    <>
+                                        <span className="char-removed">{formatValue(diff.oldValue)}</span>
+                                        <span className="semantic-arrow">→</span>
+                                        <span className="char-added">{formatValue(diff.newValue)}</span>
+                                    </>
+                                ) : diff.type === 'added' ? (
+                                    <span className="char-added">{formatValue(diff.newValue)}</span>
+                                ) : diff.type === 'removed' ? (
+                                    <span className="char-removed">{formatValue(diff.oldValue)}</span>
+                                ) : (
+                                    <span>{formatValue(diff.oldValue)}</span>
+                                )}
+                            </span>
+                        </div>
+                    ))
+                )}
+            </div>
+        );
+    };
+
+    // Main renderer based on selected mode
+    const renderDiff = (docIndex: number) => {
+        switch (diffMode) {
+            case 'character':
+                return renderCharacterDiff(docIndex);
+            case 'semantic':
+                return renderSemanticDiff(docIndex);
+            case 'line':
+            default:
+                return renderLineDiff(docIndex);
+        }
+    };
+
     return (
         <div className="compare-view">
             <div className="compare-header">
                 <h1>Document Comparison</h1>
                 <div className="compare-controls">
+                    {/* Diff Mode Selector */}
+                    <div className="diff-mode-selector" ref={dropdownRef}>
+                        <button
+                            className="diff-mode-button"
+                            onClick={() => setIsModeDropdownOpen(!isModeDropdownOpen)}
+                            title="Select comparison mode"
+                        >
+                            <span>{DIFF_MODES.find(m => m.value === diffMode)?.label}</span>
+                            <ChevronDown size={14} className={isModeDropdownOpen ? 'rotated' : ''} />
+                        </button>
+                        {isModeDropdownOpen && (
+                            <div className="diff-mode-dropdown">
+                                {DIFF_MODES.map(mode => (
+                                    <button
+                                        key={mode.value}
+                                        className={`diff-mode-option ${diffMode === mode.value ? 'active' : ''}`}
+                                        onClick={() => {
+                                            setDiffMode(mode.value);
+                                            setIsModeDropdownOpen(false);
+                                        }}
+                                    >
+                                        <span className="mode-label">{mode.label}</span>
+                                        <span className="mode-description">{mode.description}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                     <label className="sync-toggle">
                         <input
                             type="checkbox"
@@ -334,7 +695,7 @@ export const CompareView: React.FC<CompareViewProps> = ({ documents }) => {
                                 className="pane-content"
                                 onScroll={() => handleScroll(index)}
                             >
-                                {renderLines(index)}
+                                {renderDiff(index)}
                             </div>
                         </div>
                     );
