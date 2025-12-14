@@ -337,11 +337,40 @@ export const CompareView: React.FC<CompareViewProps> = ({ documents }) => {
     const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
-    // Format documents as pretty JSON
-    const formattedDocs = useMemo(() =>
-        documents.map(doc => JSON.stringify(doc, null, 2)),
-        [documents]
-    );
+    // Track which documents are selected for comparison (default: all documents)
+    const [selectedIndices, setSelectedIndices] = useState<Set<number>>(() => {
+        // By default, select all documents
+        return new Set(documents.map((_, i) => i));
+    });
+
+    // Get the selected documents for comparison
+    const selectedDocs = useMemo(() => {
+        const sortedIndices = Array.from(selectedIndices).sort((a, b) => a - b);
+        return sortedIndices.map(i => documents[i]);
+    }, [documents, selectedIndices]);
+
+    // Get the mapping from selected doc index to original index
+    const selectedIndexMapping = useMemo(() => {
+        return Array.from(selectedIndices).sort((a, b) => a - b);
+    }, [selectedIndices]);
+
+    // Handle checkbox toggle - simple toggle, allow any number of selections
+    const handleSelectionChange = (index: number, checked: boolean) => {
+        setSelectedIndices(prev => {
+            const newSet = new Set(prev);
+            if (checked) {
+                newSet.add(index);
+            } else {
+                newSet.delete(index);
+            }
+            return newSet;
+        });
+    };
+
+    // Format selected documents as pretty JSON
+    const formattedDocs = useMemo(() => {
+        return selectedDocs.map(doc => JSON.stringify(doc, null, 2));
+    }, [selectedDocs]);
 
     // Compute line-by-line diff
     const diffLines = useMemo(() =>
@@ -356,10 +385,9 @@ export const CompareView: React.FC<CompareViewProps> = ({ documents }) => {
     );
 
     // Compute semantic diff
-    const semanticDiffs = useMemo(() =>
-        computeSemanticDiff(documents, ignoreArrayOrder),
-        [documents, ignoreArrayOrder]
-    );
+    const semanticDiffs = useMemo(() => {
+        return computeSemanticDiff(selectedDocs, ignoreArrayOrder);
+    }, [selectedDocs, ignoreArrayOrder]);
 
     // Count differences based on mode
     const diffCount = useMemo(() => {
@@ -775,8 +803,25 @@ export const CompareView: React.FC<CompareViewProps> = ({ documents }) => {
             }}>
                 {documents.map((doc, index) => {
                     const ageInfo = ageInfos[index];
+                    const isSelected = selectedIndices.has(index);
+                    // Calculate the diff index for this document (only if selected)
+                    const diffIndex = isSelected ? selectedIndexMapping.indexOf(index) : -1;
+
                     return (
-                        <div key={index} className="compare-pane">
+                        <div key={index} className={`compare-pane ${!isSelected ? 'pane-unselected' : ''}`}>
+                            {/* Selection checkbox */}
+                            <div className="pane-selection">
+                                <label className="selection-checkbox">
+                                    <input
+                                        type="checkbox"
+                                        checked={isSelected}
+                                        onChange={(e) => handleSelectionChange(index, e.target.checked)}
+                                    />
+                                    <span className="selection-label">
+                                        Compare Doc #{index + 1}
+                                    </span>
+                                </label>
+                            </div>
                             <div className="pane-header">
                                 <div className="pane-header-left">
                                     <span className="pane-title">
@@ -815,7 +860,8 @@ export const CompareView: React.FC<CompareViewProps> = ({ documents }) => {
                                 className="pane-content"
                                 onScroll={() => handleScroll(index)}
                             >
-                                {renderDiff(index)}
+                                {/* Only render diff content if this document is selected and we have at least 2 selected */}
+                                {isSelected && selectedIndices.size >= 2 && renderDiff(diffIndex)}
                             </div>
                         </div>
                     );

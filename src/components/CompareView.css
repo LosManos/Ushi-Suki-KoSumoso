@@ -539,3 +539,86 @@
 [data-theme="dark"] .array-order-toggle:has(input:checked) span {
     color: #a78bfa;
 }
+
+/* Document selection checkboxes (shown when > 2 documents) */
+.pane-selection {
+    padding: 8px 12px;
+    background: linear-gradient(to bottom, var(--bg-tertiary), var(--bg-secondary));
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.selection-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    padding: 4px 12px;
+    border-radius: 6px;
+    transition: background-color 0.15s ease;
+}
+
+.selection-checkbox:hover {
+    background-color: rgba(59, 130, 246, 0.1);
+}
+
+.selection-checkbox input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--accent-color);
+}
+
+.selection-label {
+    font-weight: 500;
+}
+
+/* Unselected pane styling */
+.compare-pane.pane-unselected {
+    opacity: 0.6;
+}
+
+.compare-pane.pane-unselected .pane-content {
+    background-color: var(--bg-secondary);
+}
+
+.unselected-message {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 100px;
+    color: var(--text-secondary);
+    font-style: italic;
+    text-align: center;
+    padding: 20px;
+}
+
+/* Compare 2 Only toggle styling */
+.select-toggle {
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+}
+
+.select-toggle:has(input:checked) {
+    background-color: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.3);
+}
+
+.select-toggle:has(input:checked) span {
+    color: #3b82f6;
+}
+
+[data-theme="dark"] .select-toggle:has(input:checked) {
+    background-color: rgba(59, 130, 246, 0.15);
+}
+
+[data-theme="dark"] .select-toggle:has(input:checked) span {
+    color: #60a5fa;
+}
