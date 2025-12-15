@@ -510,6 +510,19 @@ export const CompareView: React.FC<CompareViewProps> = ({ documents }) => {
         return `Document`;
     };
 
+    // Count elements in a document (keys for objects, items for arrays)
+    const countElements = (doc: any): number => {
+        if (doc === null || doc === undefined) return 0;
+        if (Array.isArray(doc)) {
+            return doc.reduce((sum, item) => sum + 1 + countElements(item), 0);
+        }
+        if (typeof doc === 'object') {
+            const keys = Object.keys(doc);
+            return keys.reduce((sum, key) => sum + 1 + countElements(doc[key]), 0);
+        }
+        return 0;
+    };
+
     // Format timestamp to readable date
     const formatTimestamp = (ts: number): string => {
         const date = new Date(ts * 1000);
@@ -828,6 +841,9 @@ export const CompareView: React.FC<CompareViewProps> = ({ documents }) => {
                                         {getDocumentId(doc)}
                                     </span>
                                     <span className="pane-index">#{index + 1}</span>
+                                    <span className="element-count" title="Total number of properties and array items in this document">
+                                        {countElements(doc)} elements
+                                    </span>
                                 </div>
                                 {ageInfo.timestamp !== null && (
                                     <div className="age-indicator">

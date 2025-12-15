@@ -143,6 +143,26 @@
     flex-shrink: 0;
 }
 
+.element-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.7rem;
+    color: #3b82f6;
+    background-color: rgba(59, 130, 246, 0.1);
+    padding: 2px 8px;
+    border-radius: 10px;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    flex-shrink: 0;
+    cursor: help;
+}
+
+[data-theme="dark"] .element-count {
+    color: #60a5fa;
+    background-color: rgba(59, 130, 246, 0.15);
+    border-color: rgba(59, 130, 246, 0.35);
+}
+
 /* Age indicator styles */
 .age-indicator {
     display: flex;
