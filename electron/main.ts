@@ -10,17 +10,101 @@ function getVitePublicPath(): string {
     return app.isPackaged ? process.env.DIST! : path.join(process.env.DIST!, '../public');
 }
 
+// Window state persistence
+interface WindowState {
+    x?: number;
+    y?: number;
+    width: number;
+    height: number;
+    isMaximized?: boolean;
+}
+
+interface AllWindowStates {
+    main?: WindowState;
+    compare?: WindowState;
+}
+
+function getWindowStatePath(): string {
+    return path.join(app.getPath('userData'), 'window-state.json');
+}
+
+function loadWindowStates(): AllWindowStates {
+    try {
+        const data = fs.readFileSync(getWindowStatePath(), 'utf8');
+        return JSON.parse(data);
+    } catch {
+        return {};
+    }
+}
+
+function saveWindowStates(states: AllWindowStates): void {
+    try {
+        fs.writeFileSync(getWindowStatePath(), JSON.stringify(states, null, 2));
+    } catch (error) {
+        console.error('[Main] Failed to save window states:', error);
+    }
+}
+
+function getWindowState(windowName: 'main' | 'compare'): WindowState | undefined {
+    const states = loadWindowStates();
+    return states[windowName];
+}
+
+function saveWindowState(windowName: 'main' | 'compare', state: WindowState): void {
+    const states = loadWindowStates();
+    states[windowName] = state;
+    saveWindowStates(states);
+}
+
+function trackWindowState(win: BrowserWindow, windowName: 'main' | 'compare'): void {
+    const saveState = () => {
+        if (win.isDestroyed()) return;
+
+        const bounds = win.getBounds();
+        const state: WindowState = {
+            x: bounds.x,
+            y: bounds.y,
+            width: bounds.width,
+            height: bounds.height,
+            isMaximized: win.isMaximized(),
+        };
+        saveWindowState(windowName, state);
+    };
+
+    // Save state on various events
+    win.on('close', saveState);
+    win.on('resize', saveState);
+    win.on('move', saveState);
+}
+
 let win: BrowserWindow | null;
 // 🚧 Use ['ENV_NAME'] avoid vite:define plugin - Vite@2.x
 const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL'];
 
 function createWindow() {
+    // Restore saved window state
+    const savedState = getWindowState('main');
+    const defaultWidth = 1200;
+    const defaultHeight = 800;
+
     win = new BrowserWindow({
+        x: savedState?.x,
+        y: savedState?.y,
+        width: savedState?.width ?? defaultWidth,
+        height: savedState?.height ?? defaultHeight,
         icon: path.join(getVitePublicPath(), 'electron-vite.svg'),
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
         },
     });
+
+    // Restore maximized state if applicable
+    if (savedState?.isMaximized) {
+        win.maximize();
+    }
+
+    // Track window state changes
+    trackWindowState(win, 'main');
 
     // Test active push message to Renderer-process.
     win.webContents.on('did-finish-load', () => {
@@ -65,15 +149,30 @@ ipcMain.handle('compare:open', async (_, documents: any[]) => {
         // Store documents for the compare window to fetch
         pendingCompareDocuments = documents;
 
+        // Restore saved window state or use defaults
+        const savedState = getWindowState('compare');
+        const defaultWidth = Math.min(400 * documents.length, 1600);
+        const defaultHeight = 800;
+
         const compareWin = new BrowserWindow({
-            width: Math.min(400 * documents.length, 1600),
-            height: 800,
+            x: savedState?.x,
+            y: savedState?.y,
+            width: savedState?.width ?? defaultWidth,
+            height: savedState?.height ?? defaultHeight,
             icon: path.join(getVitePublicPath(), 'electron-vite.svg'),
             webPreferences: {
                 preload: path.join(__dirname, 'preload.js'),
             },
             title: 'Compare Documents',
         });
+
+        // Restore maximized state if applicable
+        if (savedState?.isMaximized) {
+            compareWin.maximize();
+        }
+
+        // Track window state changes
+        trackWindowState(compareWin, 'compare');
 
         console.log('[Main] Opening compare window with', documents.length, 'documents');
 
