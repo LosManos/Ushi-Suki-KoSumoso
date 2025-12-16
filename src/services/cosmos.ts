@@ -25,6 +25,10 @@ export const cosmos = {
         return await window.ipcRenderer.invoke('cosmos:getContainers', databaseId);
     },
 
+    getContainerInfo: async (databaseId: string, containerId: string): Promise<CosmosResponse<import('../types').ContainerInfo>> => {
+        return await window.ipcRenderer.invoke('cosmos:getContainerInfo', databaseId, containerId);
+    },
+
     // Storage
     saveConnection: async (name: string, connectionString: string): Promise<CosmosResponse<void>> => {
         return await window.ipcRenderer.invoke('storage:saveConnection', name, connectionString);

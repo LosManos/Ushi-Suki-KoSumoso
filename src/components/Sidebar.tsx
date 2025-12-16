@@ -10,11 +10,14 @@ import {
   Moon,
   Monitor,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  Info
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { HistoryItem } from '../types';
+import { ContainerInfoPanel } from './ContainerInfoPanel';
 import './Sidebar.css';
+
 
 interface SidebarProps {
   databases: string[];
@@ -54,6 +57,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const sidebarRef = React.useRef<HTMLDivElement>(null);
   const historyFilterRef = React.useRef<HTMLDivElement>(null);
   const optionRefs = React.useRef<(HTMLDivElement | null)[]>([]);
+
+  // Container Info Panel state
+  const [infoPanel, setInfoPanel] = React.useState<{ databaseId: string; containerId: string } | null>(null);
+
 
   // Sync history filter with active selection
   React.useEffect(() => {
@@ -104,6 +111,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     return () => window.removeEventListener('keydown', handleWindowKeyDown);
   }, []);
 
+
   const flatItems = React.useMemo(() => {
     const items: { type: 'db' | 'container' | 'history' | 'filter'; id: string; parentId?: string; data?: HistoryItem }[] = [];
     databases.forEach(db => {
@@ -132,6 +140,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
     return items;
   }, [databases, selectedDatabase, containers, history, historyFilter]);
+
+  // Global Cmd+I listener to open container info for focused item
+  React.useEffect(() => {
+    const handleWindowKeyDown = (e: KeyboardEvent) => {
+      // Use e.code for reliable key detection on Mac
+      if ((e.metaKey || e.ctrlKey) && e.code === 'KeyI' && !e.shiftKey && !e.altKey) {
+        // Find the focused item in flatItems
+        const focusedItem = flatItems.find(item => item.id === focusedId);
+
+        if (focusedItem && focusedItem.type === 'container' && focusedItem.parentId) {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('[Sidebar] Cmd+I pressed on focused container:', focusedItem.parentId, focusedItem.id);
+          setInfoPanel({ databaseId: focusedItem.parentId, containerId: focusedItem.id });
+        }
+      }
+    };
+    window.addEventListener('keydown', handleWindowKeyDown, true); // Use capture phase
+    return () => window.removeEventListener('keydown', handleWindowKeyDown, true);
+  }, [flatItems, focusedId]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (flatItems.length === 0) return;
@@ -585,14 +613,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {containers[db].map(container => (
                   <div
                     key={container}
-                    className={`nav-item sub-item ${selectedContainer === container ? 'active' : ''} ${focusedId === container ? 'focused' : ''}`}
-                    onClick={() => onSelectContainer(db, container)}
+                    className={`nav-item sub-item container-item-row ${selectedContainer === container ? 'active' : ''} ${focusedId === container ? 'focused' : ''}`}
                   >
-                    <FileText size={14} style={{ marginRight: '6px' }} /> {container}
+                    <div
+                      className="container-item-content"
+                      onClick={() => onSelectContainer(db, container)}
+                    >
+                      <FileText size={14} style={{ marginRight: '6px' }} /> {container}
+                    </div>
+                    <button
+                      className="container-info-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setInfoPanel({ databaseId: db, containerId: container });
+                      }}
+                      title="View container info (⌘I)"
+                    >
+                      <Info size={12} />
+                    </button>
                   </div>
                 ))}
               </div>
             )}
+
           </div>
         ))}
 
@@ -748,6 +791,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         )}
       </nav>
+
+      {/* Container Info Panel */}
+      <ContainerInfoPanel
+        isOpen={infoPanel !== null}
+        databaseId={infoPanel?.databaseId || ''}
+        containerId={infoPanel?.containerId || ''}
+        onClose={() => setInfoPanel(null)}
+      />
     </div>
+
   );
 };

@@ -204,6 +204,58 @@
     padding: 0.3rem 0.75rem;
 }
 
+/* Container Item with Info Button */
+.container-item-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-right: 6px !important;
+}
+
+.container-item-content {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.container-info-btn {
+    opacity: 0;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.15s, background-color 0.15s, color 0.15s;
+    flex-shrink: 0;
+}
+
+.container-item-row:hover .container-info-btn,
+.container-item-row.focused .container-info-btn {
+    opacity: 0.6;
+}
+
+.container-info-btn:hover {
+    opacity: 1 !important;
+    background: var(--button-hover-bg);
+    color: var(--accent-color);
+}
+
+.container-item-row.active .container-info-btn {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.container-item-row.active .container-info-btn:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.15);
+}
+
 /* History Section */
 .history-section {
     margin-top: 1rem;

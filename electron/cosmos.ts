@@ -182,5 +182,105 @@ export const cosmosService = {
         } catch (error: any) {
             return { success: false, error: error.message };
         }
+    },
+
+    getContainerInfo: async (databaseId: string, containerId: string) => {
+        console.log('[Cosmos] getContainerInfo called:', databaseId, containerId);
+        if (!client) return { success: false, error: 'Not connected' };
+        try {
+            const database = client.database(databaseId);
+            const container = database.container(containerId);
+
+            // Read container to get full metadata including headers with usage stats
+            console.log('[Cosmos] Reading container...');
+            const { resource, headers } = await container.read();
+            console.log('[Cosmos] Container read complete, resource:', !!resource);
+            console.log('[Cosmos] Headers:', JSON.stringify(headers, null, 2));
+
+            if (!resource) {
+                return { success: false, error: 'Container not found' };
+            }
+
+            // Parse resource usage from headers
+            // Format: "documentCount=123;documentsSize=456789;..."
+            let documentCount: number | undefined;
+            let documentsSizeKB: number | undefined;
+            let indexSizeKB: number | undefined;
+
+            // Log all headers to see what's available
+            console.log('[Cosmos] x-ms-resource-usage:', headers?.['x-ms-resource-usage']);
+
+            const resourceUsage = headers?.['x-ms-resource-usage'];
+            if (resourceUsage && typeof resourceUsage === 'string') {
+                console.log('[Cosmos] Parsing resource usage:', resourceUsage);
+                const usageMap: Record<string, string> = {};
+                resourceUsage.split(';').forEach(part => {
+                    const [key, value] = part.split('=');
+                    if (key && value) {
+                        usageMap[key.trim()] = value.trim();
+                    }
+                });
+                console.log('[Cosmos] Usage map:', usageMap);
+
+                if (usageMap['documentCount']) {
+                    documentCount = parseInt(usageMap['documentCount'], 10);
+                }
+                if (usageMap['documentsSize']) {
+                    // Convert bytes to KB
+                    documentsSizeKB = Math.round(parseInt(usageMap['documentsSize'], 10) / 1024);
+                }
+                if (usageMap['indexesSize']) {
+                    indexSizeKB = Math.round(parseInt(usageMap['indexesSize'], 10) / 1024);
+                }
+            }
+
+            // Note: Document count and size stats are not available from container.read()
+            // They would require Azure Monitor APIs or running queries, which we skip to keep this fast
+
+
+            // Extract partition key paths
+            const partitionKeyPaths = resource.partitionKey?.paths || [];
+            const partitionKeyVersion = resource.partitionKey?.version;
+
+            // Extract indexing policy
+            const indexingPolicy = resource.indexingPolicy || {};
+            const formattedIndexingPolicy = {
+                indexingMode: indexingPolicy.indexingMode || 'consistent',
+                automatic: indexingPolicy.automatic !== false,
+                includedPaths: (indexingPolicy.includedPaths || []).map((p: any) => p.path),
+                excludedPaths: (indexingPolicy.excludedPaths || []).map((p: any) => p.path),
+                compositeIndexes: indexingPolicy.compositeIndexes?.map((composite: any[]) =>
+                    composite.map((idx: any) => ({ path: idx.path, order: idx.order }))
+                ),
+                spatialIndexes: indexingPolicy.spatialIndexes?.map((spatial: any) => ({
+                    path: spatial.path,
+                    types: spatial.types
+                }))
+            };
+
+            // Extract unique key paths
+            const uniqueKeyPaths = resource.uniqueKeyPolicy?.uniqueKeys?.map(
+                (uk: any) => uk.paths
+            );
+
+            const containerInfo = {
+                id: resource.id,
+                partitionKeyPaths,
+                partitionKeyVersion,
+                indexingPolicy: formattedIndexingPolicy,
+                defaultTtl: resource.defaultTtl,
+                uniqueKeyPaths,
+                documentCount,
+                documentsSizeKB,
+                indexSizeKB,
+                _ts: resource._ts,
+                _etag: resource._etag
+            };
+
+            return { success: true, data: containerInfo };
+        } catch (error: any) {
+            console.error('GetContainerInfo Error:', error);
+            return { success: false, error: error.message };
+        }
     }
 };

@@ -19,3 +19,24 @@ export interface HistoryItem {
     query: string;
     timestamp: number;
 }
+
+export interface ContainerInfo {
+    id: string;
+    partitionKeyPaths: string[];
+    partitionKeyVersion?: number;
+    indexingPolicy: {
+        indexingMode: string;
+        automatic: boolean;
+        includedPaths: string[];
+        excludedPaths: string[];
+        compositeIndexes?: Array<Array<{ path: string; order: string }>>;
+        spatialIndexes?: Array<{ path: string; types: string[] }>;
+    };
+    defaultTtl?: number;
+    uniqueKeyPaths?: string[][];
+    documentCount?: number;
+    documentsSizeKB?: number;
+    indexSizeKB?: number;
+    _ts?: number;
+    _etag?: string;
+}

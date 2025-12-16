@@ -462,6 +462,10 @@ app.whenReady().then(() => {
         return await cosmosService.getContainers(dbId);
     });
 
+    ipcMain.handle('cosmos:getContainerInfo', async (_, dbId, containerId) => {
+        return await cosmosService.getContainerInfo(dbId, containerId);
+    });
+
     // IPC handler for saving query results to file
     ipcMain.handle('file:saveResults', async (_, content: string) => {
         try {
