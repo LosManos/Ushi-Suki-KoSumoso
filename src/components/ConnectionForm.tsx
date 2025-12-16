@@ -28,7 +28,6 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect, onCan
 
     useEffect(() => {
         loadSavedConnections();
-        inputRef.current?.focus();
     }, []);
 
     // Handle ESC key to cancel
@@ -89,7 +88,16 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect, onCan
                 const latest = result.data[0];
                 setConnectionName(latest.name);
                 setInputValue(latest.connectionString);
+
+                // Focus the saved connections dropdown
+                setTimeout(() => savedSelectRef.current?.focus(), 0);
+            } else {
+                // No saved connections - focus the connection name input
+                setTimeout(() => nameInputRef.current?.focus(), 0);
             }
+        } else {
+            // Failed to load or no data - focus the connection name input
+            setTimeout(() => nameInputRef.current?.focus(), 0);
         }
     };
 
