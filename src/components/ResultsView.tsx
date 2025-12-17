@@ -41,6 +41,87 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
   /* Ref for page size selector */
   const pageSizeSelectRef = React.useRef<HTMLSelectElement>(null);
 
+  // Helper to get current line from textarea
+  const getCurrentLineFromTextarea = (): string | null => {
+    const textarea = containerRef.current;
+    if (!textarea) return null;
+
+    const cursorPos = textarea.selectionStart;
+    const text = textarea.value;
+
+    // Find line start and end
+    let lineStart = cursorPos;
+    while (lineStart > 0 && text[lineStart - 1] !== '\n') lineStart--;
+
+    let lineEnd = cursorPos;
+    while (lineEnd < text.length && text[lineEnd] !== '\n') lineEnd++;
+
+    return text.substring(lineStart, lineEnd);
+  };
+
+  // Helper to parse JSON key-value from a line
+  const parseJsonLine = (line: string): { key: string; value: string; both: string } | null => {
+    // Match pattern: "key": value  or  "key": "value"
+    const match = line.match(/^\s*"([^"]+)"\s*:\s*(.+?)\s*,?\s*$/);
+    if (!match) return null;
+
+    const key = match[1];
+    let value = match[2];
+
+    // Remove trailing comma if present
+    if (value.endsWith(',')) {
+      value = value.slice(0, -1).trim();
+    }
+
+    return {
+      key,
+      value,
+      both: `"${key}": ${value}`
+    };
+  };
+
+  // Copy handlers for text view
+  const copyKeyFromLine = () => {
+    const line = getCurrentLineFromTextarea();
+    if (!line) return;
+    const parsed = parseJsonLine(line);
+    if (parsed) {
+      navigator.clipboard.writeText(parsed.key).catch(console.error);
+    }
+  };
+
+  const copyValueFromLine = () => {
+    const line = getCurrentLineFromTextarea();
+    if (!line) return;
+    const parsed = parseJsonLine(line);
+    if (parsed) {
+      navigator.clipboard.writeText(parsed.value).catch(console.error);
+    }
+  };
+
+  const copyBothFromLine = () => {
+    const line = getCurrentLineFromTextarea();
+    if (!line) return;
+    const parsed = parseJsonLine(line);
+    if (parsed) {
+      navigator.clipboard.writeText(parsed.both).catch(console.error);
+    }
+  };
+
+  const copyRawValueFromLine = () => {
+    const line = getCurrentLineFromTextarea();
+    if (!line) return;
+    const parsed = parseJsonLine(line);
+    if (parsed) {
+      // Remove surrounding quotes if it's a string value
+      let rawValue = parsed.value;
+      if (rawValue.startsWith('"') && rawValue.endsWith('"')) {
+        rawValue = rawValue.slice(1, -1);
+      }
+      navigator.clipboard.writeText(rawValue).catch(console.error);
+    }
+  };
+
   React.useEffect(() => {
     if (results) {
       setContent(JSON.stringify(results, null, 2));
@@ -114,6 +195,31 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
         e.preventDefault();
         if (results.length >= 2 && results.length <= 5) {
           handleCompare();
+        }
+      }
+
+      // Text view copy shortcuts (Alt+K/V/R/B)
+      // Only work when text view is active and textarea is focused
+      if (viewMode === 'text' && document.activeElement === containerRef.current) {
+        // Alt+K to copy key from current line
+        if (e.altKey && !e.metaKey && !e.ctrlKey && e.code === 'KeyK') {
+          e.preventDefault();
+          copyKeyFromLine();
+        }
+        // Alt+V to copy value from current line
+        if (e.altKey && !e.metaKey && !e.ctrlKey && e.code === 'KeyV') {
+          e.preventDefault();
+          copyValueFromLine();
+        }
+        // Alt+R to copy raw value (no quotes) from current line
+        if (e.altKey && !e.metaKey && !e.ctrlKey && e.code === 'KeyR') {
+          e.preventDefault();
+          copyRawValueFromLine();
+        }
+        // Alt+B to copy both (key: value) from current line
+        if (e.altKey && !e.metaKey && !e.ctrlKey && e.code === 'KeyB') {
+          e.preventDefault();
+          copyBothFromLine();
         }
       }
     };
@@ -244,13 +350,30 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
           <>
             {results.length > 0 ? (
               viewMode === 'text' ? (
-                <textarea
-                  ref={containerRef}
-                  className="json-editor"
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  spellCheck={false}
-                />
+                <div className="text-view-container">
+                  <div className="text-view-toolbar">
+                    <span className="toolbar-label">Copy from current line:</span>
+                    <button className="toolbar-btn" onClick={copyKeyFromLine} title="Copy key (Alt+K)">
+                      <Copy size={12} /><span>K</span>
+                    </button>
+                    <button className="toolbar-btn" onClick={copyValueFromLine} title="Copy value with quotes (Alt+V)">
+                      <Copy size={12} /><span>V</span>
+                    </button>
+                    <button className="toolbar-btn" onClick={copyRawValueFromLine} title="Copy raw value without quotes (Alt+R)">
+                      <Copy size={12} /><span>R</span>
+                    </button>
+                    <button className="toolbar-btn" onClick={copyBothFromLine} title="Copy key & value (Alt+B)">
+                      <Copy size={12} /><span>B</span>
+                    </button>
+                  </div>
+                  <textarea
+                    ref={containerRef}
+                    className="json-editor"
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    spellCheck={false}
+                  />
+                </div>
               ) : (
                 <div className="json-viewer-container">
                   <JsonTreeView

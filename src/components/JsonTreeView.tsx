@@ -1,6 +1,31 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { ChevronRight, ChevronDown } from 'lucide-react';
+import { ChevronRight, ChevronDown, Copy } from 'lucide-react';
 import './JsonTreeView.css';
+
+// Helper to format value for clipboard
+const formatValueForClipboard = (value: any): string => {
+    if (value === null) return 'null';
+    if (typeof value === 'string') return `"${value}"`;
+    if (typeof value === 'boolean' || typeof value === 'number') return String(value);
+    return JSON.stringify(value, null, 2);
+};
+
+// Helper to get raw value (without quotes for strings)
+const getRawValue = (value: any): string => {
+    if (value === null) return 'null';
+    if (typeof value === 'string') return value; // No quotes!
+    if (typeof value === 'boolean' || typeof value === 'number') return String(value);
+    return JSON.stringify(value, null, 2);
+};
+
+// Helper to copy text to clipboard
+const copyToClipboard = async (text: string) => {
+    try {
+        await navigator.clipboard.writeText(text);
+    } catch (err) {
+        console.error('Failed to copy:', err);
+    }
+};
 
 interface JsonTreeViewProps {
     data: any;
@@ -233,6 +258,28 @@ const JsonNode: React.FC<{ item: FlattenedItem; isFocused: boolean; onSelect: (i
         valueDisplay = <span className="json-object-label">{"{}"}</span>;
     }
 
+    // Copy handlers
+    const handleCopyKey = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        copyToClipboard(item.key);
+    };
+
+    const handleCopyValue = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        copyToClipboard(formatValueForClipboard(item.value));
+    };
+
+    const handleCopyRawValue = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        copyToClipboard(getRawValue(item.value));
+    };
+
+    const handleCopyBoth = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        const formattedValue = formatValueForClipboard(item.value);
+        copyToClipboard(`"${item.key}": ${formattedValue}`);
+    };
+
     return (
         <div
             id={`json-node-${item.id}`}
@@ -248,6 +295,20 @@ const JsonNode: React.FC<{ item: FlattenedItem; isFocused: boolean; onSelect: (i
             </span>
             <span className="json-key">{item.key === 'root' ? 'root' : item.key}: </span>
             {valueDisplay}
+            <span className="copy-buttons">
+                <button className="copy-btn" onClick={handleCopyKey} title="Copy key">
+                    <Copy size={10} /><span>K</span>
+                </button>
+                <button className="copy-btn" onClick={handleCopyValue} title="Copy value (with quotes)">
+                    <Copy size={10} /><span>V</span>
+                </button>
+                <button className="copy-btn" onClick={handleCopyRawValue} title="Copy raw value (no quotes)">
+                    <Copy size={10} /><span>R</span>
+                </button>
+                <button className="copy-btn" onClick={handleCopyBoth} title="Copy key & value">
+                    <Copy size={10} /><span>B</span>
+                </button>
+            </span>
         </div>
     );
 }

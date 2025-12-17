@@ -111,3 +111,78 @@
 .json-tree-view.light .json-object-label {
     color: #6f42c1;
 }
+
+/* Copy buttons container */
+.copy-buttons {
+    display: inline-flex;
+    gap: 2px;
+    margin-left: 8px;
+    opacity: 0;
+    transition: opacity 0.15s ease-in-out;
+}
+
+.json-node:hover .copy-buttons {
+    opacity: 1;
+}
+
+.json-node.focused .copy-buttons {
+    opacity: 1;
+}
+
+/* Individual copy button */
+.copy-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 1px 4px;
+    font-size: 10px;
+    font-family: inherit;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    background-color: rgba(128, 128, 128, 0.2);
+    color: inherit;
+    opacity: 0.7;
+    transition: opacity 0.1s, background-color 0.1s;
+}
+
+.copy-btn:hover {
+    opacity: 1;
+    background-color: rgba(128, 128, 128, 0.4);
+}
+
+.copy-btn:active {
+    transform: scale(0.95);
+}
+
+/* Dark theme copy button */
+.json-tree-view.dark .copy-btn {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #ccc;
+}
+
+.json-tree-view.dark .copy-btn:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: #fff;
+}
+
+/* Light theme copy button */
+.json-tree-view.light .copy-btn {
+    background-color: rgba(0, 0, 0, 0.08);
+    color: #666;
+}
+
+.json-tree-view.light .copy-btn:hover {
+    background-color: rgba(0, 0, 0, 0.15);
+    color: #333;
+}
+
+/* Focused row copy buttons maintain visibility */
+.json-node.focused .copy-btn {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.json-node.focused .copy-btn:hover {
+    background-color: rgba(255, 255, 255, 0.35);
+}

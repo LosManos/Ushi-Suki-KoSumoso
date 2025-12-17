@@ -345,3 +345,60 @@
 .dismiss-btn:hover {
     background-color: var(--button-hover-bg);
 }
+
+/* Text view container with toolbar */
+.text-view-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+}
+
+.text-view-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: linear-gradient(180deg, var(--bg-tertiary), var(--bg-secondary));
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.toolbar-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-right: 4px;
+}
+
+.toolbar-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 3px 8px;
+    font-size: 11px;
+    font-family: inherit;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    cursor: pointer;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    transition: all 0.15s ease;
+}
+
+.toolbar-btn:hover {
+    background-color: var(--button-hover-bg);
+    border-color: var(--accent-color);
+}
+
+.toolbar-btn:active {
+    transform: scale(0.96);
+}
+
+.toolbar-btn span {
+    font-weight: 600;
+}
+
+.text-view-container .json-editor {
+    flex: 1;
+    min-height: 0;
+}
