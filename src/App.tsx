@@ -43,6 +43,32 @@ function App() {
         });
     }, []);
 
+    // Use a ref to track the current activeTabId for the IPC listener
+    const activeTabIdRef = React.useRef<string | null>(null);
+    activeTabIdRef.current = activeTabId;
+
+    // Listen for Cmd+W from main process to close active tab (only on mount)
+    useEffect(() => {
+        const handleCloseTab = () => {
+            const tabIdToClose = activeTabIdRef.current;
+            if (tabIdToClose) {
+                setTabs(prev => {
+                    const newTabs = prev.filter(t => t.id !== tabIdToClose);
+                    // Switch to the last remaining tab or null
+                    const lastTab = newTabs[newTabs.length - 1];
+                    setActiveTabId(lastTab ? lastTab.id : null);
+                    return newTabs;
+                });
+            }
+        };
+
+        window.ipcRenderer.on('close-active-tab', handleCloseTab);
+        // Note: cleanup may not work due to preload `off` bug, but we only register once
+        return () => {
+            window.ipcRenderer.off('close-active-tab', handleCloseTab);
+        };
+    }, []); // Empty dependency - register only once
+
     // Resize State
     const [queryPaneHeight, setQueryPaneHeight] = useState(300);
     const [sidebarWidth, setSidebarWidth] = useState(250);

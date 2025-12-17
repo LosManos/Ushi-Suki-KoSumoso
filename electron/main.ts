@@ -106,6 +106,14 @@ function createWindow() {
     // Track window state changes
     trackWindowState(win, 'main');
 
+    // Intercept Cmd+W to close tab instead of window
+    win.webContents.on('before-input-event', (event, input) => {
+        if (input.type === 'keyDown' && input.key === 'w' && (input.meta || input.control) && !input.shift && !input.alt) {
+            event.preventDefault();
+            win?.webContents.send('close-active-tab');
+        }
+    });
+
     // Test active push message to Renderer-process.
     win.webContents.on('did-finish-load', () => {
         win?.webContents.send('main-process-message', (new Date).toLocaleString());
