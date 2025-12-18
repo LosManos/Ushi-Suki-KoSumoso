@@ -9,6 +9,7 @@ import { cosmos } from './services/cosmos';
 import { ThemeProvider } from './context/ThemeContext';
 import { QueryTab, HistoryItem } from './types';
 import { historyService } from './services/history';
+import { templateService } from './services/templates';
 import { extractParagraphAtCursor } from './utils';
 
 function App() {
@@ -35,10 +36,19 @@ function App() {
     // Track active query IDs per tab for cancellation
     const activeQueryIdsRef = React.useRef<Map<string, string>>(new Map());
 
+    // Store templates per container (loaded from disk)
+    const storedTemplatesRef = React.useRef<Record<string, string>>({});
+
+    // Load history and templates on startup
     useEffect(() => {
         historyService.getHistory().then(res => {
             if (res.success && res.data) {
                 setHistory(res.data);
+            }
+        });
+        templateService.getTemplates().then(res => {
+            if (res.success && res.data) {
+                storedTemplatesRef.current = res.data;
             }
         });
     }, []);
@@ -255,7 +265,8 @@ function App() {
                 query: 'SELECT * FROM c',
                 results: [],
                 isQuerying: false,
-                pageSize: 10
+                pageSize: 10,
+                template: storedTemplatesRef.current[newTabId] || ''
             };
             setTabs(prev => [...prev, newTab]);
             setActiveTabId(newTabId);
@@ -393,7 +404,8 @@ function App() {
                     query: item.query,
                     results: [],
                     isQuerying: false,
-                    pageSize: 10
+                    pageSize: 10,
+                    template: storedTemplatesRef.current[tabId] || ''
                 };
                 return [...prev, newTab];
             }
@@ -549,6 +561,16 @@ function App() {
                             error={activeTab?.error}
                             onDismissError={handleDismissError}
                             hasMoreResults={activeTab?.hasMoreResults}
+                            template={activeTab?.template || ''}
+                            onTemplateChange={(newTemplate) => {
+                                if (!activeTabId) return;
+                                setTabs(prev => prev.map(t =>
+                                    t.id === activeTabId ? { ...t, template: newTemplate } : t
+                                ));
+                                // Update ref and persist to disk
+                                storedTemplatesRef.current[activeTabId] = newTemplate;
+                                templateService.saveTemplate(activeTabId, newTemplate);
+                            }}
                         />
                     </>
                 }

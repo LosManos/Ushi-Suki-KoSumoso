@@ -15,9 +15,11 @@ interface ResultsViewProps {
   error?: string;
   onDismissError?: () => void;
   hasMoreResults?: boolean;
+  template?: string;
+  onTemplateChange?: (template: string) => void;
 }
 
-type ViewMode = 'text' | 'json';
+type ViewMode = 'text' | 'json' | 'template';
 
 export const ResultsView: React.FC<ResultsViewProps> = ({
   results,
@@ -28,11 +30,17 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
   onPageSizeChange,
   error,
   onDismissError,
-  hasMoreResults
+  hasMoreResults,
+  template = '',
+  onTemplateChange
 }) => {
   const containerRef = React.useRef<HTMLTextAreaElement>(null);
   const [content, setContent] = React.useState('');
   const [viewMode, setViewMode] = React.useState<ViewMode>('text');
+  const [templateOutput, setTemplateOutput] = React.useState('');
+  const [templateInputHeight, setTemplateInputHeight] = React.useState(100);
+  const [isResizingTemplate, setIsResizingTemplate] = React.useState(false);
+  const templateContainerRef = React.useRef<HTMLDivElement>(null);
   const { resolvedTheme } = useTheme();
 
   /* New Ref for JsonTreeView */
@@ -128,6 +136,81 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
     }
   }, [results]);
 
+  // Helper to get a nested value from an object using dot notation
+  const getNestedValue = (obj: any, path: string): any => {
+    const parts = path.split('.');
+    let current = obj;
+    for (const part of parts) {
+      if (current === null || current === undefined) return undefined;
+      current = current[part];
+    }
+    return current;
+  };
+
+  // Apply template to a single result object
+  // Supports escaping: {{ becomes literal {, }} becomes literal }
+  const applyTemplate = (templateStr: string, data: any): string => {
+    // Use placeholder tokens for escaped braces
+    const OPEN_BRACE_TOKEN = '\u0000OPEN\u0000';
+    const CLOSE_BRACE_TOKEN = '\u0000CLOSE\u0000';
+
+    // First, replace escaped braces with tokens
+    let result = templateStr
+      .replace(/\{\{/g, OPEN_BRACE_TOKEN)
+      .replace(/\}\}/g, CLOSE_BRACE_TOKEN);
+
+    // Now replace {fieldName} placeholders with values
+    result = result.replace(/\{([^}]+)\}/g, (match, key) => {
+      const value = getNestedValue(data, key.trim());
+      if (value === undefined) return match; // Keep placeholder if key not found
+      if (typeof value === 'object') return JSON.stringify(value);
+      return String(value);
+    });
+
+    // Finally, restore escaped braces to literal { and }
+    return result
+      .replace(new RegExp(OPEN_BRACE_TOKEN, 'g'), '{')
+      .replace(new RegExp(CLOSE_BRACE_TOKEN, 'g'), '}');
+  };
+
+  // Update template output when template or results change
+  React.useEffect(() => {
+    if (!template || results.length === 0) {
+      setTemplateOutput('');
+      return;
+    }
+    const output = results.map((item) => applyTemplate(template, item)).join('\n');
+    setTemplateOutput(output);
+  }, [template, results]);
+
+  // Template resize handlers
+  const handleTemplateResizeMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizingTemplate(true);
+  };
+
+  React.useEffect(() => {
+    if (!isResizingTemplate) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!templateContainerRef.current) return;
+      const containerRect = templateContainerRef.current.getBoundingClientRect();
+      const newHeight = e.clientY - containerRect.top - 30; // 30px for label
+      setTemplateInputHeight(Math.max(40, Math.min(newHeight, containerRect.height - 100)));
+    };
+
+    const handleMouseUp = () => {
+      setIsResizingTemplate(false);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizingTemplate]);
+
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Cmd/Ctrl + 3 to focus results view (or Cmd+R/Ctrl+R depending on implementation)
@@ -144,15 +227,21 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
 
       // ... existing mode switch logic ...
       // Cmd/Ctrl + T to switch to Text view
-      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && (e.key === 't' || e.key === 'T')) {
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && (e.key === 't' || e.key === 'T')) {
         e.preventDefault();
         setViewMode('text');
       }
 
       // Cmd/Ctrl + Shift + T to switch to Hierarchical view
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 't' || e.key === 'T')) {
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && !e.altKey && (e.key === 't' || e.key === 'T')) {
         e.preventDefault();
         setViewMode('json');
+      }
+
+      // Cmd/Ctrl + Alt + T to switch to Template view
+      if ((e.metaKey || e.ctrlKey) && e.altKey && e.code === 'KeyT') {
+        e.preventDefault();
+        setViewMode('template');
       }
 
       // Escape to dismiss error
@@ -330,6 +419,13 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
             >
               Hierarchical
             </button>
+            <button
+              className={viewMode === 'template' ? 'active' : ''}
+              onClick={() => setViewMode('template')}
+              title="Template View (Cmd+Alt+T)"
+            >
+              Template
+            </button>
           </div>
           {results.length >= 2 && results.length <= 5 && (
             <button
@@ -374,13 +470,51 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                     spellCheck={false}
                   />
                 </div>
-              ) : (
+              ) : viewMode === 'json' ? (
                 <div className="json-viewer-container">
                   <JsonTreeView
                     ref={jsonViewRef}
                     data={results}
                     theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
                   />
+                </div>
+              ) : (
+                <div className="template-view-container" ref={templateContainerRef}>
+                  <div className="template-input-section" style={{ height: templateInputHeight }}>
+                    <label className="template-label">Template: {'{field}'} for values, {'{nested.field}'} for nested, {'{{'}  {'}}'} for literal braces</label>
+                    <textarea
+                      className="template-input"
+                      value={template}
+                      onChange={(e) => onTemplateChange?.(e.target.value)}
+                      placeholder="Example: Name: {customerName}, Tel: {phone}"
+                      spellCheck={false}
+                    />
+                  </div>
+                  <div
+                    className={`template-resize-handle ${isResizingTemplate ? 'dragging' : ''}`}
+                    onMouseDown={handleTemplateResizeMouseDown}
+                  >
+                    <div className="template-resize-grabber" />
+                  </div>
+                  <div className="template-output-section">
+                    <div className="template-output-header">
+                      <label className="template-label">Output ({results.length} results):</label>
+                      <button
+                        className="toolbar-btn"
+                        onClick={() => navigator.clipboard.writeText(templateOutput)}
+                        title="Copy output to clipboard"
+                        disabled={!templateOutput}
+                      >
+                        <Copy size={12} /><span>Copy</span>
+                      </button>
+                    </div>
+                    <textarea
+                      className="template-output"
+                      value={templateOutput}
+                      readOnly
+                      spellCheck={false}
+                    />
+                  </div>
                 </div>
               )
             ) : (

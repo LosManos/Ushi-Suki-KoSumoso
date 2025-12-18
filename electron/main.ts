@@ -209,7 +209,70 @@ app.whenReady().then(() => {
 
     const connectionsPath = path.join(app.getPath('userData'), 'connections.json');
     const historyPath = path.join(app.getPath('userData'), 'history.json');
+    const templatesPath = path.join(app.getPath('userData'), 'templates.json');
 
+    // Template storage handlers
+    ipcMain.handle('storage:saveTemplate', async (_, containerId: string, template: string) => {
+        try {
+            let templates: Record<string, { template: string; lastUpdated: number }> = {};
+            try {
+                const data = await fs.promises.readFile(templatesPath, 'utf8');
+                templates = JSON.parse(data);
+            } catch (error) {
+                // File might not exist yet
+            }
+
+            if (template.trim()) {
+                templates[containerId] = { template, lastUpdated: Date.now() };
+            } else {
+                // Remove empty templates
+                delete templates[containerId];
+            }
+
+            await fs.promises.writeFile(templatesPath, JSON.stringify(templates, null, 2));
+            return { success: true };
+        } catch (error: any) {
+            console.error('[Main] Failed to save template:', error);
+            return { success: false, error: error.message };
+        }
+    });
+
+    ipcMain.handle('storage:getTemplates', async () => {
+        try {
+            try {
+                const data = await fs.promises.readFile(templatesPath, 'utf8');
+                const templates = JSON.parse(data);
+                // Convert to simple containerId -> template string map
+                const result: Record<string, string> = {};
+                for (const [key, value] of Object.entries(templates)) {
+                    result[key] = (value as any).template || '';
+                }
+                return { success: true, data: result };
+            } catch (error) {
+                return { success: true, data: {} };
+            }
+        } catch (error: any) {
+            return { success: false, error: error.message };
+        }
+    });
+
+    ipcMain.handle('storage:deleteTemplate', async (_, containerId: string) => {
+        try {
+            let templates: Record<string, any> = {};
+            try {
+                const data = await fs.promises.readFile(templatesPath, 'utf8');
+                templates = JSON.parse(data);
+            } catch (error) {
+                return { success: true };
+            }
+
+            delete templates[containerId];
+            await fs.promises.writeFile(templatesPath, JSON.stringify(templates, null, 2));
+            return { success: true };
+        } catch (error: any) {
+            return { success: false, error: error.message };
+        }
+    });
     // IPC handlers to show files in Finder
     ipcMain.handle('storage:showHistoryFile', async () => {
         try {

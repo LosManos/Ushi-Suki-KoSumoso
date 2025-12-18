@@ -9,6 +9,7 @@ export interface QueryTab {
     pageSize: number | 'All';
     error?: string;
     hasMoreResults?: boolean;
+    template?: string;
 }
 
 export interface HistoryItem {
