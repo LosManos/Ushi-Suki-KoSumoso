@@ -16,9 +16,22 @@
 }
 
 .connection-form h2 {
-    margin-top: 0;
+    margin-top: 0.5rem;
     color: var(--text-primary);
     text-align: center;
+}
+
+.logo-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 0.5rem;
+}
+
+.app-logo {
+    width: 120px;
+    height: 120px;
+    object-fit: contain;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
 }
 
 .form-group {

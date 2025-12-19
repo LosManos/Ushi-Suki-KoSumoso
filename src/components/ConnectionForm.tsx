@@ -159,6 +159,9 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect, onCan
     return (
         <div className="connection-form-container">
             <form onSubmit={handleSubmit} className="connection-form">
+                <div className="logo-container">
+                    <img src="/v_ios.png" alt="Kosumoso Logo" className="app-logo" />
+                </div>
                 <h2>Kosumoso</h2>
 
                 {savedConnections.length > 0 && (

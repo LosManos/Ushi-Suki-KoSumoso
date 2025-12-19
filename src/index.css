@@ -9,17 +9,19 @@
   -moz-osx-font-smoothing: grayscale;
 
   /* Default (Dark) Theme Variables */
-  --bg-primary: #242424;
-  --bg-secondary: #1a1a1a;
-  --bg-tertiary: #2a2a2a;
+  /* Ushi (Cow) Theme Palette */
+  --bg-primary: #121420;
+  --bg-secondary: #0a0c14;
+  --bg-tertiary: #1b1e2e;
   --text-primary: rgba(255, 255, 255, 0.87);
   --text-secondary: rgba(255, 255, 255, 0.60);
   --border-color: #333333;
   --input-bg: #1a1a1a;
   --input-border: #333333;
   --button-hover-bg: #333;
-  --accent-color: #646cff;
-  --accent-hover: #535bf2;
+  --accent-color: #d84315;
+  /* Sunset Red from the Ox icon */
+  --accent-hover: #bf360c;
   --scrollbar-track: #1e1e1e;
   --scrollbar-thumb: #444;
   --scrollbar-thumb-hover: #555;
@@ -34,17 +36,21 @@
 
 :root.light {
   /* Light Theme Variables */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f3f3f3;
-  --bg-tertiary: #e5e5e5;
-  --text-primary: #213547;
-  --text-secondary: rgba(60, 60, 60, 0.70);
-  --border-color: #e0e0e0;
+  /* Ushi (Cow) Light Theme Palette */
+  --bg-primary: #fdfaf5;
+  /* Cream background from cow icon */
+  --bg-secondary: #f3eee3;
+  --bg-tertiary: #ffffff;
+  --text-primary: #121420;
+  /* Navy blue from cow icon */
+  --text-secondary: #4a4d5e;
+  --border-color: #dcd7ca;
   --input-bg: #ffffff;
-  --input-border: #cccccc;
-  --button-hover-bg: #e0e0e0;
-  --accent-color: #646cff;
-  --accent-hover: #535bf2;
+  --input-border: #dcd7ca;
+  --button-hover-bg: #ece6d8;
+  --accent-color: #d84315;
+  /* Sunset Red */
+  --accent-hover: #bf360c;
   --scrollbar-track: #f1f1f1;
   --scrollbar-thumb: #c1c1c1;
   --scrollbar-thumb-hover: #a8a8a8;
