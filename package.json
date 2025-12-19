@@ -1,5 +1,5 @@
 {
-    "name": "try-cosmos-query-tool",
+    "name": "kosumoso",
     "private": true,
     "version": "0.0.0",
     "main": "dist-electron/main.js",

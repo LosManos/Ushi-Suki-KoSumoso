@@ -202,9 +202,9 @@ function App() {
     // Update Window Title
     useEffect(() => {
         if (activeTab?.containerId) {
-            document.title = `Cosmos DB Viewer - ${activeTab.containerId}`;
+            document.title = `Kosumoso - ${activeTab.containerId}`;
         } else {
-            document.title = 'Cosmos DB Viewer';
+            document.title = 'Kosumoso';
         }
     }, [activeTab?.containerId]);
 

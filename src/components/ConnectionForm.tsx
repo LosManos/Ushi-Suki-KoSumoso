@@ -159,7 +159,7 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect, onCan
     return (
         <div className="connection-form-container">
             <form onSubmit={handleSubmit} className="connection-form">
-                <h2>Connect to Cosmos DB</h2>
+                <h2>Kosumoso</h2>
 
                 {savedConnections.length > 0 && (
                     <div className="form-group saved-connections-group">
