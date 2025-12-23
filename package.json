@@ -3,7 +3,7 @@
     "productName": "Kosumoso",
     "description": "Ushi-Suki-Kosumoso Cosmos DB Query Tool",
     "private": true,
-    "version": "0.1.1-alpha",
+    "version": "0.1.1",
     "author": "LosManos",
     "license": "LGPLv3+NoEvil",
     "main": "dist-electron/main.js",

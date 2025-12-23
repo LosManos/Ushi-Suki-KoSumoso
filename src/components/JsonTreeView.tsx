@@ -221,6 +221,16 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
         // maybe focus container?
     }, []);
 
+    const toggleExpand = (id: string) => {
+        const newKeys = new Set(expandedKeys);
+        if (newKeys.has(id)) {
+            newKeys.delete(id);
+        } else {
+            newKeys.add(id);
+        }
+        setExpandedKeys(newKeys);
+    };
+
     return (
         <div
             className={`json-tree-view ${theme}`}
@@ -230,7 +240,16 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
             onClick={() => internalRef.current?.focus()}
         >
             {flattenedItems.map(item => (
-                <JsonNode key={item.id} item={item} isFocused={focusedPath === item.id} onSelect={(id) => setFocusedPath(id)} />
+                <JsonNode
+                    key={item.id}
+                    item={item}
+                    isFocused={focusedPath === item.id}
+                    onSelect={(id) => {
+                        setFocusedPath(id);
+                        internalRef.current?.focus();
+                    }}
+                    onToggle={toggleExpand}
+                />
             ))}
         </div>
     );
@@ -238,7 +257,12 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
 
 JsonTreeView.displayName = 'JsonTreeView';
 
-const JsonNode: React.FC<{ item: FlattenedItem; isFocused: boolean; onSelect: (id: string) => void }> = ({ item, isFocused, onSelect }) => {
+const JsonNode: React.FC<{
+    item: FlattenedItem;
+    isFocused: boolean;
+    onSelect: (id: string) => void;
+    onToggle: (id: string) => void;
+}> = ({ item, isFocused, onSelect, onToggle }) => {
 
     // Formatting value
     let valueDisplay = null;
@@ -288,6 +312,9 @@ const JsonNode: React.FC<{ item: FlattenedItem; isFocused: boolean; onSelect: (i
             onClick={(e) => {
                 e.stopPropagation();
                 onSelect(item.id);
+                if (item.hasChildren) {
+                    onToggle(item.id);
+                }
             }}
         >
             <span className="arrow">
