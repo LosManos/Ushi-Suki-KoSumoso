@@ -5,3 +5,5 @@ dist-electron
 dist
 
 .vscode
+
+release

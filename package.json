@@ -3,7 +3,9 @@
     "productName": "Kosumoso",
     "description": "Ushi-Suki-Kosumoso Cosmos DB Query Tool",
     "private": true,
-    "version": "0.0.0",
+    "version": "0.1.0-alpha",
+    "author": "LosManos",
+    "license": "LGPLv3+NoEvil",
     "main": "dist-electron/main.js",
     "scripts": {
         "dev": "concurrently \"tsc -w -p tsconfig.electron.json\" \"vite\" \"wait-on tcp:5173 && unset ELECTRON_RUN_AS_NODE && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .\"",
@@ -30,5 +32,42 @@
         "typescript": "^5.2.2",
         "vite": "^5.2.0",
         "wait-on": "^7.2.0"
+    },
+    "build": {
+        "appId": "com.losmanos.ushi-suki-kosumoso",
+        "productName": "Kosumoso",
+        "directories": {
+            "output": "release/${version}",
+            "buildResources": "public"
+        },
+        "files": [
+            "dist",
+            "dist-electron",
+            "package.json"
+        ],
+        "mac": {
+            "category": "public.app-category.developer-tools",
+            "target": [
+                "dmg"
+            ],
+            "icon": "public/icon.icns"
+        },
+        "win": {
+            "target": [
+                "nsis"
+            ],
+            "icon": "public/v_windows.png"
+        },
+        "linux": {
+            "target": [
+                "AppImage"
+            ],
+            "icon": "public/icon-source.png"
+        },
+        "publish": {
+            "provider": "github",
+            "owner": "LosManos",
+            "repo": "Ushi-Suki-KoSumoso"
+        }
     }
 }
