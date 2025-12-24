@@ -282,5 +282,53 @@ export const cosmosService = {
             console.error('GetContainerInfo Error:', error);
             return { success: false, error: error.message };
         }
+    },
+
+    getContainerKeys: async (databaseId: string, containerId: string, sampleSize: number = 100) => {
+        if (!client) return { success: false, error: 'Not connected' };
+        try {
+            const database = client.database(databaseId);
+            const container = database.container(containerId);
+
+            // Fetch a sample of documents
+            const { resources } = await container.items
+                .query(`SELECT TOP ${sampleSize} * FROM c`)
+                .fetchAll();
+
+            if (!resources || resources.length === 0) {
+                return { success: true, data: [] };
+            }
+
+            const paths = new Set<string>();
+
+            const extractPaths = (obj: any, prefix: string = '') => {
+                if (!obj || typeof obj !== 'object') return;
+
+                for (const key of Object.keys(obj)) {
+                    // Skip internal Cosmos DB properties starting with _
+                    if (key.startsWith('_') && prefix === '') continue;
+
+                    const currentPath = prefix ? `${prefix}.${key}` : key;
+                    paths.add(currentPath);
+
+                    if (obj[key] && typeof obj[key] === 'object' && !Array.isArray(obj[key])) {
+                        extractPaths(obj[key], currentPath);
+                    } else if (Array.isArray(obj[key]) && obj[key].length > 0) {
+                        // For arrays, we could optionally explore elements, but let's stick to object keys for now
+                        // to avoid excessive paths. If we wanted to, we could do:
+                        // extractPaths(obj[key][0], `${currentPath}[]`);
+                    }
+                }
+            };
+
+            for (const doc of resources) {
+                extractPaths(doc);
+            }
+
+            return { success: true, data: Array.from(paths).sort() };
+        } catch (error: any) {
+            console.error('GetContainerKeys Error:', error);
+            return { success: false, error: error.message };
+        }
     }
 };

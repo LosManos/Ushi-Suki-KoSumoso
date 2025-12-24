@@ -350,3 +350,140 @@
     color: var(--text-primary);
     font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
 }
+
+/* Schema Discovery */
+.schema-discovery-section {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 2px solid var(--border-color);
+}
+
+.schema-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.schema-discover-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.schema-discover-btn:hover:not(:disabled) {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+}
+
+.schema-discover-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.schema-search {
+    width: 100%;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    margin-bottom: 12px;
+    outline: none;
+}
+
+.schema-search:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(100, 150, 255, 0.1);
+}
+
+.schema-results {
+    max-height: 250px;
+    overflow-y: auto;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.schema-path-item {
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.75rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    padding: 4px 8px;
+    border-radius: 4px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.1s;
+    user-select: all;
+}
+
+.schema-path-item:hover {
+    border-color: var(--accent-color);
+    background: var(--bg-tertiary);
+}
+
+.schema-empty {
+    width: 100%;
+    padding: 24px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.schema-count {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.schema-path-item:active {
+    transform: scale(0.95);
+    background: var(--accent-color);
+    color: white;
+}
+
+.copy-feedback {
+    position: fixed;
+    background: var(--accent-color);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    pointer-events: none;
+    animation: fadeOut 0.8s forwards;
+    z-index: 2000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    white-space: nowrap;
+}
+
+@keyframes fadeOut {
+    0% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    70% {
+        opacity: 1;
+        transform: translateY(-10px);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+}

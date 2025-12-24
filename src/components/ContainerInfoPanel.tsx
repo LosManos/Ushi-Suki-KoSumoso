@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, Database, Key, Clock, Hash } from 'lucide-react';
+import { X, Database, Key, Clock, Hash, Search, RefreshCw, Play } from 'lucide-react';
 import { ContainerInfo } from '../types';
 import { cosmos } from '../services/cosmos';
 import './ContainerInfoPanel.css';
@@ -22,6 +22,10 @@ export const ContainerInfoPanel: React.FC<ContainerInfoPanelProps> = ({
     const [info, setInfo] = useState<ContainerInfo | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [discoveredKeys, setDiscoveredKeys] = useState<string[]>([]);
+    const [isDiscovering, setIsDiscovering] = useState(false);
+    const [schemaSearch, setSchemaSearch] = useState('');
+    const [copyFeedback, setCopyFeedback] = useState<{ text: string, x: number, y: number } | null>(null);
 
     useEffect(() => {
         if (isOpen && databaseId && containerId) {
@@ -46,6 +50,10 @@ export const ContainerInfoPanel: React.FC<ContainerInfoPanelProps> = ({
                     setIsLoading(false);
                     setError(err.message || 'Failed to load container info');
                 });
+
+            // Reset keys when container changes
+            setDiscoveredKeys([]);
+            setSchemaSearch('');
         } else if (isOpen) {
             // If open but no databaseId/containerId, show error
             setError('No container selected');
@@ -59,10 +67,43 @@ export const ContainerInfoPanel: React.FC<ContainerInfoPanelProps> = ({
             if (e.key === 'Escape' && isOpen) {
                 onClose();
             }
+            // Alt+D to Discover
+            if (e.altKey && e.code === 'KeyD' && isOpen) {
+                e.preventDefault();
+                handleDiscoverSchema();
+            }
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isOpen, onClose]);
+    }, [isOpen, onClose, discoveredKeys, isDiscovering, databaseId, containerId]); // Include deps for handleDiscoverSchema call
+
+    const handleDiscoverSchema = async () => {
+        if (!databaseId || !containerId || isDiscovering) return;
+
+        setIsDiscovering(true);
+        try {
+            const result = await cosmos.getContainerKeys(databaseId, containerId, 10);
+            if (result.success && result.data) {
+                setDiscoveredKeys(result.data);
+            } else {
+                console.error('Failed to discover schema:', result.error);
+            }
+        } catch (err) {
+            console.error('Error discovering schema:', err);
+        } finally {
+            setIsDiscovering(false);
+        }
+    };
+
+    const handleCopy = (e: React.MouseEvent, text: string) => {
+        navigator.clipboard.writeText(text);
+        setCopyFeedback({ text: 'Copied!', x: e.clientX, y: e.clientY });
+        setTimeout(() => setCopyFeedback(null), 800);
+    };
+
+    const filteredKeys = discoveredKeys.filter(k =>
+        k.toLowerCase().includes(schemaSearch.toLowerCase())
+    );
 
     if (!isOpen) return null;
 
@@ -222,10 +263,70 @@ export const ContainerInfoPanel: React.FC<ContainerInfoPanelProps> = ({
                                     </span>
                                 </div>
                             </div>
+
+                            {/* Schema Discovery */}
+                            <div className="schema-discovery-section">
+                                <div className="schema-header">
+                                    <h4><Search size={14} /> Schema Discovery</h4>
+                                    <button
+                                        className="schema-discover-btn"
+                                        onClick={handleDiscoverSchema}
+                                        disabled={isDiscovering}
+                                        title="Sample documents to find property names (Alt+D)"
+                                    >
+                                        {isDiscovering ? (
+                                            <RefreshCw size={14} className="info-spinner" />
+                                        ) : (
+                                            <Play size={14} />
+                                        )}
+                                        {discoveredKeys.length > 0 ? 'Refresh' : 'Discover'}
+                                    </button>
+                                </div>
+
+                                {discoveredKeys.length > 0 && (
+                                    <>
+                                        <input
+                                            type="text"
+                                            className="schema-search"
+                                            placeholder="Search property names..."
+                                            value={schemaSearch}
+                                            onChange={e => setSchemaSearch(e.target.value)}
+                                        />
+                                        <div className="schema-results">
+                                            {filteredKeys.length > 0 ? (
+                                                filteredKeys.map(key => (
+                                                    <div key={key} className="schema-path-item" title="Click to copy path" onClick={(e) => handleCopy(e, key)}>
+                                                        {key}
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="schema-empty">No properties match your search.</div>
+                                            )}
+                                        </div>
+                                        <div className="schema-count" style={{ marginTop: '8px' }}>
+                                            Showing {filteredKeys.length} of {discoveredKeys.length} unique properties (sampled 10 docs)
+                                        </div>
+                                    </>
+                                )}
+
+                                {discoveredKeys.length === 0 && !isDiscovering && (
+                                    <div className="schema-empty">
+                                        Click "Discover" to scan a sample of documents and find all unique property names.
+                                    </div>
+                                )}
+                            </div>
                         </>
                     )}
                 </div>
             </div>
+            {copyFeedback && (
+                <div
+                    className="copy-feedback"
+                    style={{ left: copyFeedback.x, top: copyFeedback.y - 20 }}
+                >
+                    {copyFeedback.text}
+                </div>
+            )}
         </div>
     );
 };
