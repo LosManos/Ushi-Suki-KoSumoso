@@ -12,6 +12,7 @@ interface QueryEditorProps {
     onRunQuery: () => void;
     onGetDocument: (docId: string) => void;
     onQueryChange: (query: string) => void;
+    onDiscoverSchema: () => void;
     cursorPositionRef?: React.MutableRefObject<number | null>;
 }
 
@@ -23,9 +24,12 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
     onRunQuery,
     onGetDocument,
     onQueryChange,
+    onDiscoverSchema,
     cursorPositionRef
 }) => {
     const [quickId, setQuickId] = useState('');
+    const [selectedProperty, setSelectedProperty] = useState('');
+    const [propertyValue, setPropertyValue] = useState('');
 
     // Derived state from active tab
     const activeTab = tabs.find(t => t.id === activeTabId);
@@ -34,6 +38,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
     // We only need local refs for text area and ID lookup now
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const quickIdInputRef = useRef<HTMLInputElement>(null);
+    const propertySelectRef = useRef<HTMLSelectElement>(null);
     const tabsContainerRef = useRef<HTMLDivElement>(null);
     const menuRef = useRef<HTMLDivElement>(null);
 
@@ -70,6 +75,11 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
             if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'e') {
                 e.preventDefault();
                 textareaRef.current?.focus();
+            }
+            // Cmd/Ctrl + Shift + K to focus property lookup
+            if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'k') {
+                e.preventDefault();
+                propertySelectRef.current?.focus();
             }
 
             // Tab Navigation Cmd+1 through Cmd+9
@@ -159,6 +169,34 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
         onGetDocument(quickId.trim());
     };
 
+    const handlePropertyLookup = () => {
+        if (!selectedProperty || !propertyValue.trim()) return;
+
+        // Construct query: select * from c where c.{property} == {value}
+        // Using bracket notation for property name to handle special characters or nested paths
+        // However, if it's already a dotted path from discovery, we might need to handle it.
+        // Cosmos SQL supports c.path.to.prop or c["path"]["to"]["prop"].
+        // For simplicity and correctness with dots:
+        const propertyPath = selectedProperty.split('.').map(p => `["${p}"]`).join('');
+        const formattedValue = isNaN(Number(propertyValue)) ? `"${propertyValue}"` : propertyValue;
+
+        const newQuery = `SELECT * FROM c WHERE c${propertyPath} = ${formattedValue}`;
+
+        // Append to the bottom of the query window
+        const updatedQuery = query.trim() ? `${query}\n\n${newQuery}` : newQuery;
+        onQueryChange(updatedQuery);
+    };
+
+    const handlePropertySelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const val = e.target.value;
+        if (val === '__reinit__') {
+            onDiscoverSchema();
+            setSelectedProperty('');
+        } else {
+            setSelectedProperty(val);
+        }
+    };
+
     if (!activeTab) {
         return <div className="query-editor-container placeholder">Please select a container to start querying.</div>;
     }
@@ -228,6 +266,45 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
                 )}
 
                 <div className="quick-lookup">
+                    <div className={`property-lookup ${activeTab.isDiscovering ? 'discovering' : ''}`}>
+                        <select
+                            ref={propertySelectRef}
+                            value={selectedProperty}
+                            onChange={handlePropertySelectChange}
+                            title="Filter by property (Cmd+Shift+K)"
+                            className="property-select"
+                            disabled={activeTab.isDiscovering}
+                        >
+                            <option value="">{activeTab.isDiscovering ? 'Discovering...' : 'Select Property...'}</option>
+                            {(activeTab.schemaKeys || []).map(key => (
+                                <option key={key} value={key}>{key}</option>
+                            ))}
+                            {(activeTab.schemaKeys || []).length > 0 && <option disabled>──────────</option>}
+                            <option value="__reinit__">
+                                {(activeTab.schemaKeys || []).length > 0 ? '↻ Reinitialize List...' : 'Initialize Properties...'}
+                            </option>
+                        </select>
+                        <input
+                            type="text"
+                            placeholder="Value..."
+                            value={propertyValue}
+                            onChange={(e) => setPropertyValue(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handlePropertyLookup()}
+                            title="Property value"
+                            className="property-value-input"
+                            disabled={activeTab.isDiscovering}
+                        />
+                        <button
+                            onClick={handlePropertyLookup}
+                            title="Append filter to query"
+                            disabled={activeTab.isDiscovering}
+                        >
+                            {activeTab.isDiscovering ? '...' : 'Append'}
+                        </button>
+                    </div>
+
+                    <div className="id-lookup-separator"></div>
+
                     <label title="Focus ID Lookup (Cmd+Shift+I)">Get by Document Id:</label>
                     <input
                         ref={quickIdInputRef}

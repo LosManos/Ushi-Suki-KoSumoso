@@ -149,6 +149,39 @@
     border-color: var(--accent-color);
 }
 
+.property-lookup {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.property-select {
+    background-color: var(--input-bg);
+    border: 1px solid var(--input-border);
+    color: var(--text-primary);
+    padding: 0.2rem 0.2rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    max-width: 140px;
+}
+
+.property-select:focus {
+    outline: none;
+    border-color: var(--accent-color);
+}
+
+.property-value-input {
+    width: 100px !important;
+}
+
+.id-lookup-separator {
+    width: 1px;
+    height: 18px;
+    background-color: var(--border-color);
+    margin: 0 0.5rem;
+    opacity: 0.5;
+}
+
 .editor-area {
     flex: 1;
     position: relative;
@@ -167,4 +200,32 @@
     resize: none;
     outline: none;
     box-sizing: border-box;
+}
+
+.property-lookup.discovering {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+.property-lookup.discovering * {
+    cursor: wait !important;
+}
+
+@keyframes pulsate-lookup {
+    0% {
+        opacity: 0.8;
+    }
+
+    50% {
+        opacity: 0.4;
+    }
+
+    100% {
+        opacity: 0.8;
+    }
+}
+
+.property-lookup.discovering select,
+.property-lookup.discovering input {
+    animation: pulsate-lookup 1.5s infinite ease-in-out;
 }

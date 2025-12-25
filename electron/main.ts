@@ -218,6 +218,46 @@ app.whenReady().then(() => {
     const connectionsPath = path.join(app.getPath('userData'), 'connections.json');
     const historyPath = path.join(app.getPath('userData'), 'history.json');
     const templatesPath = path.join(app.getPath('userData'), 'templates.json');
+    const schemasPath = path.join(app.getPath('userData'), 'schemas.json');
+
+    // Schema storage handlers
+    ipcMain.handle('storage:saveSchema', async (_, containerId: string, keys: string[]) => {
+        try {
+            let schemas: Record<string, { keys: string[]; lastUpdated: number }> = {};
+            try {
+                const data = await fs.promises.readFile(schemasPath, 'utf8');
+                schemas = JSON.parse(data);
+            } catch (error) {
+                // File might not exist yet
+            }
+
+            schemas[containerId] = { keys, lastUpdated: Date.now() };
+            await fs.promises.writeFile(schemasPath, JSON.stringify(schemas, null, 2));
+            return { success: true };
+        } catch (error: any) {
+            console.error('[Main] Failed to save schema:', error);
+            return { success: false, error: error.message };
+        }
+    });
+
+    ipcMain.handle('storage:getSchemas', async () => {
+        try {
+            try {
+                const data = await fs.promises.readFile(schemasPath, 'utf8');
+                const schemas = JSON.parse(data);
+                // Convert to simple containerId -> keys array map
+                const result: Record<string, string[]> = {};
+                for (const [key, value] of Object.entries(schemas)) {
+                    result[key] = (value as any).keys || [];
+                }
+                return { success: true, data: result };
+            } catch (error) {
+                return { success: true, data: {} };
+            }
+        } catch (error: any) {
+            return { success: false, error: error.message };
+        }
+    });
 
     // Template storage handlers
     ipcMain.handle('storage:saveTemplate', async (_, containerId: string, template: string) => {

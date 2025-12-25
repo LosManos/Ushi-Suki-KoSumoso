@@ -10,11 +10,11 @@ import { ThemeProvider } from './context/ThemeContext';
 import { QueryTab, HistoryItem } from './types';
 import { historyService } from './services/history';
 import { templateService } from './services/templates';
+import { schemaService } from './services/schema';
 import { extractParagraphAtCursor } from './utils';
 
 function App() {
     const [isConnected, setIsConnected] = useState(false);
-    const [connectionString, setConnectionString] = useState('');
     const [databases, setDatabases] = useState<string[]>([]);
     const [containers, setContainers] = useState<Record<string, string[]>>({});
 
@@ -38,8 +38,10 @@ function App() {
 
     // Store templates per container (loaded from disk)
     const storedTemplatesRef = React.useRef<Record<string, string>>({});
+    // Store schemas per container (loaded from disk)
+    const storedSchemasRef = React.useRef<Record<string, string[]>>({});
 
-    // Load history and templates on startup
+    // Load history, templates and schemas on startup
     useEffect(() => {
         historyService.getHistory().then(res => {
             if (res.success && res.data) {
@@ -49,6 +51,11 @@ function App() {
         templateService.getTemplates().then(res => {
             if (res.success && res.data) {
                 storedTemplatesRef.current = res.data;
+            }
+        });
+        schemaService.getSchemas().then(res => {
+            if (res.success && res.data) {
+                storedSchemasRef.current = res.data;
             }
         });
     }, []);
@@ -209,7 +216,6 @@ function App() {
     }, [activeTab?.containerId]);
 
     const handleConnect = async (connStr: string) => {
-        setConnectionString(connStr);
         const result = await cosmos.connect(connStr);
         if (result.success && result.data) {
             // Clear previous session state
@@ -253,6 +259,7 @@ function App() {
         if (!containerId || !dbId) return;
 
         const newTabId = `${dbId}/${containerId}`;
+        const storageKey = `${accountName}/${newTabId}`;
         const existingTab = tabs.find(t => t.id === newTabId);
 
         if (existingTab) {
@@ -266,7 +273,8 @@ function App() {
                 results: [],
                 isQuerying: false,
                 pageSize: 10,
-                template: storedTemplatesRef.current[newTabId] || ''
+                template: storedTemplatesRef.current[storageKey] || '',
+                schemaKeys: storedSchemasRef.current[storageKey] || []
             };
             setTabs(prev => [...prev, newTab]);
             setActiveTabId(newTabId);
@@ -387,6 +395,7 @@ function App() {
 
     const handleSelectHistory = (item: HistoryItem) => {
         const tabId = `${item.databaseId}/${item.containerId}`;
+        const storageKey = `${item.accountName}/${tabId}`;
 
         setTabs(prev => {
             const existingTab = prev.find(t => t.id === tabId);
@@ -405,7 +414,8 @@ function App() {
                     results: [],
                     isQuerying: false,
                     pageSize: 10,
-                    template: storedTemplatesRef.current[tabId] || ''
+                    template: storedTemplatesRef.current[storageKey] || '',
+                    schemaKeys: storedSchemasRef.current[storageKey] || []
                 };
                 return [...prev, newTab];
             }
@@ -442,6 +452,33 @@ function App() {
     const handleDeleteHistory = async (item: HistoryItem) => {
         await historyService.deleteHistoryItem(item);
         setHistory(prev => prev.filter(h => h.id !== item.id));
+    };
+
+    const handleDiscoverSchema = async () => {
+        if (!activeTab || !activeTabId) return;
+
+        const storageKey = `${accountName}/${activeTabId}`;
+
+        // Set isDiscovering to true
+        setTabs(prev => prev.map(t =>
+            t.id === activeTabId ? { ...t, isDiscovering: true } : t
+        ));
+
+        const result = await cosmos.getContainerKeys(activeTab.databaseId, activeTab.containerId);
+
+        if (result.success && result.data) {
+            const keys = result.data;
+            setTabs(prev => prev.map(t =>
+                t.id === activeTabId ? { ...t, schemaKeys: keys, isDiscovering: false } : t
+            ));
+            // Update ref and persist to disk
+            storedSchemasRef.current[storageKey] = keys;
+            schemaService.saveSchema(storageKey, keys);
+        } else {
+            setTabs(prev => prev.map(t =>
+                t.id === activeTabId ? { ...t, error: result.error, isDiscovering: false } : t
+            ));
+        }
     };
 
 
@@ -536,6 +573,7 @@ function App() {
                                 onRunQuery={executeActiveQuery}
                                 onGetDocument={handleGetDocument}
                                 onQueryChange={handleQueryChange}
+                                onDiscoverSchema={handleDiscoverSchema}
                                 cursorPositionRef={cursorPositionRef}
                             />
                         </div>
@@ -564,12 +602,13 @@ function App() {
                             template={activeTab?.template || ''}
                             onTemplateChange={(newTemplate) => {
                                 if (!activeTabId) return;
+                                const storageKey = `${accountName}/${activeTabId}`;
                                 setTabs(prev => prev.map(t =>
                                     t.id === activeTabId ? { ...t, template: newTemplate } : t
                                 ));
                                 // Update ref and persist to disk
-                                storedTemplatesRef.current[activeTabId] = newTemplate;
-                                templateService.saveTemplate(activeTabId, newTemplate);
+                                storedTemplatesRef.current[storageKey] = newTemplate;
+                                templateService.saveTemplate(storageKey, newTemplate);
                             }}
                         />
                     </>

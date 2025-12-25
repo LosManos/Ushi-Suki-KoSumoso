@@ -10,6 +10,8 @@ export interface QueryTab {
     error?: string;
     hasMoreResults?: boolean;
     template?: string;
+    schemaKeys?: string[];
+    isDiscovering?: boolean;
 }
 
 export interface HistoryItem {
