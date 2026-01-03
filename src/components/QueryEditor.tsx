@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
+import { Play, Search } from 'lucide-react';
 import './QueryEditor.css';
 import './QueryEditorOverflow.css';
 import { QueryTab } from '../types';
@@ -52,9 +53,8 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
 
     const getContextMenuItems = (): ContextMenuItem[] => {
         return [
-            { label: 'Run Query', onClick: onRunQuery },
-            { divider: true },
-            { label: 'Coming Soon...', onClick: () => { } }
+            { label: 'Run Query', icon: <Play size={16} />, onClick: onRunQuery },
+            { label: 'Discover Schema', icon: <Search size={16} />, onClick: onDiscoverSchema }
         ];
     };
 

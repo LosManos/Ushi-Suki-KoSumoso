@@ -66,10 +66,55 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const { contextMenu, showContextMenu, closeContextMenu } = useContextMenu();
 
   const getContextMenuItems = (data: any): ContextMenuItem[] => {
-    // Placeholder items as requested "We will fill out later its contents"
+    if (data.type === 'db') {
+      const isExpanded = selectedDatabase === data.id;
+      return [
+        {
+          label: isExpanded ? 'Collapse' : 'Expand',
+          icon: isExpanded ? <Folder size={14} /> : <FolderOpen size={14} />,
+          onClick: () => onSelectDatabase(isExpanded ? null : data.id)
+        }
+      ];
+    }
+
+    if (data.type === 'container') {
+      return [
+        {
+          label: 'Open',
+          icon: <FileText size={14} />,
+          onClick: () => onSelectContainer(data.parentId, data.id)
+        },
+        { divider: true },
+        {
+          label: 'Properties',
+          icon: <Info size={14} />,
+          onClick: () => setInfoPanel({ databaseId: data.parentId, containerId: data.id })
+        }
+      ];
+    }
+
+    if (data.type === 'history') {
+      return [
+        {
+          label: 'Open in Tab',
+          icon: <FolderOpen size={14} />,
+          onClick: () => onSelectHistory(data.data)
+        },
+        {
+          label: 'Copy to Editor',
+          icon: <Copy size={14} />,
+          onClick: () => onCopyHistory(data.data)
+        },
+        { divider: true },
+        {
+          label: 'Delete from History',
+          icon: <Trash2 size={14} />,
+          onClick: () => onDeleteHistory(data.data)
+        }
+      ];
+    }
+
     return [
-      { label: 'Coming Soon...', onClick: () => console.log('Action on:', data) },
-      { divider: true, onClick: () => { } },
       { label: 'Properties', onClick: () => console.log('Properties of:', data) }
     ];
   };
@@ -658,7 +703,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <div
                       className="container-item-content"
                       onClick={() => onSelectContainer(db, container)}
-                      onContextMenu={(e) => showContextMenu(e, { type: 'container', db, container })}
+                      onContextMenu={(e) => showContextMenu(e, { type: 'container', id: container, parentId: db })}
                     >
                       <FileText size={14} style={{ marginRight: '6px' }} /> {container}
                     </div>
