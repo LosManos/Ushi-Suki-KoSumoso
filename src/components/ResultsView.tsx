@@ -2,6 +2,8 @@ import React from 'react';
 import { Copy, Save, X } from 'lucide-react';
 import { JsonTreeView } from './JsonTreeView';
 import { useTheme } from '../context/ThemeContext';
+import { useContextMenu } from '../hooks/useContextMenu';
+import { ContextMenu, ContextMenuItem } from './ContextMenu';
 import './ResultsView.css';
 
 
@@ -42,6 +44,17 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
   const [isResizingTemplate, setIsResizingTemplate] = React.useState(false);
   const templateContainerRef = React.useRef<HTMLDivElement>(null);
   const { resolvedTheme } = useTheme();
+
+  const { contextMenu, showContextMenu, closeContextMenu } = useContextMenu();
+
+  const getContextMenuItems = (): ContextMenuItem[] => {
+    return [
+      { label: 'Copy All', onClick: handleCopyToClipboard },
+      { label: 'Save to File', onClick: handleSaveToFile },
+      { divider: true },
+      { label: 'Coming Soon...', onClick: () => { } }
+    ];
+  };
 
   /* New Ref for JsonTreeView */
   const jsonViewRef = React.useRef<HTMLDivElement>(null);
@@ -467,6 +480,14 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                     className="json-editor"
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
+                    onContextMenu={(e) => showContextMenu(e)}
+                    onKeyDown={(e) => {
+                      if (e.shiftKey && e.key === 'F10') {
+                        showContextMenu(e);
+                      } else if (e.altKey && e.key === 'Enter') {
+                        showContextMenu(e);
+                      }
+                    }}
                     spellCheck={false}
                   />
                 </div>
@@ -542,6 +563,14 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
           </>
         )}
       </div>
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          items={getContextMenuItems()}
+          onClose={closeContextMenu}
+        />
+      )}
     </div>
   );
 };

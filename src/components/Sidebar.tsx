@@ -14,6 +14,8 @@ import {
   Info
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { useContextMenu } from '../hooks/useContextMenu';
+import { ContextMenu, ContextMenuItem } from './ContextMenu';
 import { HistoryItem } from '../types';
 import { ContainerInfoPanel } from './ContainerInfoPanel';
 import './Sidebar.css';
@@ -60,6 +62,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   // Container Info Panel state
   const [infoPanel, setInfoPanel] = React.useState<{ databaseId: string; containerId: string } | null>(null);
+
+  const { contextMenu, showContextMenu, closeContextMenu } = useContextMenu();
+
+  const getContextMenuItems = (data: any): ContextMenuItem[] => {
+    // Placeholder items as requested "We will fill out later its contents"
+    return [
+      { label: 'Coming Soon...', onClick: () => console.log('Action on:', data) },
+      { divider: true, onClick: () => { } },
+      { label: 'Properties', onClick: () => console.log('Properties of:', data) }
+    ];
+  };
 
 
   // Sync history filter with active selection
@@ -183,6 +196,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
         break;
       }
       case 'Enter': {
+        if (e.altKey) {
+          e.preventDefault();
+          const item = flatItems[idx];
+          if (item) {
+            const el = sidebarRef.current?.querySelector(`[data-id="${item.id}"]`) as HTMLElement;
+            showContextMenu(e, item, el || undefined);
+          }
+          break;
+        }
+
         e.preventDefault();
         const item = flatItems[idx];
         if (item) {
@@ -251,6 +274,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
           } else if (item.type === 'db' && selectedDatabase === item.id) {
             // Collapse DB
             onSelectDatabase(null);
+          }
+        }
+        break;
+      }
+      case 'F10': {
+        if (e.shiftKey) {
+          e.preventDefault();
+          const item = flatItems[idx];
+          if (item) {
+            const el = sidebarRef.current?.querySelector(`[data-id="${item.id}"]`) as HTMLElement;
+            showContextMenu(e, item, el || undefined);
           }
         }
         break;
@@ -608,6 +642,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div
               className={`nav-item ${selectedDatabase === db ? 'active' : ''} ${focusedId === db ? 'focused' : ''}`}
               onClick={() => onSelectDatabase(db)}
+              onContextMenu={(e) => showContextMenu(e, { type: 'db', id: db })}
+              data-id={db}
             >
               {selectedDatabase === db ? <FolderOpen size={16} style={{ marginRight: '6px' }} /> : <Folder size={16} style={{ marginRight: '6px' }} />} {db}
             </div>
@@ -617,10 +653,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <div
                     key={container}
                     className={`nav-item sub-item container-item-row ${selectedContainer === container ? 'active' : ''} ${focusedId === container ? 'focused' : ''}`}
+                    data-id={container}
                   >
                     <div
                       className="container-item-content"
                       onClick={() => onSelectContainer(db, container)}
+                      onContextMenu={(e) => showContextMenu(e, { type: 'container', db, container })}
                     >
                       <FileText size={14} style={{ marginRight: '6px' }} /> {container}
                     </div>
@@ -762,6 +800,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   key={item.id}
                   className={`nav-item history-item ${focusedId === item.id ? 'focused' : ''}`}
                   onClick={() => onSelectHistory(h)}
+                  onContextMenu={(e) => showContextMenu(e, { type: 'history', data: h })}
+                  data-id={item.id}
                   title={`${h.query}\n${h.databaseId}/${h.containerId}\n${new Date(h.timestamp).toLocaleString()}\n\nClick/Enter: Open in tab\nDelete/Backspace: Remove`}
                 >
                   <div className="history-query-text">{h.query}</div>
@@ -794,6 +834,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         )}
       </nav>
+
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          items={getContextMenuItems(contextMenu.data)}
+          onClose={closeContextMenu}
+        />
+      )}
 
       {/* Container Info Panel */}
       <ContainerInfoPanel
