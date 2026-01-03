@@ -55,3 +55,28 @@ export const extractParagraphAtCursor = (text: string, cursorIndex: number): str
 
     return lines.slice(startLine, endLine + 1).join('\n');
 };
+
+/**
+ * Immutably updates a value at a given JSON path.
+ * Path starts with 'root', which is ignored.
+ */
+export const updateValueAtPath = (obj: any, path: string[], newValue: any): any => {
+    // path starts with 'root'
+    const keys = path.slice(1);
+    if (keys.length === 0) return newValue;
+
+    const newObjArrayOrObject = Array.isArray(obj) ? [...obj] : { ...obj };
+    let current: any = newObjArrayOrObject;
+
+    for (let i = 0; i < keys.length - 1; i++) {
+        const key = keys[i];
+        // Create shallow copy of the next level
+        current[key] = Array.isArray(current[key]) ? [...current[key]] : { ...current[key] };
+        current = current[key];
+    }
+
+    const lastKey = keys[keys.length - 1];
+    current[lastKey] = newValue;
+
+    return newObjArrayOrObject;
+};

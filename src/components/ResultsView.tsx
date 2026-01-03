@@ -19,6 +19,7 @@ interface ResultsViewProps {
   hasMoreResults?: boolean;
   template?: string;
   onTemplateChange?: (template: string) => void;
+  onFollowLink?: (item: any) => void;
 }
 
 type ViewMode = 'text' | 'json' | 'template';
@@ -34,7 +35,8 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
   onDismissError,
   hasMoreResults,
   template = '',
-  onTemplateChange
+  onTemplateChange,
+  onFollowLink
 }) => {
   const containerRef = React.useRef<HTMLTextAreaElement>(null);
   const [content, setContent] = React.useState('');
@@ -536,6 +538,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                     ref={jsonViewRef}
                     data={results}
                     theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
+                    onFollowLink={onFollowLink}
                   />
                 </div>
               ) : (

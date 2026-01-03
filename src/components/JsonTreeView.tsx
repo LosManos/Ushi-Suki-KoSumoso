@@ -32,6 +32,7 @@ const copyToClipboard = async (text: string) => {
 interface JsonTreeViewProps {
     data: any;
     theme?: 'light' | 'dark';
+    onFollowLink?: (item: FlattenedItem) => void;
 }
 
 interface FlattenedItem {
@@ -47,7 +48,7 @@ interface FlattenedItem {
 
 // Interface removed as we forward HTMLDivElement directly
 
-export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(({ data, theme = 'dark' }, ref) => {
+export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(({ data, theme = 'dark', onFollowLink }, ref) => {
     const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set(['root']));
     const [focusedPath, setFocusedPath] = useState<string>('root');
     const internalRef = useRef<HTMLDivElement | null>(null);
@@ -134,6 +135,11 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
             {
                 label: 'Collapse All',
                 onClick: () => collapseAll(item)
+            },
+            { divider: true },
+            {
+                label: 'Follow Link...',
+                onClick: () => onFollowLink?.(item)
             }
         ];
     };

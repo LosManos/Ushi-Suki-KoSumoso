@@ -5,13 +5,14 @@ import { QueryEditor } from './components/QueryEditor';
 import { ResultsView } from './components/ResultsView';
 import { ConnectionForm } from './components/ConnectionForm';
 import { CommandPalette } from './components/CommandPalette';
+import { FollowLinkDialog } from './components/FollowLinkDialog';
 import { cosmos } from './services/cosmos';
 import { ThemeProvider } from './context/ThemeContext';
 import { QueryTab, HistoryItem } from './types';
 import { historyService } from './services/history';
 import { templateService } from './services/templates';
 import { schemaService } from './services/schema';
-import { extractParagraphAtCursor } from './utils';
+import { extractParagraphAtCursor, updateValueAtPath } from './utils';
 
 function App() {
     const [isConnected, setIsConnected] = useState(false);
@@ -30,6 +31,9 @@ function App() {
 
     // Command Palette State
     const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+
+    // Follow Link State
+    const [followLinkItem, setFollowLinkItem] = useState<any | null>(null);
 
     const cursorPositionRef = React.useRef<number | null>(null);
 
@@ -481,6 +485,77 @@ function App() {
         }
     };
 
+    const handleFollowLink = (item: any) => {
+        setFollowLinkItem(item);
+    };
+
+    const confirmFollowLink = async (dbId: string, containerId: string, propertyName: string) => {
+        if (!followLinkItem || !activeTabId || !activeTab) return;
+
+        const targetValue = followLinkItem.value;
+        const path = followLinkItem.path;
+
+        setFollowLinkItem(null);
+
+        // Run query to follow link
+        // select * from c where c.["propertyName"] == targetValue
+        // We use a safe property accessor for Cosmos DB
+        const propertyAccessor = propertyName.includes('.') ? propertyName : `["${propertyName}"]`;
+
+        // Use string interpolation for query
+        const escapedValue = typeof targetValue === 'string' ? `"${targetValue}"` : targetValue;
+        const query = `SELECT * FROM c WHERE c.${propertyAccessor} = ${escapedValue}`;
+
+        // Set isQuerying to true for visual feedback
+        setTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, isQuerying: true } : t));
+
+        const result = await cosmos.query(dbId, containerId, query, 100);
+
+        if (result.success && result.data) {
+            const linkedData = result.data.items;
+
+            setTabs(prev => prev.map(t => {
+                if (t.id !== activeTabId) return t;
+
+                const originalResults = t.results;
+                let updatedResults;
+
+                if (path.length > 1) {
+                    const parentPath = path.slice(0, -1);
+                    const lastKey = path[path.length - 1];
+                    const newKey = `${lastKey}_linked`;
+
+                    if (isNaN(Number(lastKey))) {
+                        // Object property
+                        updatedResults = updateValueAtPath(originalResults, [...parentPath, newKey], linkedData);
+                    } else {
+                        // Array index
+                        const combinedValue = {
+                            _value: targetValue,
+                            _linked: linkedData
+                        };
+                        updatedResults = updateValueAtPath(originalResults, path, combinedValue);
+                    }
+                } else {
+                    // Root - uncommon for follow link but handleable
+                    updatedResults = linkedData;
+                }
+
+                return {
+                    ...t,
+                    isQuerying: false,
+                    results: updatedResults
+                };
+            }));
+        } else {
+            setTabs(prev => prev.map(t => t.id === activeTabId ? {
+                ...t,
+                isQuerying: false,
+                error: result.error || 'Failed to follow link'
+            } : t));
+        }
+    };
+
 
     const executeActiveQuery = () => {
         if (!activeTab || !activeTabId) return;
@@ -610,6 +685,7 @@ function App() {
                                 storedTemplatesRef.current[storageKey] = newTemplate;
                                 templateService.saveTemplate(storageKey, newTemplate);
                             }}
+                            onFollowLink={handleFollowLink}
                         />
                     </>
                 }
@@ -622,6 +698,17 @@ function App() {
                 onSelectContainer={handleSelectContainer}
                 loadContainers={loadContainersForPalette}
             />
+            {followLinkItem && activeTab && (
+                <FollowLinkDialog
+                    databases={databases}
+                    containers={containers}
+                    currentDbId={activeTab.databaseId}
+                    currentContainerId={activeTab.containerId}
+                    selectedValue={followLinkItem.value}
+                    onClose={() => setFollowLinkItem(null)}
+                    onConfirm={confirmFollowLink}
+                />
+            )}
         </ThemeProvider>
     );
 }
