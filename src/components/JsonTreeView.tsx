@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { ChevronRight, ChevronDown, Copy } from 'lucide-react';
+import { useContextMenu } from '../hooks/useContextMenu';
+import { ContextMenu, ContextMenuItem } from './ContextMenu';
 import './JsonTreeView.css';
 
 // Helper to format value for clipboard
@@ -49,6 +51,7 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
     const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set(['root']));
     const [focusedPath, setFocusedPath] = useState<string>('root');
     const internalRef = useRef<HTMLDivElement | null>(null);
+    const { contextMenu, showContextMenu, closeContextMenu } = useContextMenu();
 
     // Merge local and forwarded refs
     const setBufferRef = (element: HTMLDivElement | null) => {
@@ -58,6 +61,81 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
         } else if (ref) {
             (ref as any).current = element;
         }
+    };
+
+    const expandAll = (rootItem: FlattenedItem) => {
+        const newKeys = new Set(expandedKeys);
+        const traverse = (data: any, currentPath: string[]) => {
+            if (data !== null && typeof data === 'object') {
+                const pathStr = currentPath.join('.');
+                newKeys.add(pathStr);
+                Object.entries(data).forEach(([k, v]) => {
+                    traverse(v, [...currentPath, k]);
+                });
+            }
+        };
+        traverse(rootItem.value, rootItem.path);
+        setExpandedKeys(newKeys);
+    };
+
+    const collapseAll = (rootItem: FlattenedItem) => {
+        const newKeys = new Set(expandedKeys);
+        const pathStr = rootItem.path.join('.');
+        const prefix = pathStr + '.';
+
+        // Remove all keys that start with this prefix or are exactly this key
+        Array.from(newKeys).forEach((key: string) => {
+            if (key === pathStr || key.startsWith(prefix)) {
+                newKeys.delete(key);
+            }
+        });
+        setExpandedKeys(newKeys);
+    };
+
+    const getContextMenuItems = (item: FlattenedItem): ContextMenuItem[] => {
+        return [
+            {
+                label: 'Copy Key',
+                icon: <Copy size={14} />,
+                onClick: () => copyToClipboard(item.key)
+            },
+            {
+                label: 'Copy Value',
+                icon: <Copy size={14} />,
+                onClick: () => copyToClipboard(formatValueForClipboard(item.value))
+            },
+            {
+                label: 'Copy Raw Value',
+                icon: <Copy size={14} />,
+                onClick: () => copyToClipboard(getRawValue(item.value))
+            },
+            {
+                label: 'Copy Key & Value',
+                icon: <Copy size={14} />,
+                onClick: () => {
+                    const formattedValue = formatValueForClipboard(item.value);
+                    copyToClipboard(`"${item.key}": ${formattedValue}`);
+                }
+            },
+            { divider: true },
+            {
+                label: 'Copy JSON Path',
+                icon: <Copy size={14} />,
+                onClick: () => {
+                    const path = item.path.filter(p => p !== 'root').join('.');
+                    copyToClipboard(path || 'document');
+                }
+            },
+            { divider: true },
+            {
+                label: 'Expand All',
+                onClick: () => expandAll(item)
+            },
+            {
+                label: 'Collapse All',
+                onClick: () => collapseAll(item)
+            }
+        ];
     };
 
     // Flatten the visible tree structure
@@ -205,6 +283,28 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
                 newIndex = flattenedItems.length - 1;
                 break;
             }
+            case 'Enter': {
+                if (e.altKey) {
+                    e.preventDefault();
+                    const item = flattenedItems[currentIndex];
+                    if (item) {
+                        const el = document.getElementById(`json-node-${item.id}`);
+                        showContextMenu(e, item, el || undefined);
+                    }
+                }
+                break;
+            }
+            case 'F10': {
+                if (e.shiftKey) {
+                    e.preventDefault();
+                    const item = flattenedItems[currentIndex];
+                    if (item) {
+                        const el = document.getElementById(`json-node-${item.id}`);
+                        showContextMenu(e, item, el || undefined);
+                    }
+                }
+                break;
+            }
         }
 
         if (newIndex !== currentIndex && newIndex !== -1) {
@@ -239,7 +339,7 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
             ref={setBufferRef}
             onClick={() => internalRef.current?.focus()}
         >
-            {flattenedItems.map(item => (
+            {flattenedItems.map((item: FlattenedItem) => (
                 <JsonNode
                     key={item.id}
                     item={item}
@@ -249,8 +349,17 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
                         internalRef.current?.focus();
                     }}
                     onToggle={toggleExpand}
+                    onContextMenu={(e, i) => showContextMenu(e, i)}
                 />
             ))}
+            {contextMenu && contextMenu.visible && (
+                <ContextMenu
+                    x={contextMenu.x}
+                    y={contextMenu.y}
+                    items={getContextMenuItems(contextMenu.data)}
+                    onClose={closeContextMenu}
+                />
+            )}
         </div>
     );
 });
@@ -262,7 +371,8 @@ const JsonNode: React.FC<{
     isFocused: boolean;
     onSelect: (id: string) => void;
     onToggle: (id: string) => void;
-}> = ({ item, isFocused, onSelect, onToggle }) => {
+    onContextMenu: (e: React.MouseEvent | React.KeyboardEvent, item: FlattenedItem) => void;
+}> = ({ item, isFocused, onSelect, onToggle, onContextMenu }) => {
 
     // Formatting value
     let valueDisplay = null;
@@ -315,6 +425,10 @@ const JsonNode: React.FC<{
                 if (item.hasChildren) {
                     onToggle(item.id);
                 }
+            }}
+            onContextMenu={(e) => {
+                onSelect(item.id);
+                onContextMenu(e, item);
             }}
         >
             <span className="arrow">
