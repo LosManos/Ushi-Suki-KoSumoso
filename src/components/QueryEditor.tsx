@@ -2,6 +2,8 @@ import React, { useRef, useEffect, useState } from 'react';
 import './QueryEditor.css';
 import './QueryEditorOverflow.css';
 import { QueryTab } from '../types';
+import { useContextMenu } from '../hooks/useContextMenu';
+import { ContextMenu, ContextMenuItem } from './ContextMenu';
 
 
 interface QueryEditorProps {
@@ -45,6 +47,16 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
     // Overflow state
     const [isOverflowing, setIsOverflowing] = useState(false);
     const [showDropdown, setShowDropdown] = useState(false);
+
+    const { contextMenu, showContextMenu, closeContextMenu } = useContextMenu();
+
+    const getContextMenuItems = (): ContextMenuItem[] => {
+        return [
+            { label: 'Run Query', onClick: onRunQuery },
+            { divider: true },
+            { label: 'Coming Soon...', onClick: () => { } }
+        ];
+    };
 
     useEffect(() => {
         if (activeTabId && textareaRef.current) {
@@ -327,10 +339,26 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
                     onSelect={updateCursorPosition}
                     onClick={updateCursorPosition}
                     onKeyUp={updateCursorPosition}
+                    onContextMenu={(e) => showContextMenu(e)}
+                    onKeyDown={(e) => {
+                        if (e.shiftKey && e.key === 'F10') {
+                            showContextMenu(e);
+                        } else if (e.altKey && e.key === 'Enter') {
+                            showContextMenu(e);
+                        }
+                    }}
                     placeholder="SELECT * FROM c"
                     title="Query Editor (Cmd+E)"
                 />
             </div>
+            {contextMenu && (
+                <ContextMenu
+                    x={contextMenu.x}
+                    y={contextMenu.y}
+                    items={getContextMenuItems()}
+                    onClose={closeContextMenu}
+                />
+            )}
         </div>
     );
 };
