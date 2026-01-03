@@ -48,12 +48,51 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
   const { contextMenu, showContextMenu, closeContextMenu } = useContextMenu();
 
   const getContextMenuItems = (): ContextMenuItem[] => {
-    return [
-      { label: 'Copy All', onClick: handleCopyToClipboard },
-      { label: 'Save to File', onClick: handleSaveToFile },
-      { divider: true },
-      { label: 'Coming Soon...', onClick: () => { } }
+    const line = getCurrentLineFromTextarea();
+    const parsed = line ? parseJsonLine(line) : null;
+
+    const items: ContextMenuItem[] = [
+      { label: 'Copy All Results', icon: <Copy size={16} />, onClick: handleCopyToClipboard },
+      { label: 'Save Results to File', icon: <Save size={16} />, onClick: handleSaveToFile },
     ];
+
+    if (parsed) {
+      items.push({ divider: true });
+      items.push({
+        label: `Copy Key: "${parsed.key}"`,
+        icon: <Copy size={16} />,
+        onClick: copyKeyFromLine
+      });
+      items.push({
+        label: `Copy Value: ${parsed.value.length > 30 ? parsed.value.substring(0, 30) + '...' : parsed.value}`,
+        icon: <Copy size={16} />,
+        onClick: copyValueFromLine
+      });
+
+      if (parsed.value.startsWith('"') && parsed.value.endsWith('"')) {
+        items.push({
+          label: 'Copy Raw Value (No Quotes)',
+          icon: <Copy size={16} />,
+          onClick: copyRawValueFromLine
+        });
+      }
+
+      items.push({
+        label: 'Copy Key & Value',
+        icon: <Copy size={16} />,
+        onClick: copyBothFromLine
+      });
+    }
+
+    if (results.length >= 2 && results.length <= 5) {
+      items.push({ divider: true });
+      items.push({
+        label: 'Compare Documents...',
+        onClick: handleCompare
+      });
+    }
+
+    return items;
   };
 
   /* New Ref for JsonTreeView */
