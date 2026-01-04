@@ -531,21 +531,8 @@ function App() {
                 let updatedResults;
 
                 if (path.length > 1) {
-                    const parentPath = path.slice(0, -1);
-                    const lastKey = path[path.length - 1];
-                    const newKey = `${lastKey}_linked`;
-
-                    if (isNaN(Number(lastKey))) {
-                        // Object property
-                        updatedResults = updateValueAtPath(originalResults, [...parentPath, newKey], linkedData);
-                    } else {
-                        // Array index
-                        const combinedValue = {
-                            _value: targetValue,
-                            _linked: linkedData
-                        };
-                        updatedResults = updateValueAtPath(originalResults, path, combinedValue);
-                    }
+                    // Directly replace the value at path with the linked data
+                    updatedResults = updateValueAtPath(originalResults, path, linkedData);
                 } else {
                     // Root
                     updatedResults = linkedData;
