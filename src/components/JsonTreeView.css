@@ -209,3 +209,28 @@
 .json-node.focused .json-linked-original {
     opacity: 0.9;
 }
+
+.json-link-indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 6px;
+    margin-right: 2px;
+    color: var(--accent-color, #007acc);
+    opacity: 0.8;
+    cursor: pointer;
+    vertical-align: middle;
+}
+
+.json-node.focused .json-link-indicator {
+    color: white;
+    opacity: 1;
+}
+
+.json-tree-view.dark .json-link-indicator {
+    color: #66d9ef;
+}
+
+.json-tree-view.light .json-link-indicator {
+    color: #005cc5;
+}

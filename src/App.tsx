@@ -47,7 +47,7 @@ function App() {
     // Store schemas per container (loaded from disk)
     const storedSchemasRef = React.useRef<Record<string, string[]>>({});
     // Store link mappings (loaded from disk)
-    const storedLinksRef = React.useRef<Record<string, LinkMapping>>({});
+    const [storedLinks, setStoredLinks] = useState<Record<string, LinkMapping>>({});
 
     // Load history, templates and schemas on startup
     useEffect(() => {
@@ -68,7 +68,7 @@ function App() {
         });
         linkService.getLinks().then(res => {
             if (res.success && res.data) {
-                storedLinksRef.current = res.data;
+                setStoredLinks(res.data);
             }
         });
     }, []);
@@ -511,7 +511,7 @@ function App() {
         // We want to skip root and index if they exist
         const propertyPath = item.path.filter((p: any) => p !== 'root' && typeof p !== 'number').join('.');
         const sourceKey = `${accountName}/${activeTabId}:${propertyPath}`;
-        const suggestion = storedLinksRef.current[sourceKey];
+        const suggestion = storedLinks[sourceKey];
 
         // If we have a suggestion, ensure containers for that DB are loaded
         if (suggestion && !containers[suggestion.targetDb]) {
@@ -541,7 +541,7 @@ function App() {
                 targetContainer: containerId,
                 targetPropertyName: propertyName
             };
-            storedLinksRef.current[sourceKey] = mapping;
+            setStoredLinks(prev => ({ ...prev, [sourceKey]: mapping }));
             linkService.saveLink(sourceKey, mapping);
         }
 
@@ -736,6 +736,9 @@ function App() {
                                 templateService.saveTemplate(storageKey, newTemplate);
                             }}
                             onFollowLink={handleFollowLink}
+                            storedLinks={storedLinks}
+                            accountName={accountName}
+                            activeTabId={activeTabId || ''}
                         />
                     </>
                 }
@@ -755,7 +758,7 @@ function App() {
                     currentDbId={tabs.find(t => t.id === followLinkItem.sourceTabId)?.databaseId || ''}
                     currentContainerId={tabs.find(t => t.id === followLinkItem.sourceTabId)?.containerId || ''}
                     selectedValue={followLinkItem.item.linkedValue !== undefined ? followLinkItem.item.linkedValue : followLinkItem.item.value}
-                    suggestedMapping={storedLinksRef.current[followLinkItem.sourceKey]}
+                    suggestedMapping={storedLinks[followLinkItem.sourceKey]}
                     onDatabaseChange={loadContainers}
                     onClose={() => setFollowLinkItem(null)}
                     onConfirm={confirmFollowLink}

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { ChevronRight, ChevronDown, Copy } from 'lucide-react';
+import { ChevronRight, ChevronDown, Copy, Link } from 'lucide-react';
 import { useContextMenu } from '../hooks/useContextMenu';
 import { ContextMenu, ContextMenuItem } from './ContextMenu';
+import { LinkMapping } from '../services/linkService';
 import './JsonTreeView.css';
 
 // Helper to format value for clipboard
@@ -33,6 +34,9 @@ interface JsonTreeViewProps {
     data: any;
     theme?: 'light' | 'dark';
     onFollowLink?: (item: FlattenedItem) => void;
+    storedLinks?: Record<string, any>;
+    accountName?: string;
+    activeTabId?: string;
 }
 
 export interface FlattenedItem {
@@ -45,11 +49,12 @@ export interface FlattenedItem {
     hasChildren: boolean;
     path: string[];
     linkedValue?: any;
+    linkTarget?: LinkMapping;
 }
 
 // Interface removed as we forward HTMLDivElement directly
 
-export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(({ data, theme = 'dark', onFollowLink }, ref) => {
+export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(({ data, theme = 'dark', onFollowLink, storedLinks = {}, accountName = '', activeTabId = '' }, ref) => {
     const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set(['root']));
     const [focusedPath, setFocusedPath] = useState<string>('root');
     const internalRef = useRef<HTMLDivElement | null>(null);
@@ -232,8 +237,23 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
 
         // Initialize with data
         traverse(data, 0, []);
+
+        // Post-process to mark isLinked based on storedLinks
+        if (Object.keys(storedLinks).length > 0 && accountName && activeTabId) {
+            items.forEach(item => {
+                // Same logic as in App.tsx for sourceKey
+                const propertyPath = item.path.filter((p: any) => p !== 'root' && typeof p !== 'number').join('.');
+                if (!propertyPath) return;
+                const sourceKey = `${accountName}/${activeTabId}:${propertyPath}`;
+                const mapping = storedLinks[sourceKey];
+                if (mapping) {
+                    item.linkTarget = mapping;
+                }
+            });
+        }
+
         return items;
-    }, [data, expandedKeys]);
+    }, [data, expandedKeys, storedLinks, accountName, activeTabId]);
 
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -462,7 +482,17 @@ const JsonNode: React.FC<{
             <span className="arrow">
                 {item.hasChildren ? (item.expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />) : <span style={{ display: 'inline-block', width: '1em' }}></span>}
             </span>
-            <span className="json-key">{item.key === 'root' ? 'root' : item.key}: </span>
+            <span className="json-key">
+                {item.key === 'root' ? 'root' : item.key}
+                {item.linkTarget && (
+                    <span
+                        className="json-link-indicator"
+                        title={`Link leads to: ${item.linkTarget.targetDb} / ${item.linkTarget.targetContainer} (property: ${item.linkTarget.targetPropertyName})`}
+                    >
+                        <Link size={12} />
+                    </span>
+                )}:
+            </span>
             {item.linkedValue !== undefined && (
                 <span className="json-linked-original">
                     {typeof item.linkedValue === 'string' ? `"${item.linkedValue}"` : String(item.linkedValue)}

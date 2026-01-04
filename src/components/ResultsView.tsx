@@ -20,6 +20,9 @@ interface ResultsViewProps {
   template?: string;
   onTemplateChange?: (template: string) => void;
   onFollowLink?: (item: any) => void;
+  storedLinks?: Record<string, any>;
+  accountName?: string;
+  activeTabId?: string;
 }
 
 type ViewMode = 'text' | 'json' | 'template';
@@ -36,7 +39,10 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
   hasMoreResults,
   template = '',
   onTemplateChange,
-  onFollowLink
+  onFollowLink,
+  storedLinks = {},
+  accountName = '',
+  activeTabId = ''
 }) => {
   const containerRef = React.useRef<HTMLTextAreaElement>(null);
   const [content, setContent] = React.useState('');
@@ -538,6 +544,9 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                   data={results}
                   theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
                   onFollowLink={onFollowLink}
+                  storedLinks={storedLinks}
+                  accountName={accountName}
+                  activeTabId={activeTabId}
                 />
               </div>
             ) : (
