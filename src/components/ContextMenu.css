@@ -64,3 +64,9 @@
 .context-menu-label {
     flex: 1;
 }
+
+.access-key {
+    text-decoration: underline;
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 2px;
+}

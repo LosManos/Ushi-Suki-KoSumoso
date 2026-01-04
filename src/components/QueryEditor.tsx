@@ -184,7 +184,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
     const handlePropertyLookup = () => {
         if (!selectedProperty || !propertyValue.trim()) return;
 
-        // Construct query: select * from c where c.{property} == {value}
+        // Construct query: select * from c where c.{property} = {value}
         // Using bracket notation for property name to handle special characters or nested paths
         // However, if it's already a dotted path from discovery, we might need to handle it.
         // Cosmos SQL supports c.path.to.prop or c["path"]["to"]["prop"].

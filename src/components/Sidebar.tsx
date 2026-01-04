@@ -510,7 +510,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         onChangeConnection();
                         setIsSettingsOpen(false);
                       }}
-                      onKeyDown={(e) => handleMenuKeyDown(e, 0, 6)}
+                      onKeyDown={(e) => handleMenuKeyDown(e, 0, 7)}
                     >
                       Account...
                     </button>
@@ -522,7 +522,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         onOpenCommandPalette();
                         setIsSettingsOpen(false);
                       }}
-                      onKeyDown={(e) => handleMenuKeyDown(e, 1, 6)}
+                      onKeyDown={(e) => handleMenuKeyDown(e, 1, 7)}
                       style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                     >
                       <span>Go to Container...</span>
@@ -543,7 +543,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           e.preventDefault();
                           setMenuView('theme');
                         } else {
-                          handleMenuKeyDown(e, 2, 6);
+                          handleMenuKeyDown(e, 2, 7);
                         }
                       }}
                       style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
@@ -561,7 +561,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         window.ipcRenderer.invoke('storage:showHistoryFile');
                         setIsSettingsOpen(false);
                       }}
-                      onKeyDown={(e) => handleMenuKeyDown(e, 3, 6)}
+                      onKeyDown={(e) => handleMenuKeyDown(e, 3, 7)}
                     >
                       View History File...
                     </button>
@@ -573,21 +573,33 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         window.ipcRenderer.invoke('storage:showConnectionsFile');
                         setIsSettingsOpen(false);
                       }}
-                      onKeyDown={(e) => handleMenuKeyDown(e, 4, 6)}
+                      onKeyDown={(e) => handleMenuKeyDown(e, 4, 7)}
                     >
                       View Connections File...
                     </button>
-
-                    <div className="menu-separator"></div>
 
                     <button
                       ref={(el) => (menuItemsRef.current[5] = el)}
                       className="menu-item"
                       onClick={() => {
+                        window.ipcRenderer.invoke('storage:showLinksFile');
+                        setIsSettingsOpen(false);
+                      }}
+                      onKeyDown={(e) => handleMenuKeyDown(e, 5, 7)}
+                    >
+                      View Link Mapping File...
+                    </button>
+
+                    <div className="menu-separator"></div>
+
+                    <button
+                      ref={(el) => (menuItemsRef.current[6] = el)}
+                      className="menu-item"
+                      onClick={() => {
                         window.ipcRenderer.send('app:quit');
                         setIsSettingsOpen(false);
                       }}
-                      onKeyDown={(e) => handleMenuKeyDown(e, 5, 6)}
+                      onKeyDown={(e) => handleMenuKeyDown(e, 6, 7)}
                       style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                     >
                       <span>Quit</span>

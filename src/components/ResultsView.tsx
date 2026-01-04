@@ -19,6 +19,10 @@ interface ResultsViewProps {
   hasMoreResults?: boolean;
   template?: string;
   onTemplateChange?: (template: string) => void;
+  onFollowLink?: (item: any) => void;
+  storedLinks?: Record<string, any>;
+  accountName?: string;
+  activeTabId?: string;
 }
 
 type ViewMode = 'text' | 'json' | 'template';
@@ -34,7 +38,11 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
   onDismissError,
   hasMoreResults,
   template = '',
-  onTemplateChange
+  onTemplateChange,
+  onFollowLink,
+  storedLinks = {},
+  accountName = '',
+  activeTabId = ''
 }) => {
   const containerRef = React.useRef<HTMLTextAreaElement>(null);
   const [content, setContent] = React.useState('');
@@ -492,114 +500,122 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
         </div>
       </div>
       <div className="results-content">
-        {loading ? (
+        {results.length === 0 && loading ? (
           <div className="empty-state">Loading...</div>
-        ) : (
+        ) : results.length > 0 ? (
           <>
-            {results.length > 0 ? (
-              viewMode === 'text' ? (
-                <div className="text-view-container">
-                  <div className="text-view-toolbar">
-                    <span className="toolbar-label">Copy from current line:</span>
-                    <button className="toolbar-btn" onClick={copyKeyFromLine} title="Copy key (Alt+K)">
-                      <Copy size={12} /><span>K</span>
-                    </button>
-                    <button className="toolbar-btn" onClick={copyValueFromLine} title="Copy value with quotes (Alt+V)">
-                      <Copy size={12} /><span>V</span>
-                    </button>
-                    <button className="toolbar-btn" onClick={copyRawValueFromLine} title="Copy raw value without quotes (Alt+R)">
-                      <Copy size={12} /><span>R</span>
-                    </button>
-                    <button className="toolbar-btn" onClick={copyBothFromLine} title="Copy key & value (Alt+B)">
-                      <Copy size={12} /><span>B</span>
-                    </button>
-                  </div>
+            {viewMode === 'text' ? (
+              <div className="text-view-container">
+                <div className="text-view-toolbar">
+                  <span className="toolbar-label">Copy from current line:</span>
+                  <button className="toolbar-btn" onClick={copyKeyFromLine} title="Copy key (Alt+K)">
+                    <Copy size={12} /><span>K</span>
+                  </button>
+                  <button className="toolbar-btn" onClick={copyValueFromLine} title="Copy value with quotes (Alt+V)">
+                    <Copy size={12} /><span>V</span>
+                  </button>
+                  <button className="toolbar-btn" onClick={copyRawValueFromLine} title="Copy raw value without quotes (Alt+R)">
+                    <Copy size={12} /><span>R</span>
+                  </button>
+                  <button className="toolbar-btn" onClick={copyBothFromLine} title="Copy key & value (Alt+B)">
+                    <Copy size={12} /><span>B</span>
+                  </button>
+                </div>
+                <textarea
+                  ref={containerRef}
+                  className="json-editor"
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  onContextMenu={(e) => showContextMenu(e)}
+                  onKeyDown={(e) => {
+                    if (e.shiftKey && e.key === 'F10') {
+                      showContextMenu(e);
+                    } else if (e.altKey && e.key === 'Enter') {
+                      showContextMenu(e);
+                    }
+                  }}
+                  spellCheck={false}
+                />
+              </div>
+            ) : viewMode === 'json' ? (
+              <div className="json-viewer-container">
+                <JsonTreeView
+                  ref={jsonViewRef}
+                  data={results}
+                  theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
+                  onFollowLink={onFollowLink}
+                  storedLinks={storedLinks}
+                  accountName={accountName}
+                  activeTabId={activeTabId}
+                />
+              </div>
+            ) : (
+              <div className="template-view-container" ref={templateContainerRef}>
+                <div className="template-input-section" style={{ height: templateInputHeight }}>
+                  <label className="template-label">Template: {'{field}'} for values, {'{nested.field}'} for nested, {'{{'}  {'}}'} for literal braces</label>
                   <textarea
-                    ref={containerRef}
-                    className="json-editor"
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                    onContextMenu={(e) => showContextMenu(e)}
-                    onKeyDown={(e) => {
-                      if (e.shiftKey && e.key === 'F10') {
-                        showContextMenu(e);
-                      } else if (e.altKey && e.key === 'Enter') {
-                        showContextMenu(e);
-                      }
-                    }}
+                    className="template-input"
+                    value={template}
+                    onChange={(e) => onTemplateChange?.(e.target.value)}
+                    placeholder="Example: Name: {customerName}, Tel: {phone}"
                     spellCheck={false}
                   />
                 </div>
-              ) : viewMode === 'json' ? (
-                <div className="json-viewer-container">
-                  <JsonTreeView
-                    ref={jsonViewRef}
-                    data={results}
-                    theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
+                <div
+                  className={`template-resize-handle ${isResizingTemplate ? 'dragging' : ''}`}
+                  onMouseDown={handleTemplateResizeMouseDown}
+                >
+                  <div className="template-resize-grabber" />
+                </div>
+                <div className="template-output-section">
+                  <div className="template-output-header">
+                    <label className="template-label">Output ({results.length} results):</label>
+                    <button
+                      className="toolbar-btn"
+                      onClick={() => navigator.clipboard.writeText(templateOutput)}
+                      title="Copy output to clipboard"
+                      disabled={!templateOutput}
+                    >
+                      <Copy size={12} /><span>Copy</span>
+                    </button>
+                  </div>
+                  <textarea
+                    className="template-output"
+                    value={templateOutput}
+                    readOnly
+                    spellCheck={false}
                   />
                 </div>
-              ) : (
-                <div className="template-view-container" ref={templateContainerRef}>
-                  <div className="template-input-section" style={{ height: templateInputHeight }}>
-                    <label className="template-label">Template: {'{field}'} for values, {'{nested.field}'} for nested, {'{{'}  {'}}'} for literal braces</label>
-                    <textarea
-                      className="template-input"
-                      value={template}
-                      onChange={(e) => onTemplateChange?.(e.target.value)}
-                      placeholder="Example: Name: {customerName}, Tel: {phone}"
-                      spellCheck={false}
-                    />
-                  </div>
-                  <div
-                    className={`template-resize-handle ${isResizingTemplate ? 'dragging' : ''}`}
-                    onMouseDown={handleTemplateResizeMouseDown}
-                  >
-                    <div className="template-resize-grabber" />
-                  </div>
-                  <div className="template-output-section">
-                    <div className="template-output-header">
-                      <label className="template-label">Output ({results.length} results):</label>
-                      <button
-                        className="toolbar-btn"
-                        onClick={() => navigator.clipboard.writeText(templateOutput)}
-                        title="Copy output to clipboard"
-                        disabled={!templateOutput}
-                      >
-                        <Copy size={12} /><span>Copy</span>
-                      </button>
-                    </div>
-                    <textarea
-                      className="template-output"
-                      value={templateOutput}
-                      readOnly
-                      spellCheck={false}
-                    />
-                  </div>
-                </div>
-              )
-            ) : (
-              <div className="empty-state">
-                Run a query to see results
               </div>
             )}
-
-            {error && (
-              <div className="error-overlay">
-                <div className="error-dialog">
-                  <div className="error-header">
-                    <span>Query Error</span>
-                    <button className="close-btn" onClick={onDismissError}><X size={16} /></button>
-                  </div>
-                  <div className="error-body">
-                    {error}
-                  </div>
-                  <div className="error-footer">
-                    <button className="dismiss-btn" onClick={onDismissError}>Dismiss</button>
-                  </div>
-                </div>
+            {loading && (
+              <div className="loading-overlay-mini">
+                <div className="loading-spinner-mini" />
+                <span>Updating...</span>
               </div>
             )}
           </>
+        ) : (
+          <div className="empty-state">
+            Run a query to see results
+          </div>
+        )}
+
+        {error && (
+          <div className="error-overlay">
+            <div className="error-dialog">
+              <div className="error-header">
+                <span>Query Error</span>
+                <button className="close-btn" onClick={onDismissError}><X size={16} /></button>
+              </div>
+              <div className="error-body">
+                {error}
+              </div>
+              <div className="error-footer">
+                <button className="dismiss-btn" onClick={onDismissError}>Dismiss</button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
       {contextMenu && (

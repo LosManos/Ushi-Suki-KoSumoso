@@ -1,0 +1,222 @@
+:root {
+    --dialog-blur: 12px;
+    --dialog-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    --input-focus-shadow: 0 0 0 2px rgba(0, 120, 215, 0.3);
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(6px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    animation: fadeIn 0.25s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.follow-link-dialog {
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    width: 440px;
+    max-width: 95vw;
+    box-shadow: var(--dialog-shadow);
+    z-index: 2001;
+    overflow: hidden;
+    animation: dialogSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    flex-direction: column;
+}
+
+@keyframes dialogSlideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.follow-link-dialog .dialog-header {
+    padding: 18px 24px;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.follow-link-dialog .dialog-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: var(--text-primary);
+}
+
+.follow-link-dialog .close-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.follow-link-dialog .close-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ff4d4d;
+}
+
+.follow-link-dialog .dialog-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.follow-link-dialog .description {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-secondary);
+    padding: 12px;
+    background: rgba(0, 120, 215, 0.05);
+    border-left: 3px solid var(--accent-color);
+    border-radius: 4px;
+}
+
+.follow-link-dialog code {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--accent-color);
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-weight: 500;
+}
+
+.follow-link-dialog .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.follow-link-dialog label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+}
+
+.follow-link-dialog .input-wrapper {
+    position: relative;
+}
+
+.follow-link-dialog input,
+.follow-link-dialog select {
+    width: 100%;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 10px 14px;
+    color: var(--text-primary);
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s;
+    box-sizing: border-box;
+}
+
+.follow-link-dialog input:focus,
+.follow-link-dialog select:focus {
+    border-color: var(--accent-color);
+    box-shadow: var(--input-focus-shadow);
+    background: var(--bg-secondary);
+}
+
+.follow-link-dialog input::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.follow-link-dialog .help-text {
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-family: 'JetBrains Mono', monospace;
+    margin-top: 4px;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    word-break: break-all;
+    opacity: 0.7;
+}
+
+.follow-link-dialog .dialog-footer {
+    padding: 18px 24px;
+    background: rgba(0, 0, 0, 0.1);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.follow-link-dialog button {
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.follow-link-dialog .secondary-btn {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+.follow-link-dialog .secondary-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--text-secondary);
+}
+
+.follow-link-dialog .primary-btn {
+    background: var(--accent-color);
+    border: 1px solid var(--accent-color);
+    color: white;
+    box-shadow: 0 4px 12px rgba(0, 120, 215, 0.3);
+}
+
+.follow-link-dialog .primary-btn:hover {
+    background: #0088f5;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(0, 120, 215, 0.4);
+}
+
+.follow-link-dialog .primary-btn:active {
+    transform: translateY(0);
+}

@@ -5,13 +5,16 @@ import { QueryEditor } from './components/QueryEditor';
 import { ResultsView } from './components/ResultsView';
 import { ConnectionForm } from './components/ConnectionForm';
 import { CommandPalette } from './components/CommandPalette';
+import { FollowLinkDialog } from './components/FollowLinkDialog';
 import { cosmos } from './services/cosmos';
 import { ThemeProvider } from './context/ThemeContext';
 import { QueryTab, HistoryItem } from './types';
 import { historyService } from './services/history';
 import { templateService } from './services/templates';
 import { schemaService } from './services/schema';
-import { extractParagraphAtCursor } from './utils';
+import { extractParagraphAtCursor, updateValueAtPath } from './utils';
+import { linkService, LinkMapping } from './services/linkService';
+import { FlattenedItem } from './components/JsonTreeView';
 
 function App() {
     const [isConnected, setIsConnected] = useState(false);
@@ -31,6 +34,9 @@ function App() {
     // Command Palette State
     const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
+    // Follow Link State
+    const [followLinkItem, setFollowLinkItem] = useState<{ item: FlattenedItem; sourceTabId: string; sourceKey: string } | null>(null);
+
     const cursorPositionRef = React.useRef<number | null>(null);
 
     // Track active query IDs per tab for cancellation
@@ -40,6 +46,8 @@ function App() {
     const storedTemplatesRef = React.useRef<Record<string, string>>({});
     // Store schemas per container (loaded from disk)
     const storedSchemasRef = React.useRef<Record<string, string[]>>({});
+    // Store link mappings (loaded from disk)
+    const [storedLinks, setStoredLinks] = useState<Record<string, LinkMapping>>({});
 
     // Load history, templates and schemas on startup
     useEffect(() => {
@@ -56,6 +64,11 @@ function App() {
         schemaService.getSchemas().then(res => {
             if (res.success && res.data) {
                 storedSchemasRef.current = res.data;
+            }
+        });
+        linkService.getLinks().then(res => {
+            if (res.success && res.data) {
+                setStoredLinks(res.data);
             }
         });
     }, []);
@@ -79,10 +92,19 @@ function App() {
             }
         };
 
+        const handleNewTab = () => {
+            // Find the first available database to open a tab for
+            if (databases.length > 0) {
+                handleSelectContainer(databases[0], 'Documents'); // Default or placeholder
+            }
+        };
+
         window.ipcRenderer.on('close-active-tab', handleCloseTab);
+        window.ipcRenderer.on('menu:new-tab', handleNewTab);
         // Note: cleanup may not work due to preload `off` bug, but we only register once
         return () => {
             window.ipcRenderer.off('close-active-tab', handleCloseTab);
+            window.ipcRenderer.off('menu:new-tab', handleNewTab);
         };
     }, []); // Empty dependency - register only once
 
@@ -245,8 +267,8 @@ function App() {
         }
     };
 
-    // Load containers for a database (used by command palette)
-    const loadContainersForPalette = React.useCallback(async (dbId: string) => {
+    // Load containers for a database
+    const loadContainers = React.useCallback(async (dbId: string) => {
         if (!containers[dbId]) {
             const result = await cosmos.getContainers(dbId);
             if (result.success && result.data) {
@@ -481,6 +503,113 @@ function App() {
         }
     };
 
+    const handleFollowLink = (item: FlattenedItem) => {
+        if (!activeTabId) return;
+
+        // Construct a source key for link persistence
+        // path is [root, index, ...property]
+        // We want to skip root and index if they exist
+        const propertyPath = item.path.filter((p: any) => p !== 'root' && typeof p !== 'number').join('.');
+        const sourceKey = `${accountName}/${activeTabId}:${propertyPath}`;
+        const mapping = item.linkTarget || storedLinks[sourceKey];
+
+        // If we have a mapping, follow it immediately
+        if (mapping) {
+            executeFollowLink(mapping.targetDb, mapping.targetContainer, mapping.targetPropertyName, {
+                item,
+                sourceTabId: activeTabId,
+                sourceKey
+            });
+            return;
+        }
+
+        setFollowLinkItem({ item, sourceTabId: activeTabId, sourceKey });
+    };
+
+    const executeFollowLink = async (dbId: string, containerId: string, propertyName: string, context: { item: FlattenedItem; sourceTabId: string; sourceKey: string }) => {
+        const { item, sourceTabId, sourceKey } = context;
+        const targetValue = item.linkedValue !== undefined ? item.linkedValue : item.value;
+        const path = item.path;
+
+        // Save link mapping for persistence if it's new
+        if (sourceKey) {
+            const mapping: LinkMapping = {
+                targetDb: dbId,
+                targetContainer: containerId,
+                targetPropertyName: propertyName
+            };
+            setStoredLinks(prev => ({ ...prev, [sourceKey]: mapping }));
+            linkService.saveLink(sourceKey, mapping);
+        }
+
+        // Run query to follow link
+        // We use a safe property accessor for Cosmos DB
+        const propertyAccessor = propertyName.split('.').map(p => `["${p}"]`).join('');
+
+        // Use single quotes for string literals in Cosmos SQL
+        // Escape single quotes by doubling them
+        let escapedValue;
+        if (typeof targetValue === 'string') {
+            escapedValue = `'${targetValue.replace(/'/g, "''")}'`;
+        } else if (targetValue === null) {
+            escapedValue = 'null';
+        } else {
+            escapedValue = targetValue;
+        }
+
+        const query = `SELECT * FROM c WHERE c${propertyAccessor} = ${escapedValue}`;
+
+        // Set isQuerying to true for visual feedback on the source tab
+        setTabs(prev => prev.map(t => t.id === sourceTabId ? { ...t, isQuerying: true } : t));
+
+        const result = await cosmos.query(dbId, containerId, query, 100);
+
+        if (result.success && result.data) {
+            const linkedData = result.data.items;
+
+            setTabs(prev => prev.map(t => {
+                if (t.id !== sourceTabId) return t;
+
+                const originalResults = t.results;
+                let updatedResults;
+
+                // Create a wrapper that preserves the original value
+                const wrappedValue = {
+                    __isLinked__: true,
+                    originalValue: targetValue,
+                    linkedData: linkedData
+                };
+
+                if (path.length > 1) {
+                    // Directly replace the value at path with the wrapped data
+                    updatedResults = updateValueAtPath(originalResults, path, wrappedValue);
+                } else {
+                    // Root
+                    updatedResults = [wrappedValue];
+                }
+
+                return {
+                    ...t,
+                    isQuerying: false,
+                    results: updatedResults
+                };
+            }));
+        } else {
+            setTabs(prev => prev.map(t => t.id === sourceTabId ? {
+                ...t,
+                isQuerying: false,
+                error: `Error following link in ${dbId}/${containerId}.\nQuery: ${query}\nError: ${result.error || 'Unknown error'}`
+            } : t));
+        }
+    };
+
+    const confirmFollowLink = async (dbId: string, containerId: string, propertyName: string) => {
+        if (!followLinkItem) return;
+        const context = followLinkItem;
+        setFollowLinkItem(null);
+        await executeFollowLink(dbId, containerId, propertyName, context);
+    };
+
 
     const executeActiveQuery = () => {
         if (!activeTab || !activeTabId) return;
@@ -610,6 +739,10 @@ function App() {
                                 storedTemplatesRef.current[storageKey] = newTemplate;
                                 templateService.saveTemplate(storageKey, newTemplate);
                             }}
+                            onFollowLink={handleFollowLink}
+                            storedLinks={storedLinks}
+                            accountName={accountName}
+                            activeTabId={activeTabId || ''}
                         />
                     </>
                 }
@@ -620,8 +753,21 @@ function App() {
                 databases={databases}
                 containers={containers}
                 onSelectContainer={handleSelectContainer}
-                loadContainers={loadContainersForPalette}
+                loadContainers={loadContainers}
             />
+            {followLinkItem && (
+                <FollowLinkDialog
+                    databases={databases}
+                    containers={containers}
+                    currentDbId={tabs.find(t => t.id === followLinkItem.sourceTabId)?.databaseId || ''}
+                    currentContainerId={tabs.find(t => t.id === followLinkItem.sourceTabId)?.containerId || ''}
+                    selectedValue={followLinkItem.item.linkedValue !== undefined ? followLinkItem.item.linkedValue : followLinkItem.item.value}
+                    suggestedMapping={storedLinks[followLinkItem.sourceKey]}
+                    onDatabaseChange={loadContainers}
+                    onClose={() => setFollowLinkItem(null)}
+                    onConfirm={confirmFollowLink}
+                />
+            )}
         </ThemeProvider>
     );
 }
