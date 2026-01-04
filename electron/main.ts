@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, safeStorage, shell } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, Menu, MenuItemConstructorOptions, safeStorage, shell } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import { cosmosService } from './cosmos';
@@ -207,19 +207,157 @@ ipcMain.handle('compare:getDocuments', () => {
 app.setName('Kosumoso');
 
 app.whenReady().then(() => {
+    const connectionsPath = path.join(app.getPath('userData'), 'connections.json');
+    const historyPath = path.join(app.getPath('userData'), 'history.json');
+    const templatesPath = path.join(app.getPath('userData'), 'templates.json');
+    const schemasPath = path.join(app.getPath('userData'), 'schemas.json');
+    const linksPath = path.join(app.getPath('userData'), 'links.json');
+
     createWindow();
+
+    // Create application menu
+    const isMac = process.platform === 'darwin';
+    const template: MenuItemConstructorOptions[] = [
+        ...(isMac ? [{
+            label: app.name,
+            submenu: [
+                { role: 'about' },
+                { type: 'separator' },
+                { role: 'services' },
+                { type: 'separator' },
+                { role: 'hide' },
+                { role: 'hideOthers' },
+                { role: 'unhide' },
+                { type: 'separator' },
+                { role: 'quit' }
+            ]
+        }] as MenuItemConstructorOptions[] : []),
+        {
+            label: 'File',
+            submenu: [
+                {
+                    label: 'New Query Tab',
+                    accelerator: 'CmdOrCtrl+N',
+                    click: () => win?.webContents.send('menu:new-tab')
+                },
+                { type: 'separator' },
+                {
+                    label: 'Close Tab',
+                    accelerator: 'CmdOrCtrl+W',
+                    click: () => win?.webContents.send('close-active-tab')
+                },
+                { type: 'separator' },
+                isMac ? { role: 'close' } : { role: 'quit' }
+            ] as MenuItemConstructorOptions[]
+        },
+        {
+            label: 'Edit',
+            submenu: [
+                { role: 'undo' },
+                { role: 'redo' },
+                { type: 'separator' },
+                { role: 'cut' },
+                { role: 'copy' },
+                { role: 'paste' },
+                { role: 'selectAll' }
+            ] as MenuItemConstructorOptions[]
+        },
+        {
+            label: 'View',
+            submenu: [
+                { role: 'reload' },
+                { role: 'forceReload' },
+                { role: 'toggleDevTools' },
+                { type: 'separator' },
+                { role: 'resetZoom' },
+                { role: 'zoomIn' },
+                { role: 'zoomOut' },
+                { type: 'separator' },
+                { role: 'togglefullscreen' }
+            ] as MenuItemConstructorOptions[]
+        },
+        {
+            label: 'Storage',
+            submenu: [
+                {
+                    label: 'View History File...',
+                    click: async () => {
+                        console.log('[Main Menu] Viewing history file');
+                        if (!fs.existsSync(historyPath)) await fs.promises.writeFile(historyPath, '[]');
+                        shell.showItemInFolder(historyPath);
+                    }
+                },
+                {
+                    label: 'View Connections File...',
+                    click: async () => {
+                        console.log('[Main Menu] Viewing connections file');
+                        if (!fs.existsSync(connectionsPath)) await fs.promises.writeFile(connectionsPath, '[]');
+                        shell.showItemInFolder(connectionsPath);
+                    }
+                },
+                {
+                    label: 'View Link Mappings File...',
+                    click: async () => {
+                        console.log('[Main Menu] Viewing links file');
+                        if (!fs.existsSync(linksPath)) await fs.promises.writeFile(linksPath, '{}');
+                        shell.showItemInFolder(linksPath);
+                    }
+                },
+                { type: 'separator' },
+                {
+                    label: 'View Templates File...',
+                    click: async () => {
+                        console.log('[Main Menu] Viewing templates file');
+                        if (!fs.existsSync(templatesPath)) await fs.promises.writeFile(templatesPath, '{}');
+                        shell.showItemInFolder(templatesPath);
+                    }
+                },
+                {
+                    label: 'View Schemas File...',
+                    click: async () => {
+                        console.log('[Main Menu] Viewing schemas file');
+                        if (!fs.existsSync(schemasPath)) await fs.promises.writeFile(schemasPath, '{}');
+                        shell.showItemInFolder(schemasPath);
+                    }
+                }
+            ] as MenuItemConstructorOptions[]
+        },
+        {
+            label: 'Window',
+            submenu: [
+                { role: 'minimize' },
+                { role: 'zoom' },
+                ...(isMac ? [
+                    { type: 'separator' },
+                    { role: 'front' },
+                    { type: 'separator' },
+                    { role: 'window' }
+                ] : [
+                    { role: 'close' }
+                ])
+            ] as MenuItemConstructorOptions[]
+        },
+        {
+            role: 'help',
+            submenu: [
+                {
+                    label: 'Learn More',
+                    click: async () => {
+                        await shell.openExternal('https://github.com/LosManos/Ushi-Suki-KoSumoso');
+                    }
+                }
+            ] as MenuItemConstructorOptions[]
+        }
+    ];
+
+    const menu = Menu.buildFromTemplate(template);
+    Menu.setApplicationMenu(menu);
 
     // Set dock icon on macOS
     if (process.platform === 'darwin' && app.dock) {
         const iconPath = path.join(getVitePublicPath(), 'v_macos.png');
         app.dock.setIcon(iconPath);
     }
-
-    const connectionsPath = path.join(app.getPath('userData'), 'connections.json');
-    const historyPath = path.join(app.getPath('userData'), 'history.json');
-    const templatesPath = path.join(app.getPath('userData'), 'templates.json');
-    const schemasPath = path.join(app.getPath('userData'), 'schemas.json');
-    const linksPath = path.join(app.getPath('userData'), 'links.json');
 
     // Schema storage handlers
     ipcMain.handle('storage:saveSchema', async (_, containerId: string, keys: string[]) => {
@@ -359,10 +497,12 @@ app.whenReady().then(() => {
     // IPC handlers to show files in Finder
     ipcMain.handle('storage:showHistoryFile', async () => {
         try {
-            // Create file if it doesn't exist
+            console.log('[Main] Invoked storage:showHistoryFile');
             if (!fs.existsSync(historyPath)) {
+                console.log('[Main] Creating empty history file');
                 await fs.promises.writeFile(historyPath, '[]');
             }
+            console.log('[Main] Opening folder for:', historyPath);
             shell.showItemInFolder(historyPath);
             return { success: true };
         } catch (error: any) {
@@ -373,14 +513,32 @@ app.whenReady().then(() => {
 
     ipcMain.handle('storage:showConnectionsFile', async () => {
         try {
-            // Create file if it doesn't exist
+            console.log('[Main] Invoked storage:showConnectionsFile');
             if (!fs.existsSync(connectionsPath)) {
+                console.log('[Main] Creating empty connections file');
                 await fs.promises.writeFile(connectionsPath, '[]');
             }
+            console.log('[Main] Opening folder for:', connectionsPath);
             shell.showItemInFolder(connectionsPath);
             return { success: true };
         } catch (error: any) {
             console.error('[Main] Failed to show connections file:', error);
+            return { success: false, error: error.message };
+        }
+    });
+
+    ipcMain.handle('storage:showLinksFile', async () => {
+        try {
+            console.log('[Main] Invoked storage:showLinksFile');
+            if (!fs.existsSync(linksPath)) {
+                console.log('[Main] Creating empty links file');
+                await fs.promises.writeFile(linksPath, '{}');
+            }
+            console.log('[Main] Opening folder for:', linksPath);
+            shell.showItemInFolder(linksPath);
+            return { success: true };
+        } catch (error: any) {
+            console.error('[Main] Failed to show links file:', error);
             return { success: false, error: error.message };
         }
     });

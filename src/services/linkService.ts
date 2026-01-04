@@ -15,5 +15,9 @@ export const linkService = {
 
     getLinks: async (): Promise<{ success: boolean; data?: Record<string, LinkMapping>; error?: string }> => {
         return window.ipcRenderer.invoke('storage:getLinks');
+    },
+
+    showLinksFile: async (): Promise<{ success: boolean; error?: string }> => {
+        return window.ipcRenderer.invoke('storage:showLinksFile');
     }
 };

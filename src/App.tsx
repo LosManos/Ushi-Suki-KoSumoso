@@ -92,10 +92,19 @@ function App() {
             }
         };
 
+        const handleNewTab = () => {
+            // Find the first available database to open a tab for
+            if (databases.length > 0) {
+                handleSelectContainer(databases[0], 'Documents'); // Default or placeholder
+            }
+        };
+
         window.ipcRenderer.on('close-active-tab', handleCloseTab);
+        window.ipcRenderer.on('menu:new-tab', handleNewTab);
         // Note: cleanup may not work due to preload `off` bug, but we only register once
         return () => {
             window.ipcRenderer.off('close-active-tab', handleCloseTab);
+            window.ipcRenderer.off('menu:new-tab', handleNewTab);
         };
     }, []); // Empty dependency - register only once
 
@@ -501,7 +510,7 @@ function App() {
         // path is [root, index, ...property]
         // We want to skip root and index if they exist
         const propertyPath = item.path.filter((p: any) => p !== 'root' && typeof p !== 'number').join('.');
-        const sourceKey = `${activeTabId}:${propertyPath}`;
+        const sourceKey = `${accountName}/${activeTabId}:${propertyPath}`;
         const suggestion = storedLinksRef.current[sourceKey];
 
         // If we have a suggestion, ensure containers for that DB are loaded
