@@ -19,7 +19,7 @@ interface ResultsViewProps {
   hasMoreResults?: boolean;
   template?: string;
   onTemplateChange?: (template: string) => void;
-  onFollowLink?: (item: any) => void;
+  onFollowLink?: (item: any, forceDialog?: boolean) => void;
   storedLinks?: Record<string, any>;
   accountName?: string;
   activeTabId?: string;

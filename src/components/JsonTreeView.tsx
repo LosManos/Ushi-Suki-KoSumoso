@@ -33,7 +33,7 @@ const copyToClipboard = async (text: string) => {
 interface JsonTreeViewProps {
     data: any;
     theme?: 'light' | 'dark';
-    onFollowLink?: (item: FlattenedItem) => void;
+    onFollowLink?: (item: FlattenedItem, forceDialog?: boolean) => void;
     storedLinks?: Record<string, any>;
     accountName?: string;
     activeTabId?: string;
@@ -153,7 +153,7 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
             {
                 label: 'Follow Link...',
                 accessKey: 'F',
-                onClick: () => onFollowLink?.(item)
+                onClick: () => onFollowLink?.(item, true)
             }
         ];
     };
@@ -356,7 +356,7 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
             case 'f':
             case 'F': {
                 const item = flattenedItems[currentIndex];
-                if (item && item.linkTarget) {
+                if (item) {
                     e.preventDefault();
                     onFollowLink?.(item);
                 }
@@ -430,7 +430,7 @@ const JsonNode: React.FC<{
     onSelect: (id: string) => void;
     onToggle: (id: string) => void;
     onContextMenu: (e: React.MouseEvent | React.KeyboardEvent, item: FlattenedItem) => void;
-    onFollowLink?: (item: FlattenedItem) => void;
+    onFollowLink?: (item: FlattenedItem, forceDialog?: boolean) => void;
 }> = ({ item, isFocused, onSelect, onToggle, onContextMenu, onFollowLink }) => {
 
     // Formatting value
@@ -524,11 +524,13 @@ const JsonNode: React.FC<{
                 <button className="copy-btn" onClick={handleCopyBoth} title="Copy key & value">
                     <Copy size={10} /><span>B</span>
                 </button>
-                {item.linkTarget && (
-                    <button className="copy-btn follow-btn" onClick={(e) => { e.stopPropagation(); onFollowLink?.(item); }} title="Follow known link (F)">
-                        <Link size={10} /><span>F</span>
-                    </button>
-                )}
+                <button
+                    className={`copy-btn ${item.linkTarget ? 'follow-btn' : ''}`}
+                    onClick={(e) => { e.stopPropagation(); onFollowLink?.(item); }}
+                    title={item.linkTarget ? "Follow known link (F)" : "Open Follow Link dialogue (F)"}
+                >
+                    <Link size={10} /><span>F</span>
+                </button>
             </span>
         </div>
     );

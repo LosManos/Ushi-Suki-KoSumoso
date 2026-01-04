@@ -503,18 +503,16 @@ function App() {
         }
     };
 
-    const handleFollowLink = (item: FlattenedItem) => {
+    const handleFollowLink = (item: FlattenedItem, forceDialog = false) => {
         if (!activeTabId) return;
 
         // Construct a source key for link persistence
-        // path is [root, index, ...property]
-        // We want to skip root and index if they exist
         const propertyPath = item.path.filter((p: any) => p !== 'root' && typeof p !== 'number').join('.');
         const sourceKey = `${accountName}/${activeTabId}:${propertyPath}`;
         const mapping = item.linkTarget || storedLinks[sourceKey];
 
-        // If we have a mapping, follow it immediately
-        if (mapping) {
+        // If we have a mapping and NOT forcing the dialog, follow it immediately
+        if (mapping && !forceDialog) {
             executeFollowLink(mapping.targetDb, mapping.targetContainer, mapping.targetPropertyName, {
                 item,
                 sourceTabId: activeTabId,
