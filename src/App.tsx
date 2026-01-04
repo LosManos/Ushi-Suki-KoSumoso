@@ -33,7 +33,7 @@ function App() {
     const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
     // Follow Link State
-    const [followLinkItem, setFollowLinkItem] = useState<any | null>(null);
+    const [followLinkItem, setFollowLinkItem] = useState<{ item: any; sourceTabId: string } | null>(null);
 
     const cursorPositionRef = React.useRef<number | null>(null);
 
@@ -486,28 +486,38 @@ function App() {
     };
 
     const handleFollowLink = (item: any) => {
-        setFollowLinkItem(item);
+        if (!activeTabId) return;
+        setFollowLinkItem({ item, sourceTabId: activeTabId });
     };
 
     const confirmFollowLink = async (dbId: string, containerId: string, propertyName: string) => {
-        if (!followLinkItem || !activeTabId || !activeTab) return;
+        if (!followLinkItem) return;
 
-        const targetValue = followLinkItem.value;
-        const path = followLinkItem.path;
+        const { item, sourceTabId } = followLinkItem;
+        const targetValue = item.value;
+        const path = item.path;
 
         setFollowLinkItem(null);
 
         // Run query to follow link
-        // select * from c where c.["propertyName"] == targetValue
         // We use a safe property accessor for Cosmos DB
-        const propertyAccessor = propertyName.includes('.') ? propertyName : `["${propertyName}"]`;
+        const propertyAccessor = propertyName.split('.').map(p => `["${p}"]`).join('');
 
-        // Use string interpolation for query
-        const escapedValue = typeof targetValue === 'string' ? `"${targetValue}"` : targetValue;
-        const query = `SELECT * FROM c WHERE c.${propertyAccessor} = ${escapedValue}`;
+        // Use single quotes for string literals in Cosmos SQL
+        // Escape single quotes by doubling them
+        let escapedValue;
+        if (typeof targetValue === 'string') {
+            escapedValue = `'${targetValue.replace(/'/g, "''")}'`;
+        } else if (targetValue === null) {
+            escapedValue = 'null';
+        } else {
+            escapedValue = targetValue;
+        }
 
-        // Set isQuerying to true for visual feedback
-        setTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, isQuerying: true } : t));
+        const query = `SELECT * FROM c WHERE c${propertyAccessor} = ${escapedValue}`;
+
+        // Set isQuerying to true for visual feedback on the source tab
+        setTabs(prev => prev.map(t => t.id === sourceTabId ? { ...t, isQuerying: true } : t));
 
         const result = await cosmos.query(dbId, containerId, query, 100);
 
@@ -515,7 +525,7 @@ function App() {
             const linkedData = result.data.items;
 
             setTabs(prev => prev.map(t => {
-                if (t.id !== activeTabId) return t;
+                if (t.id !== sourceTabId) return t;
 
                 const originalResults = t.results;
                 let updatedResults;
@@ -537,7 +547,7 @@ function App() {
                         updatedResults = updateValueAtPath(originalResults, path, combinedValue);
                     }
                 } else {
-                    // Root - uncommon for follow link but handleable
+                    // Root
                     updatedResults = linkedData;
                 }
 
@@ -548,10 +558,10 @@ function App() {
                 };
             }));
         } else {
-            setTabs(prev => prev.map(t => t.id === activeTabId ? {
+            setTabs(prev => prev.map(t => t.id === sourceTabId ? {
                 ...t,
                 isQuerying: false,
-                error: result.error || 'Failed to follow link'
+                error: `Error following link in ${dbId}/${containerId}.\nQuery: ${query}\nError: ${result.error || 'Unknown error'}`
             } : t));
         }
     };
@@ -698,13 +708,13 @@ function App() {
                 onSelectContainer={handleSelectContainer}
                 loadContainers={loadContainersForPalette}
             />
-            {followLinkItem && activeTab && (
+            {followLinkItem && (
                 <FollowLinkDialog
                     databases={databases}
                     containers={containers}
-                    currentDbId={activeTab.databaseId}
-                    currentContainerId={activeTab.containerId}
-                    selectedValue={followLinkItem.value}
+                    currentDbId={tabs.find(t => t.id === followLinkItem.sourceTabId)?.databaseId || ''}
+                    currentContainerId={tabs.find(t => t.id === followLinkItem.sourceTabId)?.containerId || ''}
+                    selectedValue={followLinkItem.item.value}
                     onClose={() => setFollowLinkItem(null)}
                     onConfirm={confirmFollowLink}
                 />

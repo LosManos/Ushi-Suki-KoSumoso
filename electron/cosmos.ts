@@ -48,7 +48,7 @@ export const cosmosService = {
     },
 
     query: async (databaseId: string, containerId: string, query: string, pageSize: number | 'All' = 10, queryId?: string) => {
-        console.log('Main: Received query request. PageSize:', pageSize, 'QueryId:', queryId);
+        console.log(`[Cosmos] Querying ${databaseId}/${containerId}. PageSize: ${pageSize}, QueryId: ${queryId}`);
         if (!client) return { success: false, error: 'Not connected' };
 
         // Set up abort controller for this query

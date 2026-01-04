@@ -87,7 +87,7 @@ export const FollowLinkDialog: React.FC<FollowLinkDialogProps> = ({
                                 required
                                 autoFocus
                             />
-                            <span className="help-text">Query: select * from c where c.["{propertyName}"] == {JSON.stringify(selectedValue)}</span>
+                            <span className="help-text">Query: SELECT * FROM c WHERE c["{propertyName}"] = {JSON.stringify(selectedValue)}</span>
                         </div>
                     </div>
                     <div className="dialog-footer">
