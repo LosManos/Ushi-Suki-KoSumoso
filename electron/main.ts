@@ -219,6 +219,7 @@ app.whenReady().then(() => {
     const historyPath = path.join(app.getPath('userData'), 'history.json');
     const templatesPath = path.join(app.getPath('userData'), 'templates.json');
     const schemasPath = path.join(app.getPath('userData'), 'schemas.json');
+    const linksPath = path.join(app.getPath('userData'), 'links.json');
 
     // Schema storage handlers
     ipcMain.handle('storage:saveSchema', async (_, containerId: string, keys: string[]) => {
@@ -317,6 +318,40 @@ app.whenReady().then(() => {
             delete templates[containerId];
             await fs.promises.writeFile(templatesPath, JSON.stringify(templates, null, 2));
             return { success: true };
+        } catch (error: any) {
+            return { success: false, error: error.message };
+        }
+    });
+
+    // Link storage handlers
+    ipcMain.handle('storage:saveLink', async (_, sourceKey: string, mapping: any) => {
+        try {
+            let links: Record<string, any> = {};
+            try {
+                const data = await fs.promises.readFile(linksPath, 'utf8');
+                links = JSON.parse(data);
+            } catch (error) {
+                // File might not exist yet
+            }
+
+            links[sourceKey] = { ...mapping, lastUpdated: Date.now() };
+            await fs.promises.writeFile(linksPath, JSON.stringify(links, null, 2));
+            return { success: true };
+        } catch (error: any) {
+            console.error('[Main] Failed to save link mapping:', error);
+            return { success: false, error: error.message };
+        }
+    });
+
+    ipcMain.handle('storage:getLinks', async () => {
+        try {
+            try {
+                const data = await fs.promises.readFile(linksPath, 'utf8');
+                const links = JSON.parse(data);
+                return { success: true, data: links };
+            } catch (error) {
+                return { success: true, data: {} };
+            }
         } catch (error: any) {
             return { success: false, error: error.message };
         }

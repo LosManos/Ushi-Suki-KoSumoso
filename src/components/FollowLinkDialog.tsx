@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, ExternalLink } from 'lucide-react';
 import './FollowLinkDialog.css';
+import { LinkMapping } from '../services/linkService';
 
 interface FollowLinkDialogProps {
     databases: string[];
@@ -10,6 +11,8 @@ interface FollowLinkDialogProps {
     currentDbId: string;
     currentContainerId: string;
     selectedValue: any;
+    suggestedMapping?: LinkMapping;
+    onDatabaseChange?: (dbId: string) => void;
 }
 
 export const FollowLinkDialog: React.FC<FollowLinkDialogProps> = ({
@@ -19,16 +22,34 @@ export const FollowLinkDialog: React.FC<FollowLinkDialogProps> = ({
     onConfirm,
     currentDbId,
     currentContainerId,
-    selectedValue
+    selectedValue,
+    suggestedMapping,
+    onDatabaseChange
 }) => {
-    const [selectedDb, setSelectedDb] = useState(currentDbId);
-    const [selectedContainer, setSelectedContainer] = useState(currentContainerId);
-    const [propertyName, setPropertyName] = useState('id');
+    const [selectedDb, setSelectedDb] = useState(suggestedMapping?.targetDb || currentDbId);
+    const [selectedContainer, setSelectedContainer] = useState(suggestedMapping?.targetContainer || currentContainerId);
+    const [propertyName, setPropertyName] = useState(suggestedMapping?.targetPropertyName || 'id');
     const dialogRef = useRef<HTMLDivElement>(null);
     const firstInputRef = useRef<HTMLSelectElement>(null);
 
     // Filter out symbols from selectedValue for preview
     const valuePreview = typeof selectedValue === 'object' ? JSON.stringify(selectedValue).substring(0, 50) : String(selectedValue);
+
+    // Update selected container when containers list for selected DB changes
+    useEffect(() => {
+        const dbContainers = containers[selectedDb] || [];
+        if (dbContainers.length > 0) {
+            // If current selection is not in the list, or we have no selection, pick the first one
+            if (!selectedContainer || !dbContainers.includes(selectedContainer)) {
+                // However, we should only do this if we are not in the initial mount 
+                // but the containers list just loaded.
+                // Or simply: if current is not in list, pick first.
+                if (!dbContainers.includes(selectedContainer)) {
+                    setSelectedContainer(dbContainers[0]);
+                }
+            }
+        }
+    }, [selectedDb, containers]);
 
     useEffect(() => {
         // Explicitly focus the first element when the dialog mounts
@@ -100,9 +121,12 @@ export const FollowLinkDialog: React.FC<FollowLinkDialogProps> = ({
                                 ref={firstInputRef}
                                 value={selectedDb}
                                 onChange={(e) => {
-                                    setSelectedDb(e.target.value);
-                                    // Reset container if not in the new DB
-                                    const dbContainers = containers[e.target.value] || [];
+                                    const newDb = e.target.value;
+                                    setSelectedDb(newDb);
+                                    onDatabaseChange?.(newDb);
+
+                                    // Reset container if not in the new DB (immediate check)
+                                    const dbContainers = containers[newDb] || [];
                                     if (!dbContainers.includes(selectedContainer)) {
                                         setSelectedContainer(dbContainers[0] || '');
                                     }

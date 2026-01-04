@@ -35,7 +35,7 @@ interface JsonTreeViewProps {
     onFollowLink?: (item: FlattenedItem) => void;
 }
 
-interface FlattenedItem {
+export interface FlattenedItem {
     id: string;
     key: string;
     value: any;
@@ -44,6 +44,7 @@ interface FlattenedItem {
     expanded?: boolean;
     hasChildren: boolean;
     path: string[];
+    linkedValue?: any;
 }
 
 // Interface removed as we forward HTMLDivElement directly
@@ -162,10 +163,18 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
             // Determine type
             let type: 'object' | 'array' | 'primitive' = 'primitive';
             let hasChildren = false;
+            let displayData = currentData;
+            let linkedValue = undefined;
 
-            if (currentData !== null && typeof currentData === 'object') {
-                type = Array.isArray(currentData) ? 'array' : 'object';
-                hasChildren = Object.keys(currentData).length > 0;
+            // Handle wrapped linked values
+            if (currentData !== null && typeof currentData === 'object' && currentData.__isLinked__) {
+                displayData = currentData.linkedData;
+                linkedValue = currentData.originalValue;
+            }
+
+            if (displayData !== null && typeof displayData === 'object') {
+                type = Array.isArray(displayData) ? 'array' : 'object';
+                hasChildren = Object.keys(displayData).length > 0;
             }
 
             // We don't push the root object itself as a visible line if we want to show its properties directly?
@@ -205,16 +214,17 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
             items.push({
                 id: pathStr,
                 key,
-                value: currentData,
+                value: displayData,
                 level: currentLevel,
                 type,
                 expanded: isExpanded,
                 hasChildren,
-                path: currentPath
+                path: currentPath,
+                linkedValue
             });
 
             if (isExpanded && hasChildren) {
-                Object.entries(currentData).forEach(([k, v]) => {
+                Object.entries(displayData).forEach(([k, v]) => {
                     traverse(v, currentLevel + 1, [...currentPath, k]);
                 });
             }
@@ -453,6 +463,11 @@ const JsonNode: React.FC<{
                 {item.hasChildren ? (item.expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />) : <span style={{ display: 'inline-block', width: '1em' }}></span>}
             </span>
             <span className="json-key">{item.key === 'root' ? 'root' : item.key}: </span>
+            {item.linkedValue !== undefined && (
+                <span className="json-linked-original">
+                    {typeof item.linkedValue === 'string' ? `"${item.linkedValue}"` : String(item.linkedValue)}
+                </span>
+            )}
             {valueDisplay}
             <span className="copy-buttons">
                 <button className="copy-btn" onClick={handleCopyKey} title="Copy key">

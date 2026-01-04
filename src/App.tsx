@@ -13,6 +13,8 @@ import { historyService } from './services/history';
 import { templateService } from './services/templates';
 import { schemaService } from './services/schema';
 import { extractParagraphAtCursor, updateValueAtPath } from './utils';
+import { linkService, LinkMapping } from './services/linkService';
+import { FlattenedItem } from './components/JsonTreeView';
 
 function App() {
     const [isConnected, setIsConnected] = useState(false);
@@ -33,7 +35,7 @@ function App() {
     const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
     // Follow Link State
-    const [followLinkItem, setFollowLinkItem] = useState<{ item: any; sourceTabId: string } | null>(null);
+    const [followLinkItem, setFollowLinkItem] = useState<{ item: FlattenedItem; sourceTabId: string; sourceKey: string } | null>(null);
 
     const cursorPositionRef = React.useRef<number | null>(null);
 
@@ -44,6 +46,8 @@ function App() {
     const storedTemplatesRef = React.useRef<Record<string, string>>({});
     // Store schemas per container (loaded from disk)
     const storedSchemasRef = React.useRef<Record<string, string[]>>({});
+    // Store link mappings (loaded from disk)
+    const storedLinksRef = React.useRef<Record<string, LinkMapping>>({});
 
     // Load history, templates and schemas on startup
     useEffect(() => {
@@ -60,6 +64,11 @@ function App() {
         schemaService.getSchemas().then(res => {
             if (res.success && res.data) {
                 storedSchemasRef.current = res.data;
+            }
+        });
+        linkService.getLinks().then(res => {
+            if (res.success && res.data) {
+                storedLinksRef.current = res.data;
             }
         });
     }, []);
@@ -249,8 +258,8 @@ function App() {
         }
     };
 
-    // Load containers for a database (used by command palette)
-    const loadContainersForPalette = React.useCallback(async (dbId: string) => {
+    // Load containers for a database
+    const loadContainers = React.useCallback(async (dbId: string) => {
         if (!containers[dbId]) {
             const result = await cosmos.getContainers(dbId);
             if (result.success && result.data) {
@@ -485,19 +494,47 @@ function App() {
         }
     };
 
-    const handleFollowLink = (item: any) => {
+    const handleFollowLink = (item: FlattenedItem) => {
         if (!activeTabId) return;
-        setFollowLinkItem({ item, sourceTabId: activeTabId });
+
+        // Construct a source key for link persistence
+        // path is [root, index, ...property]
+        // We want to skip root and index if they exist
+        const propertyPath = item.path.filter((p: any) => p !== 'root' && typeof p !== 'number').join('.');
+        const sourceKey = `${activeTabId}:${propertyPath}`;
+        const suggestion = storedLinksRef.current[sourceKey];
+
+        // If we have a suggestion, ensure containers for that DB are loaded
+        if (suggestion && !containers[suggestion.targetDb]) {
+            cosmos.getContainers(suggestion.targetDb).then(result => {
+                if (result.success && result.data) {
+                    setContainers(prev => ({ ...prev, [suggestion.targetDb]: result.data! }));
+                }
+            });
+        }
+
+        setFollowLinkItem({ item, sourceTabId: activeTabId, sourceKey });
     };
 
     const confirmFollowLink = async (dbId: string, containerId: string, propertyName: string) => {
         if (!followLinkItem) return;
 
-        const { item, sourceTabId } = followLinkItem;
-        const targetValue = item.value;
+        const { item, sourceTabId, sourceKey } = followLinkItem;
+        const targetValue = item.linkedValue !== undefined ? item.linkedValue : item.value;
         const path = item.path;
 
         setFollowLinkItem(null);
+
+        // Save link mapping for persistence
+        if (sourceKey) {
+            const mapping: LinkMapping = {
+                targetDb: dbId,
+                targetContainer: containerId,
+                targetPropertyName: propertyName
+            };
+            storedLinksRef.current[sourceKey] = mapping;
+            linkService.saveLink(sourceKey, mapping);
+        }
 
         // Run query to follow link
         // We use a safe property accessor for Cosmos DB
@@ -530,12 +567,19 @@ function App() {
                 const originalResults = t.results;
                 let updatedResults;
 
+                // Create a wrapper that preserves the original value
+                const wrappedValue = {
+                    __isLinked__: true,
+                    originalValue: targetValue,
+                    linkedData: linkedData
+                };
+
                 if (path.length > 1) {
-                    // Directly replace the value at path with the linked data
-                    updatedResults = updateValueAtPath(originalResults, path, linkedData);
+                    // Directly replace the value at path with the wrapped data
+                    updatedResults = updateValueAtPath(originalResults, path, wrappedValue);
                 } else {
                     // Root
-                    updatedResults = linkedData;
+                    updatedResults = [wrappedValue];
                 }
 
                 return {
@@ -693,7 +737,7 @@ function App() {
                 databases={databases}
                 containers={containers}
                 onSelectContainer={handleSelectContainer}
-                loadContainers={loadContainersForPalette}
+                loadContainers={loadContainers}
             />
             {followLinkItem && (
                 <FollowLinkDialog
@@ -701,7 +745,9 @@ function App() {
                     containers={containers}
                     currentDbId={tabs.find(t => t.id === followLinkItem.sourceTabId)?.databaseId || ''}
                     currentContainerId={tabs.find(t => t.id === followLinkItem.sourceTabId)?.containerId || ''}
-                    selectedValue={followLinkItem.item.value}
+                    selectedValue={followLinkItem.item.linkedValue !== undefined ? followLinkItem.item.linkedValue : followLinkItem.item.value}
+                    suggestedMapping={storedLinksRef.current[followLinkItem.sourceKey]}
+                    onDatabaseChange={loadContainers}
                     onClose={() => setFollowLinkItem(null)}
                     onConfirm={confirmFollowLink}
                 />
