@@ -153,7 +153,10 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
             {
                 label: 'Follow Link...',
                 accessKey: 'F',
-                onClick: () => onFollowLink?.(item, true)
+                onClick: () => {
+                    internalRef.current?.focus();
+                    onFollowLink?.(item, true);
+                }
             }
         ];
     };
@@ -499,7 +502,7 @@ const JsonNode: React.FC<{
                     <span
                         className="json-link-indicator"
                         title={`Link leads to: ${item.linkTarget.targetDb} / ${item.linkTarget.targetContainer} (property: ${item.linkTarget.targetPropertyName})\nShortcut: F`}
-                        onClick={(e) => { e.stopPropagation(); onFollowLink?.(item); }}
+                        onClick={(e) => { e.stopPropagation(); onSelect(item.id); onFollowLink?.(item); }}
                     >
                         <Link size={12} />
                     </span>
@@ -526,7 +529,7 @@ const JsonNode: React.FC<{
                 </button>
                 <button
                     className={`copy-btn ${item.linkTarget ? 'follow-btn' : ''}`}
-                    onClick={(e) => { e.stopPropagation(); onFollowLink?.(item); }}
+                    onClick={(e) => { e.stopPropagation(); onSelect(item.id); onFollowLink?.(item); }}
                     title={item.linkTarget ? "Follow known link (F)" : "Open Follow Link dialogue (F)"}
                 >
                     <Link size={10} /><span>F</span>

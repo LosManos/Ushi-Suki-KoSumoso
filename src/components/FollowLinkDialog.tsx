@@ -52,6 +52,9 @@ export const FollowLinkDialog: React.FC<FollowLinkDialogProps> = ({
     }, [selectedDb, containers]);
 
     useEffect(() => {
+        // Store the element that had focus before the dialog opened
+        const previouslyFocusedElement = document.activeElement as HTMLElement;
+
         // Explicitly focus the first element when the dialog mounts
         // We use a small timeout to ensure we override any focus restoration 
         // from the context menu or background components.
@@ -94,6 +97,10 @@ export const FollowLinkDialog: React.FC<FollowLinkDialogProps> = ({
         return () => {
             clearTimeout(timer);
             window.removeEventListener('keydown', handleKeyDown);
+            // Restore focus when the dialog is closed/unmounted
+            if (previouslyFocusedElement && typeof previouslyFocusedElement.focus === 'function') {
+                previouslyFocusedElement.focus();
+            }
         };
     }, [onClose]);
 
