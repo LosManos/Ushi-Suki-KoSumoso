@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, ExternalLink } from 'lucide-react';
 import './FollowLinkDialog.css';
 
@@ -24,9 +24,57 @@ export const FollowLinkDialog: React.FC<FollowLinkDialogProps> = ({
     const [selectedDb, setSelectedDb] = useState(currentDbId);
     const [selectedContainer, setSelectedContainer] = useState(currentContainerId);
     const [propertyName, setPropertyName] = useState('id');
+    const dialogRef = useRef<HTMLDivElement>(null);
+    const firstInputRef = useRef<HTMLSelectElement>(null);
 
     // Filter out symbols from selectedValue for preview
     const valuePreview = typeof selectedValue === 'object' ? JSON.stringify(selectedValue).substring(0, 50) : String(selectedValue);
+
+    useEffect(() => {
+        // Explicitly focus the first element when the dialog mounts
+        // We use a small timeout to ensure we override any focus restoration 
+        // from the context menu or background components.
+        const timer = setTimeout(() => {
+            if (firstInputRef.current) {
+                firstInputRef.current.focus();
+            } else {
+                const firstFocusable = dialogRef.current?.querySelector('select, input, button') as HTMLElement;
+                firstFocusable?.focus();
+            }
+        }, 100);
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                onClose();
+            }
+
+            if (e.key === 'Tab' && dialogRef.current) {
+                const focusableElements = dialogRef.current.querySelectorAll(
+                    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+                );
+                const firstElement = focusableElements[0] as HTMLElement;
+                const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+                if (e.shiftKey) { // Shift + Tab
+                    if (document.activeElement === firstElement) {
+                        e.preventDefault();
+                        lastElement.focus();
+                    }
+                } else { // Tab
+                    if (document.activeElement === lastElement) {
+                        e.preventDefault();
+                        firstElement.focus();
+                    }
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            clearTimeout(timer);
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [onClose]);
 
     const handleConfirm = (e: React.FormEvent) => {
         e.preventDefault();
@@ -35,10 +83,10 @@ export const FollowLinkDialog: React.FC<FollowLinkDialogProps> = ({
 
     return (
         <div className="modal-overlay">
-            <div className="follow-link-dialog">
+            <div className="follow-link-dialog" ref={dialogRef}>
                 <div className="dialog-header">
                     <h3>Follow Link</h3>
-                    <button className="close-btn" onClick={onClose}><X size={18} /></button>
+                    <button className="close-btn" onClick={onClose} title="Close (Esc)"><X size={18} /></button>
                 </div>
                 <form onSubmit={handleConfirm}>
                     <div className="dialog-body">
@@ -49,6 +97,7 @@ export const FollowLinkDialog: React.FC<FollowLinkDialogProps> = ({
                         <div className="form-group">
                             <label>Database</label>
                             <select
+                                ref={firstInputRef}
                                 value={selectedDb}
                                 onChange={(e) => {
                                     setSelectedDb(e.target.value);
@@ -85,7 +134,6 @@ export const FollowLinkDialog: React.FC<FollowLinkDialogProps> = ({
                                 onChange={(e) => setPropertyName(e.target.value)}
                                 placeholder="e.g. id, customerId, etc."
                                 required
-                                autoFocus
                             />
                             <span className="help-text">Query: SELECT * FROM c WHERE c["{propertyName}"] = {JSON.stringify(selectedValue)}</span>
                         </div>

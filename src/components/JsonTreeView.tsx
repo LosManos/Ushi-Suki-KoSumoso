@@ -298,13 +298,17 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
                 break;
             }
             case 'Enter': {
+                const item = flattenedItems[currentIndex];
+                if (!item) break;
+
                 if (e.altKey) {
                     e.preventDefault();
-                    const item = flattenedItems[currentIndex];
-                    if (item) {
-                        const el = document.getElementById(`json-node-${item.id}`);
-                        showContextMenu(e, item, el || undefined);
-                    }
+                    const el = document.getElementById(`json-node-${item.id}`);
+                    showContextMenu(e, item, el || undefined);
+                } else {
+                    // Plain Enter - Follow Link
+                    e.preventDefault();
+                    onFollowLink?.(item);
                 }
                 break;
             }
