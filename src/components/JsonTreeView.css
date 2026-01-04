@@ -100,6 +100,15 @@
     color: #005cc5;
 }
 
+.follow-btn {
+    background-color: var(--accent-color, #007acc) !important;
+    color: white !important;
+}
+
+.follow-btn:hover {
+    filter: brightness(1.1);
+}
+
 .json-tree-view.light .json-null {
     color: #586069;
 }

@@ -511,30 +511,27 @@ function App() {
         // We want to skip root and index if they exist
         const propertyPath = item.path.filter((p: any) => p !== 'root' && typeof p !== 'number').join('.');
         const sourceKey = `${accountName}/${activeTabId}:${propertyPath}`;
-        const suggestion = storedLinks[sourceKey];
+        const mapping = item.linkTarget || storedLinks[sourceKey];
 
-        // If we have a suggestion, ensure containers for that DB are loaded
-        if (suggestion && !containers[suggestion.targetDb]) {
-            cosmos.getContainers(suggestion.targetDb).then(result => {
-                if (result.success && result.data) {
-                    setContainers(prev => ({ ...prev, [suggestion.targetDb]: result.data! }));
-                }
+        // If we have a mapping, follow it immediately
+        if (mapping) {
+            executeFollowLink(mapping.targetDb, mapping.targetContainer, mapping.targetPropertyName, {
+                item,
+                sourceTabId: activeTabId,
+                sourceKey
             });
+            return;
         }
 
         setFollowLinkItem({ item, sourceTabId: activeTabId, sourceKey });
     };
 
-    const confirmFollowLink = async (dbId: string, containerId: string, propertyName: string) => {
-        if (!followLinkItem) return;
-
-        const { item, sourceTabId, sourceKey } = followLinkItem;
+    const executeFollowLink = async (dbId: string, containerId: string, propertyName: string, context: { item: FlattenedItem; sourceTabId: string; sourceKey: string }) => {
+        const { item, sourceTabId, sourceKey } = context;
         const targetValue = item.linkedValue !== undefined ? item.linkedValue : item.value;
         const path = item.path;
 
-        setFollowLinkItem(null);
-
-        // Save link mapping for persistence
+        // Save link mapping for persistence if it's new
         if (sourceKey) {
             const mapping: LinkMapping = {
                 targetDb: dbId,
@@ -604,6 +601,13 @@ function App() {
                 error: `Error following link in ${dbId}/${containerId}.\nQuery: ${query}\nError: ${result.error || 'Unknown error'}`
             } : t));
         }
+    };
+
+    const confirmFollowLink = async (dbId: string, containerId: string, propertyName: string) => {
+        if (!followLinkItem) return;
+        const context = followLinkItem;
+        setFollowLinkItem(null);
+        await executeFollowLink(dbId, containerId, propertyName, context);
     };
 
 

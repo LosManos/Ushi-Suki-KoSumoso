@@ -353,6 +353,15 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
                 }
                 break;
             }
+            case 'f':
+            case 'F': {
+                const item = flattenedItems[currentIndex];
+                if (item && item.linkTarget) {
+                    e.preventDefault();
+                    onFollowLink?.(item);
+                }
+                break;
+            }
         }
 
         if (newIndex !== currentIndex && newIndex !== -1) {
@@ -398,6 +407,7 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
                     }}
                     onToggle={toggleExpand}
                     onContextMenu={(e, i) => showContextMenu(e, i)}
+                    onFollowLink={onFollowLink}
                 />
             ))}
             {contextMenu && contextMenu.visible && (
@@ -420,7 +430,8 @@ const JsonNode: React.FC<{
     onSelect: (id: string) => void;
     onToggle: (id: string) => void;
     onContextMenu: (e: React.MouseEvent | React.KeyboardEvent, item: FlattenedItem) => void;
-}> = ({ item, isFocused, onSelect, onToggle, onContextMenu }) => {
+    onFollowLink?: (item: FlattenedItem) => void;
+}> = ({ item, isFocused, onSelect, onToggle, onContextMenu, onFollowLink }) => {
 
     // Formatting value
     let valueDisplay = null;
@@ -487,7 +498,8 @@ const JsonNode: React.FC<{
                 {item.linkTarget && (
                     <span
                         className="json-link-indicator"
-                        title={`Link leads to: ${item.linkTarget.targetDb} / ${item.linkTarget.targetContainer} (property: ${item.linkTarget.targetPropertyName})`}
+                        title={`Link leads to: ${item.linkTarget.targetDb} / ${item.linkTarget.targetContainer} (property: ${item.linkTarget.targetPropertyName})\nShortcut: F`}
+                        onClick={(e) => { e.stopPropagation(); onFollowLink?.(item); }}
                     >
                         <Link size={12} />
                     </span>
@@ -512,6 +524,11 @@ const JsonNode: React.FC<{
                 <button className="copy-btn" onClick={handleCopyBoth} title="Copy key & value">
                     <Copy size={10} /><span>B</span>
                 </button>
+                {item.linkTarget && (
+                    <button className="copy-btn follow-btn" onClick={(e) => { e.stopPropagation(); onFollowLink?.(item); }} title="Follow known link (F)">
+                        <Link size={10} /><span>F</span>
+                    </button>
+                )}
             </span>
         </div>
     );
