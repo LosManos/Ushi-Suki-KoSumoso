@@ -7,6 +7,7 @@ export interface ContextMenuItem {
     onClick?: () => void;
     icon?: React.ReactNode;
     divider?: boolean;
+    accessKey?: string;
 }
 
 interface ContextMenuProps {
@@ -106,7 +107,35 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, items, onClose }
                 itemRefs.current[nextIndex]?.focus();
                 break;
             }
+            default: {
+                // Support access keys (hotkeys)
+                const key = e.key.toLowerCase();
+                if (key.length === 1) { // Normal character
+                    const matchIndex = items.findIndex(item => item.accessKey?.toLowerCase() === key);
+                    if (matchIndex !== -1) {
+                        const item = items[matchIndex];
+                        item.onClick?.();
+                        onClose();
+                    }
+                }
+                break;
+            }
         }
+    };
+
+    const renderLabel = (label: string, accessKey?: string) => {
+        if (!accessKey) return label;
+
+        const keyIndex = label.toLowerCase().indexOf(accessKey.toLowerCase());
+        if (keyIndex === -1) return `${label} (${accessKey.toUpperCase()})`;
+
+        return (
+            <>
+                {label.substring(0, keyIndex)}
+                <span className="access-key">{label.substring(keyIndex, keyIndex + 1)}</span>
+                {label.substring(keyIndex + 1)}
+            </>
+        );
     };
 
     let navigableItemCounter = 0;
@@ -145,7 +174,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, items, onClose }
                             role="menuitem"
                         >
                             {item.icon && <span className="context-menu-icon">{item.icon}</span>}
-                            <span className="context-menu-label">{item.label}</span>
+                            <span className="context-menu-label">{renderLabel(item.label, item.accessKey)}</span>
                         </div>
                     );
                 }

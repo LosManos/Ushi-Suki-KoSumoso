@@ -43,7 +43,7 @@ export const FollowLinkDialog: React.FC<FollowLinkDialogProps> = ({
                 <form onSubmit={handleConfirm}>
                     <div className="dialog-body">
                         <p className="description">
-                            Link value <code>{valuePreview}</code> to a document in:
+                            Linking from <code>{valuePreview}</code>
                         </p>
 
                         <div className="form-group">

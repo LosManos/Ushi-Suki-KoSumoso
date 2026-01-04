@@ -97,21 +97,25 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
         return [
             {
                 label: 'Copy Key',
+                accessKey: 'K',
                 icon: <Copy size={14} />,
                 onClick: () => copyToClipboard(item.key)
             },
             {
                 label: 'Copy Value',
+                accessKey: 'V',
                 icon: <Copy size={14} />,
                 onClick: () => copyToClipboard(formatValueForClipboard(item.value))
             },
             {
                 label: 'Copy Raw Value',
+                accessKey: 'R',
                 icon: <Copy size={14} />,
                 onClick: () => copyToClipboard(getRawValue(item.value))
             },
             {
                 label: 'Copy Key & Value',
+                accessKey: 'B',
                 icon: <Copy size={14} />,
                 onClick: () => {
                     const formattedValue = formatValueForClipboard(item.value);
@@ -121,6 +125,7 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
             { divider: true },
             {
                 label: 'Copy JSON Path',
+                accessKey: 'P',
                 icon: <Copy size={14} />,
                 onClick: () => {
                     const path = item.path.filter(p => p !== 'root').join('.');
@@ -130,15 +135,18 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
             { divider: true },
             {
                 label: 'Expand All',
+                accessKey: 'E',
                 onClick: () => expandAll(item)
             },
             {
                 label: 'Collapse All',
+                accessKey: 'C',
                 onClick: () => collapseAll(item)
             },
             { divider: true },
             {
                 label: 'Follow Link...',
+                accessKey: 'F',
                 onClick: () => onFollowLink?.(item)
             }
         ];
