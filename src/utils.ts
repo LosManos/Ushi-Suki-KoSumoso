@@ -70,9 +70,20 @@ export const updateValueAtPath = (obj: any, path: string[], newValue: any): any 
 
     for (let i = 0; i < keys.length - 1; i++) {
         const key = keys[i];
-        // Create shallow copy of the next level
-        current[key] = Array.isArray(current[key]) ? [...current[key]] : { ...current[key] };
-        current = current[key];
+
+        // Handle linked data wrapper
+        if (current[key] && typeof current[key] === 'object' && current[key].__isLinked__) {
+            // We need to immutably update the wrapper itself too
+            current[key] = {
+                ...current[key],
+                linkedData: Array.isArray(current[key].linkedData) ? [...current[key].linkedData] : { ...current[key].linkedData }
+            };
+            current = current[key].linkedData;
+        } else {
+            // Standard update
+            current[key] = Array.isArray(current[key]) ? [...current[key]] : { ...current[key] };
+            current = current[key];
+        }
     }
 
     const lastKey = keys[keys.length - 1];
