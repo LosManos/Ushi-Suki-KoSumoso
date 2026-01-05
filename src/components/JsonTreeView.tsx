@@ -50,6 +50,7 @@ export interface FlattenedItem {
     path: string[];
     linkedValue?: any;
     linkTarget?: LinkMapping;
+    isLinkedData?: boolean;
 }
 
 // Interface removed as we forward HTMLDivElement directly
@@ -165,8 +166,10 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
     const flattenedItems = useMemo(() => {
         const items: FlattenedItem[] = [];
 
-        const traverse = (currentData: any, currentLevel: number, currentPath: string[]) => {
+        const traverse = (currentData: any, currentLevel: number, currentPath: string[], isLinkedData: boolean = false) => {
             const pathStr = currentPath.join('.');
+            let childrenIsLinkedData = isLinkedData;
+            let itemIsLinkedData = isLinkedData;
 
             // Determine type
             let type: 'object' | 'array' | 'primitive' = 'primitive';
@@ -178,6 +181,7 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
             if (currentData !== null && typeof currentData === 'object' && currentData.__isLinked__) {
                 displayData = currentData.linkedData;
                 linkedValue = currentData.originalValue;
+                childrenIsLinkedData = true;
             }
 
             if (displayData !== null && typeof displayData === 'object') {
@@ -185,33 +189,38 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
                 hasChildren = Object.keys(displayData).length > 0;
             }
 
-            // We don't push the root object itself as a visible line if we want to show its properties directly?
-            // Actually, usually root is implicit. Let's make root renderable so we can collapse it if we want, 
-            // or better, just start traversing from root properties if root is an array/object.
-            // But typically JSON view starts with { or [
-
             const isExpanded = expandedKeys.has(pathStr);
 
-            // However, for the list logic, we need items.
-            // Let's treat the incoming 'data' as the root item.
             if (currentPath.length === 0) {
                 // Special case for root
-                const rootType = Array.isArray(data) ? 'array' : (typeof data === 'object' && data !== null ? 'object' : 'primitive');
-                const rootHasChildren = rootType !== 'primitive' && Object.keys(data).length > 0;
+                let rootDisplayData = data;
+                let rootLinkedValue = undefined;
+                let rootChildrenIsLinked = false;
+
+                if (data !== null && typeof data === 'object' && data.__isLinked__) {
+                    rootDisplayData = data.linkedData;
+                    rootLinkedValue = data.originalValue;
+                    rootChildrenIsLinked = true;
+                }
+
+                const rootType = Array.isArray(rootDisplayData) ? 'array' : (typeof rootDisplayData === 'object' && rootDisplayData !== null ? 'object' : 'primitive');
+                const rootHasChildren = rootType !== 'primitive' && Object.keys(rootDisplayData).length > 0;
                 items.push({
                     id: 'root',
                     key: 'root',
-                    value: data,
+                    value: rootDisplayData,
                     level: 0,
                     type: rootType,
                     expanded: expandedKeys.has('root'),
                     hasChildren: rootHasChildren,
-                    path: ['root']
+                    path: ['root'],
+                    linkedValue: rootLinkedValue,
+                    isLinkedData: false // Root itself is never highlighted as "linked result"
                 });
 
                 if (expandedKeys.has('root') && rootHasChildren) {
-                    Object.entries(data).forEach(([k, v]) => {
-                        traverse(v, 1, ['root', k]);
+                    Object.entries(rootDisplayData).forEach(([k, v]) => {
+                        traverse(v, 1, ['root', k], rootChildrenIsLinked);
                     });
                 }
                 return;
@@ -228,12 +237,13 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
                 expanded: isExpanded,
                 hasChildren,
                 path: currentPath,
-                linkedValue
+                linkedValue,
+                isLinkedData: itemIsLinkedData
             });
 
             if (isExpanded && hasChildren) {
                 Object.entries(displayData).forEach(([k, v]) => {
-                    traverse(v, currentLevel + 1, [...currentPath, k]);
+                    traverse(v, currentLevel + 1, [...currentPath, k], childrenIsLinkedData);
                 });
             }
         };
@@ -479,7 +489,7 @@ const JsonNode: React.FC<{
     return (
         <div
             id={`json-node-${item.id}`}
-            className={`json-node ${isFocused ? 'focused' : ''}`}
+            className={`json-node ${isFocused ? 'focused' : ''} ${item.isLinkedData ? 'is-linked-data' : ''}`}
             style={{ paddingLeft: `${item.level * 20}px` }}
             onClick={(e) => {
                 e.stopPropagation();

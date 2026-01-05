@@ -243,3 +243,28 @@
 .json-tree-view.light .json-link-indicator {
     color: #005cc5;
 }
+
+/* Linked Data Styling - uses high specificity to override themes without !important */
+.json-tree-view .json-node.is-linked-data .json-key {
+    color: #ff00ff;
+    /* Bright Magenta */
+}
+
+.json-tree-view .json-node.is-linked-data .json-string,
+.json-tree-view .json-node.is-linked-data .json-number,
+.json-tree-view .json-node.is-linked-data .json-boolean,
+.json-tree-view .json-node.is-linked-data .json-null,
+.json-tree-view .json-node.is-linked-data .json-array-label,
+.json-tree-view .json-node.is-linked-data .json-object-label {
+    color: #ff00ff;
+    opacity: 0.9;
+}
+
+/* Ensure focused state still overrides to white for readability */
+.json-node.focused.is-linked-data .json-key,
+.json-node.focused.is-linked-data .json-string,
+.json-node.focused.is-linked-data .json-number,
+.json-node.focused.is-linked-data .json-boolean,
+.json-node.focused.is-linked-data .json-null {
+    color: white;
+}
