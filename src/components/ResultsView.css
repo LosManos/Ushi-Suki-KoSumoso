@@ -8,6 +8,157 @@
     border-left: 1px solid var(--border-color);
 }
 
+.search-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 8px;
+    background-color: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    gap: 8px;
+}
+
+.search-input-wrapper {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    background-color: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 4px;
+    padding-right: 4px;
+}
+
+.search-bar input {
+    flex: 1;
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    padding: 4px 8px;
+    font-size: 0.85rem;
+    outline: none;
+}
+
+.search-match-count {
+    font-size: 11px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    margin: 0 4px;
+    padding: 2px 6px;
+    background-color: var(--bg-primary);
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+}
+
+.search-toggle-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    padding: 2px 6px;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-weight: 600;
+    font-size: 0.75rem;
+    cursor: pointer;
+    border-radius: 3px;
+    opacity: 0.7;
+}
+
+.search-toggle-btn:hover {
+    opacity: 1;
+    background-color: var(--button-hover-bg);
+}
+
+.search-toggle-btn.active {
+    background-color: var(--accent-color);
+    color: white;
+    opacity: 1;
+}
+
+.search-close-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    border-radius: 4px;
+}
+
+.search-close-btn:hover {
+    background-color: var(--button-hover-bg);
+    color: var(--text-primary);
+}
+
+/* Text Result Highlighting */
+.text-view-content-wrapper {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.json-highlighter {
+    flex: 1;
+    width: 100%;
+    overflow: auto;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    padding: 1rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.json-highlighter mark {
+    background-color: #ffd33d;
+    color: #000;
+    border-radius: 2px;
+}
+
+.dark .json-highlighter mark {
+    background-color: #f2cc60;
+    color: #000;
+}
+
+.template-output-wrapper {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.template-highlighter {
+    flex: 1;
+    width: 100%;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    padding: 0.75rem;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.template-highlighter mark {
+    background-color: #ffd33d;
+    color: #000;
+    border-radius: 2px;
+}
+
+.dark .template-highlighter mark {
+    background-color: #f2cc60;
+    color: #000;
+}
+
 .results-header {
     padding: 0 1rem;
     /* Removed vertical padding to let tabs touch bottom */

@@ -192,6 +192,18 @@
     color: white;
 }
 
+.search-highlight {
+    background-color: #ffd33d;
+    color: #000;
+    border-radius: 2px;
+    padding: 0 1px;
+}
+
+.dark .search-highlight {
+    background-color: #f2cc60;
+    color: #000;
+}
+
 .json-node.focused .copy-btn:hover {
     background-color: rgba(255, 255, 255, 0.35);
 }
