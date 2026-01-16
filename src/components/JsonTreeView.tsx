@@ -37,6 +37,8 @@ interface JsonTreeViewProps {
     storedLinks?: Record<string, any>;
     accountName?: string;
     activeTabId?: string;
+    searchQuery?: string;
+    searchIsRegex?: boolean;
 }
 
 export interface FlattenedItem {
@@ -55,7 +57,16 @@ export interface FlattenedItem {
 
 // Interface removed as we forward HTMLDivElement directly
 
-export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(({ data, theme = 'dark', onFollowLink, storedLinks = {}, accountName = '', activeTabId = '' }, ref) => {
+export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(({
+    data,
+    theme = 'dark',
+    onFollowLink,
+    storedLinks = {},
+    accountName = '',
+    activeTabId = '',
+    searchQuery = '',
+    searchIsRegex = false
+}, ref) => {
     const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set(['root']));
     const [focusedPath, setFocusedPath] = useState<string>('root');
     const internalRef = useRef<HTMLDivElement | null>(null);
@@ -368,6 +379,7 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
             }
             case 'f':
             case 'F': {
+                if (e.metaKey || e.ctrlKey) break;
                 const item = flattenedItems[currentIndex];
                 if (item) {
                     e.preventDefault();
@@ -421,6 +433,8 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
                     onToggle={toggleExpand}
                     onContextMenu={(e, i) => showContextMenu(e, i)}
                     onFollowLink={onFollowLink}
+                    searchQuery={searchQuery}
+                    searchIsRegex={searchIsRegex}
                 />
             ))}
             {contextMenu && contextMenu.visible && (
@@ -444,7 +458,39 @@ const JsonNode: React.FC<{
     onToggle: (id: string) => void;
     onContextMenu: (e: React.MouseEvent | React.KeyboardEvent, item: FlattenedItem) => void;
     onFollowLink?: (item: FlattenedItem, forceDialog?: boolean) => void;
-}> = ({ item, isFocused, onSelect, onToggle, onContextMenu, onFollowLink }) => {
+    searchQuery?: string;
+    searchIsRegex?: boolean;
+}> = ({ item, isFocused, onSelect, onToggle, onContextMenu, onFollowLink, searchQuery = '', searchIsRegex = false }) => {
+
+    const renderTextWithHighlight = (text: string) => {
+        if (!searchQuery) return text;
+
+        try {
+            let regex: RegExp;
+            if (searchIsRegex) {
+                regex = new RegExp(`(${searchQuery})`, 'gi');
+            } else {
+                // Escape special characters for plain text search
+                const escaped = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                regex = new RegExp(`(${escaped})`, 'gi');
+            }
+
+            const parts = text.split(regex);
+            return (
+                <>
+                    {parts.map((part, i) =>
+                        regex.test(part) ? (
+                            <span key={i} className="search-highlight">{part}</span>
+                        ) : (
+                            part
+                        )
+                    )}
+                </>
+            );
+        } catch (err) {
+            return text; // Fallback for invalid regex
+        }
+    };
 
     // Formatting value
     let valueDisplay = null;
@@ -457,7 +503,11 @@ const JsonNode: React.FC<{
     } else if (typeof item.value === 'number') {
         valueDisplay = <span className="json-number">{item.value}</span>;
     } else if (typeof item.value === 'string') {
-        valueDisplay = <span className={`json-string ${typeClass}`}>"{item.value}"</span>;
+        valueDisplay = (
+            <span className={`json-string ${typeClass}`}>
+                "{renderTextWithHighlight(item.value)}"
+            </span>
+        );
     } else if (Array.isArray(item.value)) {
         valueDisplay = <span className="json-array-label">Array({item.value.length})</span>;
     } else if (typeof item.value === 'object') {
@@ -507,7 +557,7 @@ const JsonNode: React.FC<{
                 {item.hasChildren ? (item.expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />) : <span style={{ display: 'inline-block', width: '1em' }}></span>}
             </span>
             <span className="json-key">
-                {item.key === 'root' ? 'root' : item.key}
+                {item.key === 'root' ? 'root' : renderTextWithHighlight(item.key)}
                 {item.linkTarget && (
                     <span
                         className="json-link-indicator"
