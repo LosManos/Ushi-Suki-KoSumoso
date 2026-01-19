@@ -286,6 +286,33 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
         const currentIndex = flattenedItems.findIndex(item => item.id === focusedPath);
         let newIndex = currentIndex;
 
+        if (e.altKey) {
+            const item = flattenedItems[currentIndex];
+            if (item) {
+                if (e.code === 'KeyK') {
+                    e.preventDefault();
+                    copyToClipboard(item.key);
+                    return;
+                }
+                if (e.code === 'KeyV') {
+                    e.preventDefault();
+                    copyToClipboard(formatValueForClipboard(item.value));
+                    return;
+                }
+                if (e.code === 'KeyR') {
+                    e.preventDefault();
+                    copyToClipboard(getRawValue(item.value));
+                    return;
+                }
+                if (e.code === 'KeyB') {
+                    e.preventDefault();
+                    const formattedValue = formatValueForClipboard(item.value);
+                    copyToClipboard(`"${item.key}": ${formattedValue}`);
+                    return;
+                }
+            }
+        }
+
         switch (e.key) {
             case 'ArrowDown':
             case 'j': {
@@ -366,6 +393,16 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
                 }
                 break;
             }
+            case 'f':
+            case 'F': {
+                if (e.metaKey || e.ctrlKey) break;
+                const item = flattenedItems[currentIndex];
+                if (item) {
+                    e.preventDefault();
+                    onFollowLink?.(item);
+                }
+                break;
+            }
             case 'F10': {
                 if (e.shiftKey) {
                     e.preventDefault();
@@ -374,16 +411,6 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
                         const el = document.getElementById(`json-node-${item.id}`);
                         showContextMenu(e, item, el || undefined);
                     }
-                }
-                break;
-            }
-            case 'f':
-            case 'F': {
-                if (e.metaKey || e.ctrlKey) break;
-                const item = flattenedItems[currentIndex];
-                if (item) {
-                    e.preventDefault();
-                    onFollowLink?.(item);
                 }
                 break;
             }
@@ -575,16 +602,16 @@ const JsonNode: React.FC<{
             )}
             {valueDisplay}
             <span className="copy-buttons">
-                <button className="copy-btn" onClick={handleCopyKey} title="Copy key">
+                <button className="copy-btn" onClick={handleCopyKey} title="Copy key (Alt+K)">
                     <Copy size={10} /><span>K</span>
                 </button>
-                <button className="copy-btn" onClick={handleCopyValue} title="Copy value (with quotes)">
+                <button className="copy-btn" onClick={handleCopyValue} title="Copy value (Alt+V)">
                     <Copy size={10} /><span>V</span>
                 </button>
-                <button className="copy-btn" onClick={handleCopyRawValue} title="Copy raw value (no quotes)">
+                <button className="copy-btn" onClick={handleCopyRawValue} title="Copy raw value (Alt+R)">
                     <Copy size={10} /><span>R</span>
                 </button>
-                <button className="copy-btn" onClick={handleCopyBoth} title="Copy key & value">
+                <button className="copy-btn" onClick={handleCopyBoth} title="Copy key & value (Alt+B)">
                     <Copy size={10} /><span>B</span>
                 </button>
                 <button

@@ -394,7 +394,21 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
       // Text view copy shortcuts (Alt+K/V/R/B)
       // Only work when text view is active and textarea is focused
       if (viewMode === 'text' && document.activeElement === containerRef.current) {
-        // ... (lines 351-373 unchanged)
+        if (e.altKey) {
+          if (e.code === 'KeyK') {
+            e.preventDefault();
+            copyKeyFromLine();
+          } else if (e.code === 'KeyV') {
+            e.preventDefault();
+            copyValueFromLine();
+          } else if (e.code === 'KeyR') {
+            e.preventDefault();
+            copyRawValueFromLine();
+          } else if (e.code === 'KeyB') {
+            e.preventDefault();
+            copyBothFromLine();
+          }
+        }
       }
 
       // Cmd/Ctrl + F to toggle search
