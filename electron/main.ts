@@ -10,6 +10,9 @@ function getVitePublicPath(): string {
     return app.isPackaged ? process.env.DIST! : path.join(process.env.DIST!, '../public');
 }
 
+const isDev = !!process.env['VITE_DEV_SERVER_URL'];
+
+
 // Window state persistence
 interface WindowState {
     x?: number;
@@ -92,8 +95,10 @@ function createWindow() {
         y: savedState?.y,
         width: savedState?.width ?? defaultWidth,
         height: savedState?.height ?? defaultHeight,
-        icon: path.join(getVitePublicPath(), 'icon.icns'),
+        icon: path.join(getVitePublicPath(), isDev ? 'v_dev.png' : 'icon.icns'),
         webPreferences: {
+
+
             preload: path.join(__dirname, 'preload.js'),
         },
     });
@@ -167,8 +172,10 @@ ipcMain.handle('compare:open', async (_, documents: any[]) => {
             y: savedState?.y,
             width: savedState?.width ?? defaultWidth,
             height: savedState?.height ?? defaultHeight,
-            icon: path.join(getVitePublicPath(), 'icon.icns'),
+            icon: path.join(getVitePublicPath(), isDev ? 'v_dev.png' : 'icon.icns'),
             webPreferences: {
+
+
                 preload: path.join(__dirname, 'preload.js'),
             },
             title: 'Compare Documents',
@@ -355,9 +362,11 @@ app.whenReady().then(() => {
 
     // Set dock icon on macOS
     if (process.platform === 'darwin' && app.dock) {
-        const iconPath = path.join(getVitePublicPath(), 'v_macos.png');
+        const iconPath = path.join(getVitePublicPath(), isDev ? 'v_dev.png' : 'v_macos.png');
         app.dock.setIcon(iconPath);
     }
+
+
 
     // Schema storage handlers
     ipcMain.handle('storage:saveSchema', async (_, containerId: string, keys: string[]) => {
