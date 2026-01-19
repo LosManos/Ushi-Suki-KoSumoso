@@ -59,6 +59,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const sidebarRef = React.useRef<HTMLDivElement>(null);
   const historyFilterRef = React.useRef<HTMLDivElement>(null);
   const optionRefs = React.useRef<(HTMLDivElement | null)[]>([]);
+  const [appVersion, setAppVersion] = React.useState<string>('');
+
 
   // Container Info Panel state
   const [infoPanel, setInfoPanel] = React.useState<{ databaseId: string; containerId: string } | null>(null);
@@ -168,6 +170,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
     window.addEventListener('keydown', handleWindowKeyDown);
     return () => window.removeEventListener('keydown', handleWindowKeyDown);
   }, []);
+
+  // Fetch version on mount
+  React.useEffect(() => {
+    window.ipcRenderer.invoke('app:getVersion').then(v => setAppVersion(v));
+  }, []);
+
 
 
   const flatItems = React.useMemo(() => {
@@ -605,7 +613,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       <span>Quit</span>
                       <span style={{ opacity: 0.6, fontSize: '0.85em' }}>⌘Q</span>
                     </button>
+
+                    <div className="menu-separator"></div>
+                    <div className="menu-version-info">
+                      v{appVersion}
+                    </div>
                   </>
+
                 ) : (
                   <>
                     <button

@@ -15,11 +15,25 @@
     border: 1px solid var(--border-color);
 }
 
-.connection-form h2 {
-    margin-top: 0.5rem;
-    color: var(--text-primary);
-    text-align: center;
+.title-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 1.5rem;
 }
+
+.connection-form h2 {
+    margin: 0;
+    color: var(--text-primary);
+}
+
+.app-version {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    opacity: 0.6;
+    margin-top: 2px;
+}
+
 
 .logo-container {
     display: flex;

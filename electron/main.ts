@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, Menu, MenuItemConstructorOptions, safeStorage, shell } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, Menu, MenuItemConstructorOptions, safeStorage, shell, net } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import { cosmosService } from './cosmos';
@@ -153,6 +153,67 @@ ipcMain.on('app:quit', () => {
     app.quit();
 });
 
+ipcMain.handle('app:getVersion', () => {
+    return app.getVersion();
+});
+
+ipcMain.handle('app:checkUpdate', async () => {
+    return new Promise((resolve) => {
+        const url = 'https://api.github.com/repos/LosManos/Ushi-Suki-KoSumoso/releases/latest';
+        const request = net.request(url);
+
+        request.on('response', (response: any) => {
+            let body = '';
+            response.on('data', (chunk: Buffer) => {
+                body += chunk.toString();
+            });
+            response.on('end', () => {
+                try {
+                    if (response.statusCode === 200) {
+                        const release = JSON.parse(body);
+                        const latestVersion = release.tag_name.replace(/^v/, '');
+                        const currentVersion = app.getVersion();
+
+                        // Simple version comparison (semantic)
+                        const latest = latestVersion.split('.').map(Number);
+                        const current = currentVersion.split('.').map(Number);
+
+                        let isNewer = false;
+                        for (let i = 0; i < 3; i++) {
+                            if ((latest[i] || 0) > (current[i] || 0)) {
+                                isNewer = true;
+                                break;
+                            }
+                            if ((latest[i] || 0) < (current[i] || 0)) {
+                                break;
+                            }
+                        }
+
+                        resolve({
+                            isNewer,
+                            latestVersion,
+                            currentVersion,
+                            url: release.html_url,
+                            publishedAt: release.published_at
+                        });
+                    } else {
+                        resolve({ error: `GitHub API returned ${response.statusCode}` });
+                    }
+                } catch (e: any) {
+                    resolve({ error: e.message });
+                }
+            });
+        });
+
+        request.on('error', (error: Error) => {
+            resolve({ error: error.message });
+        });
+
+        request.end();
+    });
+});
+
+
 // Store documents for compare window
 let pendingCompareDocuments: any[] | null = null;
 
@@ -228,7 +289,18 @@ app.whenReady().then(() => {
         ...(isMac ? [{
             label: app.name,
             submenu: [
-                { role: 'about' },
+                {
+                    label: `About ${app.name}`,
+                    click: () => {
+                        dialog.showMessageBox({
+                            title: `About ${app.name}`,
+                            message: app.name,
+                            detail: `Version: ${app.getVersion()}\nElectron: ${process.versions.electron}\nChrome: ${process.versions.chrome}\nNode: ${process.versions.node}`,
+                            buttons: ['OK'],
+                            icon: path.join(getVitePublicPath(), isDev ? 'v_dev.png' : 'icon.icns'),
+                        });
+                    }
+                },
                 { type: 'separator' },
                 { role: 'services' },
                 { type: 'separator' },
@@ -352,7 +424,21 @@ app.whenReady().then(() => {
                     click: async () => {
                         await shell.openExternal('https://github.com/LosManos/Ushi-Suki-KoSumoso');
                     }
+                },
+                { type: 'separator' },
+                {
+                    label: `About ${app.name}`,
+                    click: () => {
+                        dialog.showMessageBox({
+                            title: `About ${app.name}`,
+                            message: app.name,
+                            detail: `Version: ${app.getVersion()}\nElectron: ${process.versions.electron}\nChrome: ${process.versions.chrome}\nNode: ${process.versions.node}`,
+                            buttons: ['OK'],
+                            icon: path.join(getVitePublicPath(), isDev ? 'v_dev.png' : 'icon.icns'),
+                        });
+                    }
                 }
+
             ] as MenuItemConstructorOptions[]
         }
     ];

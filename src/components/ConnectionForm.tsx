@@ -21,8 +21,14 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect, onCan
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [appVersion, setAppVersion] = useState<string>('');
+
+    useEffect(() => {
+        window.ipcRenderer.invoke('app:getVersion').then(v => setAppVersion(v));
+    }, []);
 
     const inputRef = React.useRef<HTMLInputElement>(null);
+
     const savedSelectRef = React.useRef<HTMLSelectElement>(null);
     const nameInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -162,7 +168,10 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect, onCan
                 <div className="logo-container">
                     <img src="/v_ios.png" alt="Kosumoso Logo" className="app-logo" />
                 </div>
-                <h2>Kosumoso</h2>
+                <div className="title-container">
+                    <h2>Kosumoso</h2>
+                    <span className="app-version">v{appVersion}</span>
+                </div>
 
                 {savedConnections.length > 0 && (
                     <div className="form-group saved-connections-group">
