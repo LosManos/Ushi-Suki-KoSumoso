@@ -213,7 +213,6 @@ ipcMain.handle('app:checkUpdate', async () => {
     });
 });
 
-
 // Store documents for compare window
 let pendingCompareDocuments: any[] | null = null;
 
