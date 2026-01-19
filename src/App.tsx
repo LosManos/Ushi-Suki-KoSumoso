@@ -15,6 +15,8 @@ import { schemaService } from './services/schema';
 import { extractParagraphAtCursor, updateValueAtPath } from './utils';
 import { linkService, LinkMapping } from './services/linkService';
 import { FlattenedItem } from './components/JsonTreeView';
+import { UpdateBanner } from './components/UpdateBanner';
+import './App.css';
 
 function App() {
     const [isConnected, setIsConnected] = useState(false);
@@ -49,6 +51,10 @@ function App() {
     // Store link mappings (loaded from disk)
     const [storedLinks, setStoredLinks] = useState<Record<string, LinkMapping>>({});
 
+    // Update State
+    const [updateInfo, setUpdateInfo] = useState<{ isNewer: boolean; latestVersion: string; url: string } | null>(null);
+    const [showUpdateBanner, setShowUpdateBanner] = useState(false);
+
     // Load history, templates and schemas on startup
     useEffect(() => {
         historyService.getHistory().then(res => {
@@ -69,6 +75,14 @@ function App() {
         linkService.getLinks().then(res => {
             if (res.success && res.data) {
                 setStoredLinks(res.data);
+            }
+        });
+
+        // Check for updates
+        window.ipcRenderer.invoke('app:checkUpdate').then(res => {
+            if (res && res.isNewer) {
+                setUpdateInfo(res);
+                setShowUpdateBanner(true);
             }
         });
     }, []);
@@ -656,116 +670,134 @@ function App() {
     if (!isConnected) {
         return (
             <ThemeProvider>
-                <ConnectionForm
-                    onConnect={handleConnect}
-                    onCancel={databases.length > 0 ? () => setIsConnected(true) : undefined}
-                />
+                <div className="app-container">
+                    {showUpdateBanner && updateInfo && (
+                        <UpdateBanner
+                            version={updateInfo.latestVersion}
+                            url={updateInfo.url}
+                            onClose={() => setShowUpdateBanner(false)}
+                        />
+                    )}
+                    <ConnectionForm
+                        onConnect={handleConnect}
+                        onCancel={databases.length > 0 ? () => setIsConnected(true) : undefined}
+                    />
+                </div>
             </ThemeProvider>
         );
     }
 
     return (
         <ThemeProvider>
-            <Layout
-                sidebarWidth={sidebarWidth}
-                onSidebarMouseDown={handleSidebarMouseDown}
-                sidebarResizeHandleRef={sidebarResizeHandleRef}
-                isDraggingSidebar={activeDrag === 'sidebar'}
-                onSidebarHandleKeyDown={handleSidebarHandleKeyDown}
-                sidebar={
-                    <Sidebar
-                        databases={databases}
-                        selectedDatabase={highlightedDatabase}
-                        selectedContainer={highlightedContainer}
-                        onSelectDatabase={handleSelectDatabase}
-                        onSelectContainer={handleSelectContainer}
-                        containers={containers}
-                        accountName={accountName}
-                        onChangeConnection={handleChangeConnection}
-                        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
-                        history={history.filter(h => h.accountName === accountName)}
-                        onSelectHistory={handleSelectHistory}
-                        onCopyHistory={handleCopyHistoryQuery}
-                        onDeleteHistory={handleDeleteHistory}
+            <div className="app-container">
+                {showUpdateBanner && updateInfo && (
+                    <UpdateBanner
+                        version={updateInfo.latestVersion}
+                        url={updateInfo.url}
+                        onClose={() => setShowUpdateBanner(false)}
                     />
-                }
-                content={
-                    <>
-                        <div style={{ height: queryPaneHeight, display: 'flex', flexDirection: 'column' }}>
-                            <QueryEditor
-                                tabs={tabs}
-                                activeTabId={activeTabId}
-                                onTabSelect={setActiveTabId}
-                                onTabClose={handleTabClose}
-                                onRunQuery={executeActiveQuery}
-                                onGetDocument={handleGetDocument}
-                                onQueryChange={handleQueryChange}
-                                onDiscoverSchema={handleDiscoverSchema}
-                                cursorPositionRef={cursorPositionRef}
-                            />
-                        </div>
-
-                        <div
-                            ref={queryResizeHandleRef}
-                            className={`resize-handle ${activeDrag === 'query' ? 'dragging' : ''}`}
-                            onMouseDown={handleQueryMouseDown}
-                            tabIndex={0}
-                            title="Resize Query Pane (Ctrl+M)"
-                            onKeyDown={handleQueryHandleKeyDown}
-                        >
-                            <div className="resize-handle-grabber" />
-                        </div>
-
-                        <ResultsView
-                            results={activeTab?.results || []}
-                            loading={activeTab?.isQuerying || false}
-                            onRunQuery={executeActiveQuery}
-                            onCancelQuery={handleCancelQuery}
-                            pageSize={activeTab?.pageSize || 10}
-                            onPageSizeChange={handlePageSizeChange}
-                            error={activeTab?.error}
-                            onDismissError={handleDismissError}
-                            hasMoreResults={activeTab?.hasMoreResults}
-                            template={activeTab?.template || ''}
-                            onTemplateChange={(newTemplate) => {
-                                if (!activeTabId) return;
-                                const storageKey = `${accountName}/${activeTabId}`;
-                                setTabs(prev => prev.map(t =>
-                                    t.id === activeTabId ? { ...t, template: newTemplate } : t
-                                ));
-                                // Update ref and persist to disk
-                                storedTemplatesRef.current[storageKey] = newTemplate;
-                                templateService.saveTemplate(storageKey, newTemplate);
-                            }}
-                            onFollowLink={handleFollowLink}
-                            storedLinks={storedLinks}
+                )}
+                <Layout
+                    sidebarWidth={sidebarWidth}
+                    onSidebarMouseDown={handleSidebarMouseDown}
+                    sidebarResizeHandleRef={sidebarResizeHandleRef}
+                    isDraggingSidebar={activeDrag === 'sidebar'}
+                    onSidebarHandleKeyDown={handleSidebarHandleKeyDown}
+                    sidebar={
+                        <Sidebar
+                            databases={databases}
+                            selectedDatabase={highlightedDatabase}
+                            selectedContainer={highlightedContainer}
+                            onSelectDatabase={handleSelectDatabase}
+                            onSelectContainer={handleSelectContainer}
+                            containers={containers}
                             accountName={accountName}
-                            activeTabId={activeTabId || ''}
+                            onChangeConnection={handleChangeConnection}
+                            onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+                            history={history.filter(h => h.accountName === accountName)}
+                            onSelectHistory={handleSelectHistory}
+                            onCopyHistory={handleCopyHistoryQuery}
+                            onDeleteHistory={handleDeleteHistory}
                         />
-                    </>
-                }
-            />
-            <CommandPalette
-                isOpen={isCommandPaletteOpen}
-                onClose={() => setIsCommandPaletteOpen(false)}
-                databases={databases}
-                containers={containers}
-                onSelectContainer={handleSelectContainer}
-                loadContainers={loadContainers}
-            />
-            {followLinkItem && (
-                <FollowLinkDialog
+                    }
+                    content={
+                        <>
+                            <div style={{ height: queryPaneHeight, display: 'flex', flexDirection: 'column' }}>
+                                <QueryEditor
+                                    tabs={tabs}
+                                    activeTabId={activeTabId}
+                                    onTabSelect={setActiveTabId}
+                                    onTabClose={handleTabClose}
+                                    onRunQuery={executeActiveQuery}
+                                    onGetDocument={handleGetDocument}
+                                    onQueryChange={handleQueryChange}
+                                    onDiscoverSchema={handleDiscoverSchema}
+                                    cursorPositionRef={cursorPositionRef}
+                                />
+                            </div>
+
+                            <div
+                                ref={queryResizeHandleRef}
+                                className={`resize-handle ${activeDrag === 'query' ? 'dragging' : ''}`}
+                                onMouseDown={handleQueryMouseDown}
+                                tabIndex={0}
+                                title="Resize Query Pane (Ctrl+M)"
+                                onKeyDown={handleQueryHandleKeyDown}
+                            >
+                                <div className="resize-handle-grabber" />
+                            </div>
+
+                            <ResultsView
+                                results={activeTab?.results || []}
+                                loading={activeTab?.isQuerying || false}
+                                onRunQuery={executeActiveQuery}
+                                onCancelQuery={handleCancelQuery}
+                                pageSize={activeTab?.pageSize || 10}
+                                onPageSizeChange={handlePageSizeChange}
+                                error={activeTab?.error}
+                                onDismissError={handleDismissError}
+                                hasMoreResults={activeTab?.hasMoreResults}
+                                template={activeTab?.template || ''}
+                                onTemplateChange={(newTemplate) => {
+                                    if (!activeTabId) return;
+                                    const storageKey = `${accountName}/${activeTabId}`;
+                                    setTabs(prev => prev.map(t =>
+                                        t.id === activeTabId ? { ...t, template: newTemplate } : t
+                                    ));
+                                    // Update ref and persist to disk
+                                    storedTemplatesRef.current[storageKey] = newTemplate;
+                                    templateService.saveTemplate(storageKey, newTemplate);
+                                }}
+                                onFollowLink={handleFollowLink}
+                                storedLinks={storedLinks}
+                                accountName={accountName}
+                                activeTabId={activeTabId || ''}
+                            />
+                        </>
+                    }
+                />
+                <CommandPalette
+                    isOpen={isCommandPaletteOpen}
+                    onClose={() => setIsCommandPaletteOpen(false)}
                     databases={databases}
                     containers={containers}
-                    currentDbId={tabs.find(t => t.id === followLinkItem.sourceTabId)?.databaseId || ''}
-                    currentContainerId={tabs.find(t => t.id === followLinkItem.sourceTabId)?.containerId || ''}
-                    selectedValue={followLinkItem.item.linkedValue !== undefined ? followLinkItem.item.linkedValue : followLinkItem.item.value}
-                    suggestedMapping={storedLinks[followLinkItem.sourceKey]}
-                    onDatabaseChange={loadContainers}
-                    onClose={() => setFollowLinkItem(null)}
-                    onConfirm={confirmFollowLink}
+                    onSelectContainer={handleSelectContainer}
+                    loadContainers={loadContainers}
                 />
-            )}
+                {followLinkItem && (
+                    <FollowLinkDialog
+                        databases={databases}
+                        containers={containers}
+                        currentDbId={tabs.find(t => t.id === followLinkItem.sourceTabId)?.databaseId || ''}
+                        currentContainerId={tabs.find(t => t.id === followLinkItem.sourceTabId)?.containerId || ''}
+                        selectedValue={followLinkItem.item.linkedValue !== undefined ? followLinkItem.item.linkedValue : followLinkItem.item.value}
+                        suggestedMapping={storedLinks[followLinkItem.sourceKey]}
+                        onDatabaseChange={loadContainers}
+                        onClose={() => setFollowLinkItem(null)}
+                        onConfirm={confirmFollowLink}
+                    />
+                )}
+            </div>
         </ThemeProvider>
     );
 }

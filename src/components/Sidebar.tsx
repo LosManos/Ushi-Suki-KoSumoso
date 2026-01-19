@@ -61,7 +61,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const optionRefs = React.useRef<(HTMLDivElement | null)[]>([]);
   const [appVersion, setAppVersion] = React.useState<string>('');
 
-
   // Container Info Panel state
   const [infoPanel, setInfoPanel] = React.useState<{ databaseId: string; containerId: string } | null>(null);
 
@@ -78,6 +77,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
         }
       ];
     }
+
+    // Fetch version on mount
+    React.useEffect(() => {
+      window.ipcRenderer.invoke('app:getVersion').then(v => setAppVersion(v));
+    }, []);
 
     if (data.type === 'container') {
       return [
