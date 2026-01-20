@@ -54,6 +54,7 @@
 }
 
 .token.function,
+.token.function-call,
 .token.class-name {
     color: var(--sh-function, #a6e22e);
 }

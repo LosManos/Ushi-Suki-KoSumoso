@@ -10,6 +10,23 @@ import { QueryTab } from '../types';
 import { useContextMenu } from '../hooks/useContextMenu';
 import { ContextMenu, ContextMenuItem } from './ContextMenu';
 
+// Extend Prism SQL for Cosmos DB specific functions if not already present
+if (Prism.languages.sql) {
+    Prism.languages.sql['function'] = {
+        pattern: /\b(?:AVG|COUNT|FIRST|LAST|MAX|MIN|SUM|UCASE|LCASE|MID|LEN|ROUND|NOW|FORMAT|GROUP_CONCAT|COALESCE|IFNULL|ISNULL|IS_ARRAY|IS_BOOL|IS_DEFINED|IS_NULL|IS_NUMBER|IS_OBJECT|IS_PRIMITIVE|IS_STRING|CONTAINS|ENDSWITH|INDEX_OF|LEFT|LENGTH|LOWER|LTRIM|REPLACE|REPLICATE|REVERSE|RIGHT|RTRIM|STARTSWITH|SUBSTRING|UPPER|ABS|ACOS|ASIN|ATAN|ATN2|CEILING|COS|COT|DEGREES|EXP|FLOOR|LOG|LOG10|PI|POWER|RADIANS|ROUND|SIN|SQRT|SQUARE|TAN|TRUNC)\b(?=\s*\()/i,
+        lookbehind: false
+    };
+
+    // Add a catch-all for any word followed by ( as a function
+    // inserting it BEFORE the keyword to ensure function calls like count() are caught as functions
+    Prism.languages.insertBefore('sql', 'keyword', {
+        'function-call': {
+            pattern: /\b[a-z_][a-z0-9_]*(?=\s*\()/i,
+            alias: 'function'
+        }
+    });
+}
+
 
 interface QueryEditorProps {
     tabs: QueryTab[];
