@@ -15,7 +15,11 @@
     opacity: .7;
 }
 
-.token.property,
+.token.property {
+    color: #66d9ef;
+    /* Cyan/Blue-ish for columns/properties, matching JsonTreeView keys */
+}
+
 .token.tag,
 .token.boolean,
 .token.number,
@@ -39,7 +43,8 @@
 .token.url,
 .language-css .token.string,
 .style .token.string {
-    color: var(--text-primary, #f8f8f2);
+    color: var(--sh-keyword, #f92672);
+    /* Use red/pink for operators to make them pop */
 }
 
 .token.atrule,
