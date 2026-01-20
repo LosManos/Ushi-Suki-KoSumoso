@@ -16,10 +16,13 @@
     "dependencies": {
         "@azure/cosmos": "^4.0.0",
         "@azure/identity": "^4.13.0",
+        "@types/prismjs": "^1.26.5",
         "diff": "^8.0.3",
         "lucide-react": "^0.561.0",
+        "prismjs": "^1.30.0",
         "react": "^18.2.0",
-        "react-dom": "^18.2.0"
+        "react-dom": "^18.2.0",
+        "react-simple-code-editor": "^0.14.1"
     },
     "devDependencies": {
         "@types/diff": "^7.0.2",

@@ -1,7 +1,11 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Play, Search } from 'lucide-react';
+import Editor from 'react-simple-code-editor';
+import Prism from 'prismjs';
+import 'prismjs/components/prism-sql';
 import './QueryEditor.css';
 import './QueryEditorOverflow.css';
+import './SQLHighlight.css';
 import { QueryTab } from '../types';
 import { useContextMenu } from '../hooks/useContextMenu';
 import { ContextMenu, ContextMenuItem } from './ContextMenu';
@@ -59,14 +63,18 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
     };
 
     useEffect(() => {
-        if (activeTabId && textareaRef.current) {
-            textareaRef.current.focus();
+        if (activeTabId) {
+            const textarea = document.getElementById('query-editor-textarea');
+            if (textarea) {
+                textarea.focus();
+            }
         }
     }, [activeTabId]);
 
     const updateCursorPosition = () => {
-        if (textareaRef.current && cursorPositionRef) {
-            cursorPositionRef.current = textareaRef.current.selectionStart;
+        const textarea = document.getElementById('query-editor-textarea') as HTMLTextAreaElement;
+        if (textarea && cursorPositionRef) {
+            cursorPositionRef.current = textarea.selectionStart;
         }
     };
 
@@ -331,11 +339,20 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
                 </div>
             </div>
             <div className="editor-area">
-                <textarea
-                    ref={textareaRef}
-                    className="code-input"
+                <Editor
                     value={query}
-                    onChange={(e) => onQueryChange(e.target.value)}
+                    onValueChange={(code) => onQueryChange(code)}
+                    highlight={(code) => {
+                        if (Prism.languages.sql) {
+                            return Prism.highlight(code, Prism.languages.sql, 'sql');
+                        }
+                        // Fallback to plain text or basic escaping if SQL is not loaded
+                        return code;
+                    }}
+                    padding={16}
+                    className="code-editor"
+                    textareaClassName="code-input"
+                    textareaId="query-editor-textarea"
                     onSelect={updateCursorPosition}
                     onClick={updateCursorPosition}
                     onKeyUp={updateCursorPosition}

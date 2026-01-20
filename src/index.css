@@ -32,6 +32,7 @@
   --sh-keyword: #f92672;
   --sh-number: #ae81ff;
   --sh-function: #a6e22e;
+  --font-mono: 'Consolas', 'Monaco', 'Andale Mono', 'Ubuntu Mono', monospace;
 }
 
 :root.light {
