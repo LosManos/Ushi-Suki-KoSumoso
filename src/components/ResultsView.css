@@ -94,7 +94,7 @@
 .text-view-content-wrapper {
     flex: 1;
     min-height: 0;
-    overflow: hidden;
+    overflow: auto;
     position: relative;
     display: flex;
     flex-direction: column;
@@ -351,18 +351,35 @@
     background-color: var(--bg-primary);
 }
 
+.json-editor-container {
+    width: 100%;
+    min-height: 100%;
+}
+
 .json-editor {
     width: 100%;
     height: 100%;
     border: none;
     resize: none;
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
-    font-size: 14px;
-    line-height: 1.5;
-    padding: 1rem;
+    color: inherit;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
     outline: none;
+    box-sizing: border-box;
+    caret-color: var(--text-primary);
+}
+
+.json-editor-container mark {
+    background-color: rgba(255, 211, 61, 0.4);
+    color: inherit;
+    border-radius: 2px;
+    border-bottom: 2px solid #ffd33d;
+}
+
+.dark .json-editor-container mark {
+    background-color: rgba(242, 204, 96, 0.3);
+    border-bottom-color: #f2cc60;
 }
 
 .json-viewer-container {

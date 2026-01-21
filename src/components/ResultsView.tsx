@@ -4,7 +4,11 @@ import { JsonTreeView } from './JsonTreeView';
 import { useTheme } from '../context/ThemeContext';
 import { useContextMenu } from '../hooks/useContextMenu';
 import { ContextMenu, ContextMenuItem } from './ContextMenu';
+import Editor from 'react-simple-code-editor';
+import Prism from 'prismjs';
+import 'prismjs/components/prism-json';
 import './ResultsView.css';
+import './SQLHighlight.css';
 
 
 interface ResultsViewProps {
@@ -120,7 +124,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
 
   // Helper to get current line from textarea
   const getCurrentLineFromTextarea = (): string | null => {
-    const textarea = containerRef.current;
+    const textarea = document.getElementById('results-text-editor') as HTMLTextAreaElement;
     if (!textarea) return null;
 
     const cursorPos = textarea.selectionStart;
@@ -320,10 +324,13 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
       // Cmd/Ctrl + 3 to focus results view (or Cmd+R/Ctrl+R depending on implementation)
       if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'r') {
         e.preventDefault();
-        if (viewMode === 'text' && containerRef.current) {
-          containerRef.current.focus();
-          containerRef.current.setSelectionRange(0, 0);
-          containerRef.current.scrollTop = 0;
+        if (viewMode === 'text') {
+          const textarea = document.getElementById('results-text-editor') as HTMLTextAreaElement;
+          if (textarea) {
+            textarea.focus();
+            textarea.setSelectionRange(0, 0);
+            textarea.scrollTop = 0;
+          }
         } else if (viewMode === 'json' && jsonViewRef.current) {
           jsonViewRef.current.focus();
         }
@@ -393,7 +400,8 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
 
       // Text view copy shortcuts (Alt+K/V/R/B)
       // Only work when text view is active and textarea is focused
-      if (viewMode === 'text' && document.activeElement === containerRef.current) {
+      const activeTextarea = document.getElementById('results-text-editor');
+      if (viewMode === 'text' && document.activeElement === activeTextarea) {
         if (e.altKey) {
           if (e.code === 'KeyK') {
             e.preventDefault();
@@ -611,34 +619,57 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                   </button>
                 </div>
                 <div className="text-view-content-wrapper">
-                  {search.show && search.query ? (
-                    <div className="json-highlighter">
-                      {content.split(new RegExp(`(${search.isRegex ? search.query : search.query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')).map((part, i) => {
-                        const regex = new RegExp(`^${search.isRegex ? search.query : search.query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
-                        return regex.test(part) ? (
-                          <mark key={i}>{part}</mark>
-                        ) : (
-                          <span key={i}>{part}</span>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <textarea
-                      ref={containerRef}
-                      className="json-editor"
-                      value={content}
-                      onChange={(e) => setContent(e.target.value)}
-                      onContextMenu={(e) => showContextMenu(e)}
-                      onKeyDown={(e) => {
-                        if (e.shiftKey && e.key === 'F10') {
-                          showContextMenu(e);
-                        } else if (e.altKey && e.key === 'Enter') {
-                          showContextMenu(e);
+                  <Editor
+                    value={content}
+                    onValueChange={(code) => setContent(code)}
+                    highlight={(code) => {
+                      let highlighted = Prism.highlight(code, Prism.languages.json, 'json');
+
+                      // If there's a search term, inject <mark> tags into the highlighted HTML
+                      if (search.show && search.query) {
+                        try {
+                          const searchTerm = search.isRegex ? search.query : search.query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                          const regex = new RegExp(`(${searchTerm})`, 'gi');
+
+                          // We need to be careful not to break HTML tags. 
+                          // A simple way is to replace content outside of tags.
+                          // However, Prism output is mostly flat.
+                          // For now, let's just do a basic replace and hope for the best, 
+                          // or better: only highlight if not in a tag.
+
+                          // Better approach: use a temporary placeholder to avoid highlighting inside HTML tags
+                          const parts = highlighted.split(/(<[^>]+>)/g);
+                          highlighted = parts.map(part => {
+                            if (part.startsWith('<')) return part;
+                            return part.replace(regex, '<mark>$1</mark>');
+                          }).join('');
+                        } catch (e) {
+                          // Ignore regex errors
                         }
-                      }}
-                      spellCheck={false}
-                    />
-                  )}
+                      }
+
+                      return highlighted;
+                    }}
+                    padding={16}
+                    className="json-editor-container"
+                    textareaClassName="json-editor"
+                    textareaId="results-text-editor"
+                    ref={containerRef as any}
+                    onContextMenu={(e) => showContextMenu(e)}
+                    onKeyDown={(e) => {
+                      if (e.shiftKey && e.key === 'F10') {
+                        showContextMenu(e);
+                      } else if (e.altKey && e.key === 'Enter') {
+                        showContextMenu(e);
+                      }
+                    }}
+                    spellCheck={false}
+                    style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: 14,
+                      minHeight: '100%',
+                    }}
+                  />
                 </div>
               </div>
             ) : viewMode === 'json' ? (
