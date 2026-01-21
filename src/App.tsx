@@ -14,8 +14,10 @@ import { templateService } from './services/templates';
 import { schemaService } from './services/schema';
 import { extractParagraphAtCursor, updateValueAtPath } from './utils';
 import { linkService, LinkMapping } from './services/linkService';
+import { translationService } from './services/translationService';
 import { FlattenedItem } from './components/JsonTreeView';
 import { UpdateBanner } from './components/UpdateBanner';
+import { TranslationDialog } from './components/TranslationDialog';
 import './App.css';
 
 function App() {
@@ -50,6 +52,10 @@ function App() {
     const storedSchemasRef = React.useRef<Record<string, string[]>>({});
     // Store link mappings (loaded from disk)
     const [storedLinks, setStoredLinks] = useState<Record<string, LinkMapping>>({});
+    // Store translations (loaded from disk)
+    const [translations, setTranslations] = useState<any>({});
+    // Translation Dialog State
+    const [translationItem, setTranslationItem] = useState<{ item: FlattenedItem; sourceTabId: string; propertyPath: string } | null>(null);
 
     // Update State
     const [updateInfo, setUpdateInfo] = useState<{ isNewer: boolean; latestVersion: string; url: string } | null>(null);
@@ -75,6 +81,11 @@ function App() {
         linkService.getLinks().then(res => {
             if (res.success && res.data) {
                 setStoredLinks(res.data);
+            }
+        });
+        translationService.getTranslations().then(res => {
+            if (res.success && res.data) {
+                setTranslations(res.data);
             }
         });
 
@@ -622,6 +633,48 @@ function App() {
         await executeFollowLink(dbId, containerId, propertyName, context);
     };
 
+    const handleAddTranslation = (item: FlattenedItem) => {
+        if (!activeTabId) return;
+        // Skip 'root' and any numeric path segments (array indices)
+        const propertyPath = item.path.filter((p: any) => p !== 'root' && isNaN(Number(p))).join('.');
+        if (!propertyPath) return;
+        setTranslationItem({ item, sourceTabId: activeTabId, propertyPath });
+    };
+
+    const confirmTranslation = async (translation: string) => {
+        if (!translationItem || !activeTabId) return;
+        const { item, propertyPath } = translationItem;
+        const [dbId, containerId] = activeTabId.split('/');
+
+        const result = await translationService.saveTranslation(accountName, activeTabId, propertyPath, item.value, translation);
+        if (result.success) {
+            // Update local state (maintaining hierarchy)
+            setTranslations((prev: any) => {
+                const newTranslations = { ...prev };
+                if (!newTranslations[accountName]) newTranslations[accountName] = {};
+                if (!newTranslations[accountName][dbId]) newTranslations[accountName][dbId] = {};
+                if (!newTranslations[accountName][dbId][containerId]) newTranslations[accountName][dbId][containerId] = {};
+                if (!newTranslations[accountName][dbId][containerId][propertyPath]) newTranslations[accountName][dbId][containerId][propertyPath] = {};
+
+                const valueKey = String(item.value);
+                if (translation && translation.trim()) {
+                    newTranslations[accountName][dbId][containerId][propertyPath][valueKey] = translation;
+                } else {
+                    delete newTranslations[accountName][dbId][containerId][propertyPath][valueKey];
+                    // Cleanup
+                    if (Object.keys(newTranslations[accountName][dbId][containerId][propertyPath]).length === 0) {
+                        delete newTranslations[accountName][dbId][containerId][propertyPath];
+                    }
+                    if (Object.keys(newTranslations[accountName][dbId][containerId]).length === 0) {
+                        delete newTranslations[accountName][dbId][containerId];
+                    }
+                }
+                return newTranslations;
+            });
+        }
+        setTranslationItem(null);
+    };
+
 
     const executeActiveQuery = () => {
         if (!activeTab || !activeTabId) return;
@@ -772,6 +825,12 @@ function App() {
                                 storedLinks={storedLinks}
                                 accountName={accountName}
                                 activeTabId={activeTabId || ''}
+                                translations={(() => {
+                                    if (!activeTabId) return {};
+                                    const [dbId, containerId] = activeTabId.split('/');
+                                    return (translations[accountName] as any)?.[dbId]?.[containerId] || {};
+                                })()}
+                                onAddTranslation={handleAddTranslation}
                             />
                         </>
                     }
@@ -795,6 +854,19 @@ function App() {
                         onDatabaseChange={loadContainers}
                         onClose={() => setFollowLinkItem(null)}
                         onConfirm={confirmFollowLink}
+                    />
+                )}
+                {translationItem && (
+                    <TranslationDialog
+                        propertyPath={translationItem.propertyPath}
+                        value={translationItem.item.value}
+                        currentTranslation={(() => {
+                            if (!activeTabId) return undefined;
+                            const [dbId, containerId] = activeTabId.split('/');
+                            return (translations[accountName] as any)?.[dbId]?.[containerId]?.[translationItem.propertyPath]?.[String(translationItem.item.value)];
+                        })()}
+                        onClose={() => setTranslationItem(null)}
+                        onConfirm={confirmTranslation}
                     />
                 )}
             </div>

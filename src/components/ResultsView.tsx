@@ -9,6 +9,8 @@ import Prism from 'prismjs';
 import 'prismjs/components/prism-json';
 import './ResultsView.css';
 import './SQLHighlight.css';
+import { ContainerTranslations } from '../services/translationService';
+import { FlattenedItem } from './JsonTreeView';
 
 
 interface ResultsViewProps {
@@ -27,6 +29,8 @@ interface ResultsViewProps {
   storedLinks?: Record<string, any>;
   accountName?: string;
   activeTabId?: string;
+  translations?: ContainerTranslations;
+  onAddTranslation?: (item: FlattenedItem) => void;
 }
 
 type ViewMode = 'text' | 'json' | 'template';
@@ -52,7 +56,9 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
   onFollowLink,
   storedLinks = {},
   accountName = '',
-  activeTabId = ''
+  activeTabId = '',
+  translations = {},
+  onAddTranslation
 }) => {
   const containerRef = React.useRef<HTMLTextAreaElement>(null);
   const [content, setContent] = React.useState('');
@@ -686,6 +692,8 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                   activeTabId={activeTabId}
                   searchQuery={search.show ? search.query : ''}
                   searchIsRegex={search.isRegex}
+                  translations={translations}
+                  onAddTranslation={onAddTranslation}
                 />
               </div>
             ) : (

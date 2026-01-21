@@ -279,6 +279,7 @@ app.whenReady().then(() => {
     const templatesPath = path.join(app.getPath('userData'), 'templates.json');
     const schemasPath = path.join(app.getPath('userData'), 'schemas.json');
     const linksPath = path.join(app.getPath('userData'), 'links.json');
+    const translationsPath = path.join(app.getPath('userData'), 'translations.json');
 
     createWindow();
 
@@ -379,6 +380,14 @@ app.whenReady().then(() => {
                         console.log('[Main Menu] Viewing links file');
                         if (!fs.existsSync(linksPath)) await fs.promises.writeFile(linksPath, '{}');
                         shell.showItemInFolder(linksPath);
+                    }
+                },
+                {
+                    label: 'View Translations File...',
+                    click: async () => {
+                        console.log('[Main Menu] Viewing translations file');
+                        if (!fs.existsSync(translationsPath)) await fs.promises.writeFile(translationsPath, '{}');
+                        shell.showItemInFolder(translationsPath);
                     }
                 },
                 { type: 'separator' },
@@ -584,6 +593,82 @@ app.whenReady().then(() => {
             } catch (error) {
                 return { success: true, data: {} };
             }
+        } catch (error: any) {
+            return { success: false, error: error.message };
+        }
+    });
+
+    // Translation storage handlers
+    ipcMain.handle('storage:saveTranslation', async (_, account: string, containerPath: string, propertyPath: string, value: any, translation: string) => {
+        try {
+            let translations: any = {};
+            try {
+                if (fs.existsSync(translationsPath)) {
+                    const data = await fs.promises.readFile(translationsPath, 'utf8');
+                    translations = JSON.parse(data);
+                }
+            } catch (error) {
+                // Ignore error, start fresh if file is corrupt
+            }
+
+            // Split containerPath (dbId/containerId)
+            const [dbId, containerId] = containerPath.split('/');
+
+            if (!translations[account]) translations[account] = {};
+            if (!translations[account][dbId]) translations[account][dbId] = {};
+            if (!translations[account][dbId][containerId]) translations[account][dbId][containerId] = {};
+            if (!translations[account][dbId][containerId][propertyPath]) translations[account][dbId][containerId][propertyPath] = {};
+
+            // Convert value to string to use as key
+            const valueKey = String(value);
+            if (translation && translation.trim()) {
+                translations[account][dbId][containerId][propertyPath][valueKey] = translation;
+            } else {
+                delete translations[account][dbId][containerId][propertyPath][valueKey];
+
+                // Clean up empty objects up the tree
+                if (Object.keys(translations[account][dbId][containerId][propertyPath]).length === 0) {
+                    delete translations[account][dbId][containerId][propertyPath];
+                }
+                if (Object.keys(translations[account][dbId][containerId]).length === 0) {
+                    delete translations[account][dbId][containerId];
+                }
+                if (Object.keys(translations[account][dbId]).length === 0) {
+                    delete translations[account][dbId];
+                }
+                if (Object.keys(translations[account]).length === 0) {
+                    delete translations[account];
+                }
+            }
+
+            await fs.promises.writeFile(translationsPath, JSON.stringify(translations, null, 2));
+            return { success: true };
+        } catch (error: any) {
+            console.error('[Main] Failed to save translation:', error);
+            return { success: false, error: error.message };
+        }
+    });
+
+    ipcMain.handle('storage:getTranslations', async () => {
+        try {
+            if (fs.existsSync(translationsPath)) {
+                const data = await fs.promises.readFile(translationsPath, 'utf8');
+                const translations = JSON.parse(data);
+                return { success: true, data: translations };
+            }
+            return { success: true, data: {} };
+        } catch (error: any) {
+            return { success: false, error: error.message };
+        }
+    });
+
+    ipcMain.handle('storage:showTranslationsFile', async () => {
+        try {
+            if (!fs.existsSync(translationsPath)) {
+                await fs.promises.writeFile(translationsPath, '{}');
+            }
+            shell.showItemInFolder(translationsPath);
+            return { success: true };
         } catch (error: any) {
             return { success: false, error: error.message };
         }

@@ -280,3 +280,24 @@
 .json-node.focused.is-linked-data .json-null {
     color: white;
 }
+
+.json-translation {
+    font-style: italic;
+    opacity: 0.7;
+    margin-left: 6px;
+}
+
+.dark .json-translation {
+    color: #a6e22e;
+    /* Greenish in dark theme */
+}
+
+.light .json-translation {
+    color: #22863a;
+    /* Darker green in light theme */
+}
+
+.json-node.focused .json-translation {
+    color: white;
+    opacity: 1;
+}

@@ -3,7 +3,9 @@ import { ChevronRight, ChevronDown, Copy, Link } from 'lucide-react';
 import { useContextMenu } from '../hooks/useContextMenu';
 import { ContextMenu, ContextMenuItem } from './ContextMenu';
 import { LinkMapping } from '../services/linkService';
+import { ContainerTranslations } from '../services/translationService';
 import './JsonTreeView.css';
+import { Languages } from 'lucide-react';
 
 // Helper to format value for clipboard
 const formatValueForClipboard = (value: any): string => {
@@ -39,6 +41,8 @@ interface JsonTreeViewProps {
     activeTabId?: string;
     searchQuery?: string;
     searchIsRegex?: boolean;
+    translations?: ContainerTranslations;
+    onAddTranslation?: (item: FlattenedItem) => void;
 }
 
 export interface FlattenedItem {
@@ -65,7 +69,9 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
     accountName = '',
     activeTabId = '',
     searchQuery = '',
-    searchIsRegex = false
+    searchIsRegex = false,
+    translations = {},
+    onAddTranslation
 }, ref) => {
     const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set(['root']));
     const [focusedPath, setFocusedPath] = useState<string>('root');
@@ -165,12 +171,21 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
             {
                 label: 'Follow Link...',
                 accessKey: 'F',
+                icon: <Link size={14} />,
                 onClick: () => {
                     internalRef.current?.focus();
                     onFollowLink?.(item, true);
                 }
+            },
+            item.type === 'primitive' && {
+                label: 'Add Translation...',
+                accessKey: 'T',
+                icon: <Languages size={14} />,
+                onClick: () => {
+                    onAddTranslation?.(item);
+                }
             }
-        ];
+        ].filter(Boolean) as ContextMenuItem[];
     };
 
     // Flatten the visible tree structure
@@ -266,7 +281,7 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
         if (Object.keys(storedLinks).length > 0 && accountName && activeTabId) {
             items.forEach(item => {
                 // Same logic as in App.tsx for sourceKey
-                const propertyPath = item.path.filter((p: any) => p !== 'root' && typeof p !== 'number').join('.');
+                const propertyPath = item.path.filter((p: any) => p !== 'root' && isNaN(Number(p))).join('.');
                 if (!propertyPath) return;
                 const sourceKey = `${accountName}/${activeTabId}:${propertyPath}`;
                 const mapping = storedLinks[sourceKey];
@@ -462,6 +477,7 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
                     onFollowLink={onFollowLink}
                     searchQuery={searchQuery}
                     searchIsRegex={searchIsRegex}
+                    translations={translations}
                 />
             ))}
             {contextMenu && contextMenu.visible && (
@@ -487,7 +503,8 @@ const JsonNode: React.FC<{
     onFollowLink?: (item: FlattenedItem, forceDialog?: boolean) => void;
     searchQuery?: string;
     searchIsRegex?: boolean;
-}> = ({ item, isFocused, onSelect, onToggle, onContextMenu, onFollowLink, searchQuery = '', searchIsRegex = false }) => {
+    translations?: ContainerTranslations;
+}> = ({ item, isFocused, onSelect, onToggle, onContextMenu, onFollowLink, searchQuery = '', searchIsRegex = false, translations = {} }) => {
 
     const renderTextWithHighlight = (text: string) => {
         if (!searchQuery) return text;
@@ -540,6 +557,17 @@ const JsonNode: React.FC<{
     } else if (typeof item.value === 'object') {
         valueDisplay = <span className="json-object-label">{"{}"}</span>;
     }
+
+    // Translation logic
+    // Skip 'root' and any numeric path segments (array indices)
+    const propertyPath = item.path.filter((p: any) => p !== 'root' && isNaN(Number(p))).join('.');
+    const translation = translations[propertyPath]?.[String(item.value)];
+
+    const translatedDisplay = translation ? (
+        <span className="json-translation">
+            ({translation})
+        </span>
+    ) : null;
 
     // Copy handlers
     const handleCopyKey = (e: React.MouseEvent) => {
@@ -601,6 +629,7 @@ const JsonNode: React.FC<{
                 </span>
             )}
             {valueDisplay}
+            {translatedDisplay}
             <span className="copy-buttons">
                 <button className="copy-btn" onClick={handleCopyKey} title="Copy key (Alt+K)">
                     <Copy size={10} /><span>K</span>
