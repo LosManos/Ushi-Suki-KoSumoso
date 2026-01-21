@@ -658,8 +658,10 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                     onContextMenu={(e) => showContextMenu(e)}
                     onKeyDown={(e) => {
                       if (e.shiftKey && e.key === 'F10') {
+                        e.stopPropagation();
                         showContextMenu(e);
                       } else if (e.altKey && e.key === 'Enter') {
+                        e.stopPropagation();
                         showContextMenu(e);
                       }
                     }}

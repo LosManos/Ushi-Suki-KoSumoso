@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Play, Search } from 'lucide-react';
+import { Play, Search, Database, Code } from 'lucide-react';
 import Editor from 'react-simple-code-editor';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-sql';
@@ -72,10 +72,18 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
 
     const { contextMenu, showContextMenu, closeContextMenu } = useContextMenu();
 
+    const appendQuery = (newQuery: string) => {
+        const updatedQuery = query.trim() ? `${query}\n\n${newQuery}` : newQuery;
+        onQueryChange(updatedQuery);
+    };
+
     const getContextMenuItems = (): ContextMenuItem[] => {
         return [
             { label: 'Run Query', icon: <Play size={16} />, onClick: onRunQuery },
-            { label: 'Discover Schema', icon: <Search size={16} />, onClick: onDiscoverSchema }
+            { label: 'Discover Schema', icon: <Search size={16} />, onClick: onDiscoverSchema },
+            { divider: true },
+            { label: 'select * from c', icon: <Database size={16} />, onClick: () => appendQuery('select * from c') },
+            { label: 'select * from c where c.id = ', icon: <Code size={16} />, onClick: () => appendQuery('select * from c where c.id = ""') }
         ];
     };
 
@@ -376,8 +384,10 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
                     onContextMenu={(e) => showContextMenu(e)}
                     onKeyDown={(e) => {
                         if (e.shiftKey && e.key === 'F10') {
+                            e.stopPropagation();
                             showContextMenu(e);
                         } else if (e.altKey && e.key === 'Enter') {
+                            e.stopPropagation();
                             showContextMenu(e);
                         }
                     }}
