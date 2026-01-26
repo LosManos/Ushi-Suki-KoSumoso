@@ -35,6 +35,7 @@ interface SidebarProps {
   onSelectHistory: (item: HistoryItem) => void;
   onCopyHistory: (item: HistoryItem) => void;
   onDeleteHistory: (item: HistoryItem) => void;
+  onShowChangelog: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -50,7 +51,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   history,
   onSelectHistory,
   onCopyHistory,
-  onDeleteHistory
+  onDeleteHistory,
+  onShowChangelog
 }) => {
   const [focusedId, setFocusedId] = React.useState<string | null>(null);
   const [historyFilter, setHistoryFilter] = React.useState<string>('');
@@ -570,34 +572,49 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       ref={(el) => (menuItemsRef.current[3] = el)}
                       className="menu-item"
                       onClick={() => {
-                        window.ipcRenderer.invoke('storage:showHistoryFile');
+                        onShowChangelog();
                         setIsSettingsOpen(false);
                       }}
-                      onKeyDown={(e) => handleMenuKeyDown(e, 3, 7)}
+                      onKeyDown={(e) => handleMenuKeyDown(e, 3, 8)}
+                      style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
                     >
-                      View History File...
+                      <span>Changelog...</span>
                     </button>
+
+                    <div className="menu-separator"></div>
 
                     <button
                       ref={(el) => (menuItemsRef.current[4] = el)}
                       className="menu-item"
                       onClick={() => {
-                        window.ipcRenderer.invoke('storage:showConnectionsFile');
+                        window.ipcRenderer.invoke('storage:showHistoryFile');
                         setIsSettingsOpen(false);
                       }}
-                      onKeyDown={(e) => handleMenuKeyDown(e, 4, 7)}
+                      onKeyDown={(e) => handleMenuKeyDown(e, 4, 8)}
                     >
-                      View Connections File...
+                      View History File...
                     </button>
 
                     <button
                       ref={(el) => (menuItemsRef.current[5] = el)}
                       className="menu-item"
                       onClick={() => {
+                        window.ipcRenderer.invoke('storage:showConnectionsFile');
+                        setIsSettingsOpen(false);
+                      }}
+                      onKeyDown={(e) => handleMenuKeyDown(e, 5, 8)}
+                    >
+                      View Connections File...
+                    </button>
+
+                    <button
+                      ref={(el) => (menuItemsRef.current[6] = el)}
+                      className="menu-item"
+                      onClick={() => {
                         window.ipcRenderer.invoke('storage:showLinksFile');
                         setIsSettingsOpen(false);
                       }}
-                      onKeyDown={(e) => handleMenuKeyDown(e, 5, 7)}
+                      onKeyDown={(e) => handleMenuKeyDown(e, 6, 8)}
                     >
                       View Link Mapping File...
                     </button>
@@ -605,13 +622,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <div className="menu-separator"></div>
 
                     <button
-                      ref={(el) => (menuItemsRef.current[6] = el)}
+                      ref={(el) => (menuItemsRef.current[7] = el)}
                       className="menu-item"
                       onClick={() => {
                         window.ipcRenderer.send('app:quit');
                         setIsSettingsOpen(false);
                       }}
-                      onKeyDown={(e) => handleMenuKeyDown(e, 6, 7)}
+                      onKeyDown={(e) => handleMenuKeyDown(e, 7, 8)}
                       style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                     >
                       <span>Quit</span>

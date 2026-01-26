@@ -5,6 +5,7 @@ import './ConnectionForm.css';
 interface ConnectionFormProps {
     onConnect: (connectionString: string) => void;
     onCancel?: () => void;
+    onShowChangelog?: () => void;
 }
 
 interface SavedConnection {
@@ -13,7 +14,7 @@ interface SavedConnection {
     lastUsed: number;
 }
 
-export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect, onCancel }) => {
+export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect, onCancel, onShowChangelog }) => {
     const [authMethod, setAuthMethod] = useState<'connectionString' | 'azureCli'>('connectionString');
     const [inputValue, setInputValue] = useState('');
     const [connectionName, setConnectionName] = useState('');
@@ -117,7 +118,6 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect, onCan
         if (result.success) {
             // Save if using connection string and name is provided
             if (authMethod === 'connectionString' && connectionName.trim()) {
-                console.log('Attempting to save connection...');
                 try {
                     // unexpected hangs can happen with native APIs, so we'll wrap this with a timeout
                     const savePromise = cosmos.saveConnection(connectionName.trim(), inputValue);
@@ -126,7 +126,6 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect, onCan
                     );
 
                     await Promise.race([savePromise, timeoutPromise]);
-                    console.log('Connection saved successfully');
                 } catch (saveError) {
                     console.warn('Failed to save connection or timed out (proceeding with login):', saveError);
                     // We knowingly proceed to onConnect even if save fails
@@ -170,7 +169,19 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect, onCan
                 </div>
                 <div className="title-container">
                     <h2>Kosumoso</h2>
-                    <span className="app-version">v{appVersion}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span className="app-version">v{appVersion}</span>
+                        {onShowChangelog && (
+                            <button
+                                type="button"
+                                className="changelog-badge-btn"
+                                onClick={onShowChangelog}
+                                title="Changelog..."
+                            >
+                                Changelog...
+                            </button>
+                        )}
+                    </div>
                 </div>
 
                 {savedConnections.length > 0 && (

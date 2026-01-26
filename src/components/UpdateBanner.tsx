@@ -6,9 +6,10 @@ interface UpdateBannerProps {
     version: string;
     url: string;
     onClose: () => void;
+    onShowChangelog: () => void;
 }
 
-export const UpdateBanner: React.FC<UpdateBannerProps> = ({ version, url, onClose }) => {
+export const UpdateBanner: React.FC<UpdateBannerProps> = ({ version, url, onClose, onShowChangelog }) => {
     return (
         <div className="update-banner">
             <div className="update-banner-content">
@@ -18,6 +19,10 @@ export const UpdateBanner: React.FC<UpdateBannerProps> = ({ version, url, onClos
                 <div className="update-banner-text">
                     New version <strong>v{version}</strong> is available
                 </div>
+                <button className="update-banner-action" onClick={onShowChangelog}>
+                    Changelog...
+                </button>
+                <div className="update-banner-divider"></div>
                 <a href={url} target="_blank" rel="noopener noreferrer" className="update-banner-link">
                     Download <ExternalLink size={12} style={{ marginLeft: '4px' }} />
                 </a>

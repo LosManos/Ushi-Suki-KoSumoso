@@ -157,6 +157,18 @@ ipcMain.handle('app:getVersion', () => {
     return app.getVersion();
 });
 
+ipcMain.handle('app:openExternal', async (_, url: string) => {
+    if (!url || typeof url !== 'string') {
+        return { success: false, error: 'Invalid URL' };
+    }
+    try {
+        await shell.openExternal(url);
+        return { success: true };
+    } catch (error: any) {
+        return { success: false, error: error.message };
+    }
+});
+
 ipcMain.handle('app:checkUpdate', async () => {
     return new Promise((resolve) => {
         const url = 'https://api.github.com/repos/LosManos/Ushi-Suki-KoSumoso/releases/latest';
@@ -213,6 +225,46 @@ ipcMain.handle('app:checkUpdate', async () => {
     });
 });
 
+ipcMain.handle('app:getReleases', async () => {
+    return new Promise((resolve) => {
+        const url = 'https://api.github.com/repos/LosManos/Ushi-Suki-KoSumoso/releases';
+        const request = net.request({
+            url,
+            headers: { 'User-Agent': 'Kosumoso-App' } // GitHub requires user agent
+        });
+
+        request.on('response', (response: any) => {
+            let body = '';
+            response.on('data', (chunk: Buffer) => {
+                body += chunk.toString();
+            });
+            response.on('end', () => {
+                try {
+                    if (response.statusCode === 200) {
+                        const releases = JSON.parse(body);
+                        resolve(releases.map((r: any) => ({
+                            version: r.tag_name.replace(/^v/, ''),
+                            date: r.published_at.split('T')[0],
+                            body: r.body,
+                            url: r.html_url
+                        })));
+                    } else {
+                        resolve({ error: `GitHub API returned ${response.statusCode}` });
+                    }
+                } catch (e: any) {
+                    resolve({ error: e.message });
+                }
+            });
+        });
+
+        request.on('error', (error: Error) => {
+            resolve({ error: error.message });
+        });
+
+        request.end();
+    });
+});
+
 // Store documents for compare window
 let pendingCompareDocuments: any[] | null = null;
 
@@ -249,7 +301,6 @@ ipcMain.handle('compare:open', async (_, documents: any[]) => {
         // Track window state changes
         trackWindowState(compareWin, 'compare');
 
-        console.log('[Main] Opening compare window with', documents.length, 'documents');
 
         if (VITE_DEV_SERVER_URL) {
             await compareWin.loadURL(`${VITE_DEV_SERVER_URL}/compare.html`);
@@ -267,7 +318,6 @@ ipcMain.handle('compare:open', async (_, documents: any[]) => {
 // Handler for compare window to get documents
 ipcMain.handle('compare:getDocuments', () => {
     const docs = pendingCompareDocuments;
-    console.log('[Main] compare:getDocuments called, returning', docs?.length || 0, 'documents');
     return docs || [];
 });
 
@@ -300,6 +350,10 @@ app.whenReady().then(() => {
                             icon: path.join(getVitePublicPath(), isDev ? 'v_dev.png' : 'icon.icns'),
                         });
                     }
+                },
+                {
+                    label: "What's New",
+                    click: () => win?.webContents.send('menu:show-changelog')
                 },
                 { type: 'separator' },
                 { role: 'services' },
@@ -361,7 +415,6 @@ app.whenReady().then(() => {
                 {
                     label: 'View History File...',
                     click: async () => {
-                        console.log('[Main Menu] Viewing history file');
                         if (!fs.existsSync(historyPath)) await fs.promises.writeFile(historyPath, '[]');
                         shell.showItemInFolder(historyPath);
                     }
@@ -369,7 +422,6 @@ app.whenReady().then(() => {
                 {
                     label: 'View Connections File...',
                     click: async () => {
-                        console.log('[Main Menu] Viewing connections file');
                         if (!fs.existsSync(connectionsPath)) await fs.promises.writeFile(connectionsPath, '[]');
                         shell.showItemInFolder(connectionsPath);
                     }
@@ -377,7 +429,6 @@ app.whenReady().then(() => {
                 {
                     label: 'View Link Mappings File...',
                     click: async () => {
-                        console.log('[Main Menu] Viewing links file');
                         if (!fs.existsSync(linksPath)) await fs.promises.writeFile(linksPath, '{}');
                         shell.showItemInFolder(linksPath);
                     }
@@ -385,7 +436,6 @@ app.whenReady().then(() => {
                 {
                     label: 'View Translations File...',
                     click: async () => {
-                        console.log('[Main Menu] Viewing translations file');
                         if (!fs.existsSync(translationsPath)) await fs.promises.writeFile(translationsPath, '{}');
                         shell.showItemInFolder(translationsPath);
                     }
@@ -394,7 +444,6 @@ app.whenReady().then(() => {
                 {
                     label: 'View Templates File...',
                     click: async () => {
-                        console.log('[Main Menu] Viewing templates file');
                         if (!fs.existsSync(templatesPath)) await fs.promises.writeFile(templatesPath, '{}');
                         shell.showItemInFolder(templatesPath);
                     }
@@ -402,7 +451,6 @@ app.whenReady().then(() => {
                 {
                     label: 'View Schemas File...',
                     click: async () => {
-                        console.log('[Main Menu] Viewing schemas file');
                         if (!fs.existsSync(schemasPath)) await fs.promises.writeFile(schemasPath, '{}');
                         shell.showItemInFolder(schemasPath);
                     }
@@ -432,6 +480,10 @@ app.whenReady().then(() => {
                     click: async () => {
                         await shell.openExternal('https://github.com/LosManos/Ushi-Suki-KoSumoso');
                     }
+                },
+                {
+                    label: "What's New",
+                    click: () => win?.webContents.send('menu:show-changelog')
                 },
                 { type: 'separator' },
                 {
@@ -676,12 +728,9 @@ app.whenReady().then(() => {
     // IPC handlers to show files in Finder
     ipcMain.handle('storage:showHistoryFile', async () => {
         try {
-            console.log('[Main] Invoked storage:showHistoryFile');
             if (!fs.existsSync(historyPath)) {
-                console.log('[Main] Creating empty history file');
                 await fs.promises.writeFile(historyPath, '[]');
             }
-            console.log('[Main] Opening folder for:', historyPath);
             shell.showItemInFolder(historyPath);
             return { success: true };
         } catch (error: any) {
@@ -692,12 +741,9 @@ app.whenReady().then(() => {
 
     ipcMain.handle('storage:showConnectionsFile', async () => {
         try {
-            console.log('[Main] Invoked storage:showConnectionsFile');
             if (!fs.existsSync(connectionsPath)) {
-                console.log('[Main] Creating empty connections file');
                 await fs.promises.writeFile(connectionsPath, '[]');
             }
-            console.log('[Main] Opening folder for:', connectionsPath);
             shell.showItemInFolder(connectionsPath);
             return { success: true };
         } catch (error: any) {
@@ -708,12 +754,9 @@ app.whenReady().then(() => {
 
     ipcMain.handle('storage:showLinksFile', async () => {
         try {
-            console.log('[Main] Invoked storage:showLinksFile');
             if (!fs.existsSync(linksPath)) {
-                console.log('[Main] Creating empty links file');
                 await fs.promises.writeFile(linksPath, '{}');
             }
-            console.log('[Main] Opening folder for:', linksPath);
             shell.showItemInFolder(linksPath);
             return { success: true };
         } catch (error: any) {
@@ -723,28 +766,21 @@ app.whenReady().then(() => {
     });
 
     ipcMain.handle('storage:saveConnection', async (_, name: string, connectionString: string) => {
-        console.log('[Main] storage:saveConnection called', { name });
         try {
             if (!safeStorage.isEncryptionAvailable()) {
                 console.error('[Main] Encryption not available');
                 throw new Error('Encryption is not available');
             }
-            console.log('[Main] Encryption is available');
 
             let connections: any[] = [];
             try {
-                console.log('[Main] Reading file:', connectionsPath);
                 const data = await fs.promises.readFile(connectionsPath, 'utf8');
                 connections = JSON.parse(data);
-                console.log('[Main] File read successfully, entries: ', connections.length);
             } catch (error) {
-                console.log('[Main] File read failed (likely new):', error);
                 // File might not exist yet, ignore
             }
 
-            console.log('[Main] Encrypting string...');
             const encrypted = safeStorage.encryptString(connectionString).toString('base64');
-            console.log('[Main] String encrypted');
 
             // Remove existing with same name if any
             connections = connections.filter(c => c.name !== name);
@@ -756,11 +792,7 @@ app.whenReady().then(() => {
                 lastUsed: Date.now()
             });
 
-
-
-            console.log('[Main] Writing file...');
             await fs.promises.writeFile(connectionsPath, JSON.stringify(connections, null, 2));
-            console.log('[Main] File written successfully');
 
             return { success: true };
         } catch (error: any) {

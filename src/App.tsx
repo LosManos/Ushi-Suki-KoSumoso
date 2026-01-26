@@ -18,6 +18,7 @@ import { translationService } from './services/translationService';
 import { FlattenedItem } from './components/JsonTreeView';
 import { UpdateBanner } from './components/UpdateBanner';
 import { TranslationDialog } from './components/TranslationDialog';
+import { ChangelogDialog } from './components/ChangelogDialog';
 import './App.css';
 
 function App() {
@@ -60,6 +61,7 @@ function App() {
     // Update State
     const [updateInfo, setUpdateInfo] = useState<{ isNewer: boolean; latestVersion: string; url: string } | null>(null);
     const [showUpdateBanner, setShowUpdateBanner] = useState(false);
+    const [showChangelog, setShowChangelog] = useState(false);
 
     // Load history, templates and schemas on startup
     useEffect(() => {
@@ -96,6 +98,20 @@ function App() {
                 setShowUpdateBanner(true);
             }
         });
+
+        // Check if we should show the changelog (first run after update)
+        window.ipcRenderer.invoke('app:getVersion').then(version => {
+            const lastSeenVersion = localStorage.getItem('lastSeenVersion');
+            if (version && lastSeenVersion !== version) {
+                // If it's the very first time (lastSeenVersion is null), we might not want to show it?
+                // Or maybe we do show it to let them know what's in the current version.
+                // Let's only show if lastSeenVersion was set (meaning they had a previous version).
+                if (lastSeenVersion) {
+                    setShowChangelog(true);
+                }
+                localStorage.setItem('lastSeenVersion', version);
+            }
+        });
     }, []);
 
     // Use a ref to track the current activeTabId for the IPC listener
@@ -124,12 +140,18 @@ function App() {
             }
         };
 
+        const handleShowChangelog = () => {
+            setShowChangelog(true);
+        };
+
         window.ipcRenderer.on('close-active-tab', handleCloseTab);
         window.ipcRenderer.on('menu:new-tab', handleNewTab);
+        window.ipcRenderer.on('menu:show-changelog', handleShowChangelog);
         // Note: cleanup may not work due to preload `off` bug, but we only register once
         return () => {
             window.ipcRenderer.off('close-active-tab', handleCloseTab);
             window.ipcRenderer.off('menu:new-tab', handleNewTab);
+            window.ipcRenderer.off('menu:show-changelog', handleShowChangelog);
         };
     }, []); // Empty dependency - register only once
 
@@ -729,12 +751,17 @@ function App() {
                             version={updateInfo.latestVersion}
                             url={updateInfo.url}
                             onClose={() => setShowUpdateBanner(false)}
+                            onShowChangelog={() => setShowChangelog(true)}
                         />
                     )}
                     <ConnectionForm
                         onConnect={handleConnect}
                         onCancel={databases.length > 0 ? () => setIsConnected(true) : undefined}
+                        onShowChangelog={() => setShowChangelog(true)}
                     />
+                    {showChangelog && (
+                        <ChangelogDialog onClose={() => setShowChangelog(false)} />
+                    )}
                 </div>
             </ThemeProvider>
         );
@@ -748,6 +775,7 @@ function App() {
                         version={updateInfo.latestVersion}
                         url={updateInfo.url}
                         onClose={() => setShowUpdateBanner(false)}
+                        onShowChangelog={() => setShowChangelog(true)}
                     />
                 )}
                 <Layout
@@ -771,6 +799,7 @@ function App() {
                             onSelectHistory={handleSelectHistory}
                             onCopyHistory={handleCopyHistoryQuery}
                             onDeleteHistory={handleDeleteHistory}
+                            onShowChangelog={() => setShowChangelog(true)}
                         />
                     }
                     content={
@@ -868,6 +897,9 @@ function App() {
                         onClose={() => setTranslationItem(null)}
                         onConfirm={confirmTranslation}
                     />
+                )}
+                {showChangelog && (
+                    <ChangelogDialog onClose={() => setShowChangelog(false)} />
                 )}
             </div>
         </ThemeProvider>
