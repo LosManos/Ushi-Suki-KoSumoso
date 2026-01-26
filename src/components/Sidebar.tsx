@@ -713,7 +713,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             )}
           </div>
           <div className="sidebar-logo-item">
-            <img src="/v_windows.png" alt="" className="sidebar-logo-img" />
+            <img src="v_windows.png" alt="" className="sidebar-logo-img" />
           </div>
           <h2 title={`${accountName}\nFocus Sidebar (Cmd+Shift+E)`}>
             {accountName}

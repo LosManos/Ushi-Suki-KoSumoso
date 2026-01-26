@@ -7,7 +7,7 @@ import './index.css'
 if (import.meta.env.DEV) {
     const favicon = document.querySelector('link[rel="icon"]');
     if (favicon) {
-        favicon.setAttribute('href', '/v_dev.png');
+        favicon.setAttribute('href', 'v_dev.png');
     }
 }
 
