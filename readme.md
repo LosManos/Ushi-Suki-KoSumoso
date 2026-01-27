@@ -22,17 +22,23 @@ I am presently working on a Mac, so the other OSs are untested. Please test and 
 
 ## Features
 
+See the [manual](manual.md) for detailed instructions.
+
 Executes the paragraph you're on. Cmd-enter to Execute.  
 
-Has text output as regular json.  
-Has foldable hierarchical output with shortcuts for copying data.  
+Has text output as regular json text.
+
+Has foldable hierarchical output with shortcuts for copying data, following foreign keys, translate enums to text. Can also fold and expand similar nodes at once.
+
 Has templateable ouput for quick text manipulation.  
 
-Can compare records. (2 to 4 documents)
+Can compare records. (2 to 5 documents)
 
 Remembers old queries.
 
-Has quick id lookup. No more writing `"select * from c where c.id = whatever"`
+Has quick id lookup. No more writing `"select * from c where c.id = whatever"`. 
+
+Can write simple = queries for you.
 
 Is keyboard navigatable.
 
