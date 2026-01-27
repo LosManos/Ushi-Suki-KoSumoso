@@ -7,6 +7,46 @@
     outline: none;
     cursor: default;
     padding: 10px;
+    position: relative;
+}
+
+.filter-banner {
+    position: sticky;
+    top: -10px;
+    margin: -10px -10px 10px -10px;
+    background-color: var(--accent-color, #007acc);
+    color: white;
+    padding: 6px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    z-index: 100;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.filter-banner strong {
+    margin-left: 4px;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 1px 4px;
+    border-radius: 3px;
+}
+
+.clear-filter {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.clear-filter:hover {
+    background: rgba(255, 255, 255, 0.35);
 }
 
 .json-node {

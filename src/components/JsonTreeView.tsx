@@ -32,6 +32,9 @@ const copyToClipboard = async (text: string) => {
     }
 };
 
+const isNumeric = (s: string) => s.length > 0 && !isNaN(Number(s));
+const isSimilar = (k1: string, k2: string) => k1 === k2 || (isNumeric(k1) && isNumeric(k2));
+
 interface JsonTreeViewProps {
     data: any;
     theme?: 'light' | 'dark';
@@ -75,6 +78,7 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
 }, ref) => {
     const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set(['root']));
     const [focusedPath, setFocusedPath] = useState<string>('root');
+    const [filterKey, setFilterKey] = useState<string | null>(null);
     const internalRef = useRef<HTMLDivElement | null>(null);
     const { contextMenu, showContextMenu, closeContextMenu } = useContextMenu();
 
@@ -123,8 +127,46 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
     const flattenedItems = useMemo(() => {
         const items: FlattenedItem[] = [];
 
+        // 1. Identify all paths that should be visible due to filtering
+        const visiblePaths = new Set<string>();
+        if (filterKey) {
+            const findPaths = (obj: any, path: string[], isDescendantOfMatch: boolean): boolean => {
+                const key = path[path.length - 1];
+                const match = key && isSimilar(key, filterKey);
+                const shouldShow = match || isDescendantOfMatch;
+
+                let anyChildMatched = false;
+                if (obj !== null && typeof obj === 'object') {
+                    Object.entries(obj).forEach(([k, v]) => {
+                        if (findPaths(v, [...path, k], shouldShow)) {
+                            anyChildMatched = true;
+                        }
+                    });
+                }
+
+                if (shouldShow || anyChildMatched) {
+                    visiblePaths.add(path.join('.'));
+                    return true;
+                }
+                return false;
+            };
+
+            if (Array.isArray(data)) {
+                data.forEach((item, i) => findPaths(item, ['root', String(i)], false));
+            } else {
+                findPaths(data, ['root'], false);
+            }
+            visiblePaths.add('root');
+        }
+
         const traverse = (currentData: any, currentLevel: number, currentPath: string[], isLinkedData: boolean = false) => {
-            const pathStr = currentPath.join('.');
+            const pathStr = currentPath.length === 0 ? 'root' : currentPath.join('.');
+
+            // If filtering, only proceed if this path is in visiblePaths (or it's the root)
+            if (filterKey && currentPath.length > 0 && !visiblePaths.has(pathStr)) {
+                return;
+            }
+
             let childrenIsLinkedData = isLinkedData;
             let itemIsLinkedData = isLinkedData;
 
@@ -146,7 +188,8 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
                 hasChildren = Object.keys(displayData).length > 0;
             }
 
-            const isExpanded = expandedKeys.has(pathStr);
+            // Forced expansion when filtering
+            const isExpanded = filterKey ? true : expandedKeys.has(pathStr);
 
             if (currentPath.length === 0) {
                 // Special case for root
@@ -168,14 +211,14 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
                     value: rootDisplayData,
                     level: 0,
                     type: rootType,
-                    expanded: expandedKeys.has('root'),
+                    expanded: isExpanded,
                     hasChildren: rootHasChildren,
                     path: ['root'],
                     linkedValue: rootLinkedValue,
                     isLinkedData: false // Root itself is never highlighted as "linked result"
                 });
 
-                if (expandedKeys.has('root') && rootHasChildren) {
+                if (isExpanded && rootHasChildren) {
                     Object.entries(rootDisplayData).forEach(([k, v]) => {
                         traverse(v, 1, ['root', k], rootChildrenIsLinked);
                     });
@@ -223,10 +266,18 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
         }
 
         return items;
-    }, [data, expandedKeys, storedLinks, accountName, activeTabId]);
+    }, [data, expandedKeys, storedLinks, accountName, activeTabId, filterKey]);
 
-    const isNumeric = (s: string) => s.length > 0 && !isNaN(Number(s));
-    const isSimilar = (k1: string, k2: string) => k1 === k2 || (isNumeric(k1) && isNumeric(k2));
+    const copyAllIsolatedValues = () => {
+        if (!filterKey) return;
+        const matchingValues = flattenedItems
+            .filter(item => isSimilar(item.key, filterKey))
+            .map(item => item.value);
+
+        const text = JSON.stringify(matchingValues, null, 2);
+        copyToClipboard(text);
+    };
+
 
     const expandLevel = (item: FlattenedItem) => {
         const newKeys = new Set(expandedKeys);
@@ -281,6 +332,11 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
                     copyToClipboard(`"${item.key}": ${formattedValue}`);
                 }
             },
+            filterKey && {
+                label: `Copy All Isolated "${filterKey}" Values`,
+                icon: <Copy size={14} />,
+                onClick: copyAllIsolatedValues
+            },
             { divider: true },
             {
                 label: 'Copy JSON Path',
@@ -290,6 +346,18 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
                 onClick: () => {
                     const path = item.path.filter(p => p !== 'root').join('.');
                     copyToClipboard(path || 'document');
+                }
+            },
+            { divider: true },
+            {
+                label: filterKey ? 'Clear Property Isolation' : 'Property Isolation',
+                shortcut: '⌥W',
+                onClick: () => {
+                    if (filterKey) {
+                        setFilterKey(null);
+                    } else {
+                        setFilterKey(item.key);
+                    }
                 }
             },
             { divider: true },
@@ -367,10 +435,31 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
                     copyToClipboard(`"${item.key}": ${formattedValue}`);
                     return;
                 }
+                if (e.code === 'KeyW') {
+                    e.preventDefault();
+                    if (filterKey) {
+                        setFilterKey(null);
+                    } else if (item) {
+                        setFilterKey(item.key);
+                    }
+                    return;
+                }
+            } else if (e.code === 'KeyW' && filterKey) {
+                // Global clear filter with Alt+W even if no item focused
+                e.preventDefault();
+                setFilterKey(null);
+                return;
             }
         }
 
         switch (e.key) {
+            case 'Escape': {
+                if (filterKey) {
+                    e.preventDefault();
+                    setFilterKey(null);
+                }
+                break;
+            }
             case 'ArrowDown':
             case 'j': {
                 e.preventDefault();
@@ -509,6 +598,14 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
             ref={setBufferRef}
             onClick={() => internalRef.current?.focus()}
         >
+            {filterKey && (
+                <div className="filter-banner">
+                    <span>Property Isolation: <strong>{filterKey}</strong></span>
+                    <button className="clear-filter" onClick={(e) => { e.stopPropagation(); setFilterKey(null); }}>
+                        Clear (Esc or Alt+W)
+                    </button>
+                </div>
+            )}
             {flattenedItems.map((item: FlattenedItem) => (
                 <JsonNode
                     key={item.id}

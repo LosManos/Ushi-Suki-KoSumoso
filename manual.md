@@ -51,6 +51,7 @@ An interactive tree structure for exploring complex JSON objects.
 *   **Navigation**: Use arrow keys to navigate the tree. Or simplified VI keys.
 *   **Expansion**: `Right` to expand a node, `Left` to collapse it.
 *   **Fast Expansion**: Expanding a node while holding `Alt` will expand/collapse all children at that level.
+*   **Property Isolation**: `Alt + W` on a selected element will filter the view to show only elements of the same kind (key). While active, you can right-click to **Copy All Isolated Values** as a JSON array. Press `Alt + W` again or `Esc` to clear.
 *   **Follow Link**: `F` (or Right-click -> Follow Link) on a value to query for that value, even in another container (useful for foreign keys).
 *   **Translations**: Assign human-readable labels to specific values (e.g., `1` -> `Active`). Labels appear in parentheses next to the value.
 
@@ -96,6 +97,7 @@ Quickly jump to any container in your account without using the sidebar. Just st
 | **`Cmd + M`** | Focus Query Resize Handle |
 | **`Cmd + Shift + M`**| Focus Sidebar Resize Handle |
 | **`Alt + Enter`** | Open Context Menu |
+| **`Alt + W`** | Focus Property Isolation |
 | **`Cmd + 1-8`** | Switch to Query view 1-9 |
 | **`Cmd + 9`** | Switch to last Query view |
 | **`Cmd + ,`** | Open main menu |
