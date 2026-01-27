@@ -759,7 +759,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
           </>
         ) : (
           <div className="empty-state">
-            Run a query to see results
+            Run a query to see results.
           </div>
         )}
 
