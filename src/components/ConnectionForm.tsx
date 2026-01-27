@@ -6,6 +6,7 @@ interface ConnectionFormProps {
     onConnect: (connectionString: string) => void;
     onCancel?: () => void;
     onShowChangelog?: () => void;
+    updateInfo?: { isNewer: boolean; latestVersion: string; url: string } | null;
 }
 
 interface SavedConnection {
@@ -14,7 +15,7 @@ interface SavedConnection {
     lastUsed: number;
 }
 
-export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect, onCancel, onShowChangelog }) => {
+export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect, onCancel, onShowChangelog, updateInfo }) => {
     const [authMethod, setAuthMethod] = useState<'connectionString' | 'azureCli'>('connectionString');
     const [inputValue, setInputValue] = useState('');
     const [connectionName, setConnectionName] = useState('');
@@ -169,8 +170,19 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect, onCan
                 </div>
                 <div className="title-container">
                     <h2>Kosumoso</h2>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                         <span className="app-version">v{appVersion}</span>
+                        {updateInfo?.isNewer && (
+                            <a
+                                href={updateInfo.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="update-available-link"
+                                title={`Version v${updateInfo.latestVersion} is available. Click to download.`}
+                            >
+                                ✨ v{updateInfo.latestVersion} available!
+                            </a>
+                        )}
                         {onShowChangelog && (
                             <button
                                 type="button"

@@ -758,6 +758,7 @@ function App() {
                         onConnect={handleConnect}
                         onCancel={databases.length > 0 ? () => setIsConnected(true) : undefined}
                         onShowChangelog={() => setShowChangelog(true)}
+                        updateInfo={updateInfo}
                     />
                     {showChangelog && (
                         <ChangelogDialog onClose={() => setShowChangelog(false)} />
