@@ -70,3 +70,16 @@
     text-decoration-thickness: 1.5px;
     text-underline-offset: 2px;
 }
+
+.context-menu-shortcut {
+    margin-left: 16px;
+    font-size: 0.9em;
+    opacity: 0.5;
+    color: var(--text-secondary);
+}
+
+.context-menu-item:hover .context-menu-shortcut,
+.context-menu-item.focused .context-menu-shortcut {
+    color: var(--accent-light);
+    opacity: 0.8;
+}

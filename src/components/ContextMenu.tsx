@@ -8,6 +8,7 @@ export interface ContextMenuItem {
     icon?: React.ReactNode;
     divider?: boolean;
     accessKey?: string;
+    shortcut?: string;
 }
 
 interface ContextMenuProps {
@@ -175,6 +176,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, items, onClose }
                         >
                             {item.icon && <span className="context-menu-icon">{item.icon}</span>}
                             <span className="context-menu-label">{renderLabel(item.label, item.accessKey)}</span>
+                            {item.shortcut && <span className="context-menu-shortcut">{item.shortcut}</span>}
                         </div>
                     );
                 }

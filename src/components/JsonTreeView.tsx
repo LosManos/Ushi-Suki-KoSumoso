@@ -117,76 +117,7 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
         setExpandedKeys(newKeys);
     };
 
-    const getContextMenuItems = (item: FlattenedItem): ContextMenuItem[] => {
-        return [
-            {
-                label: 'Copy Key',
-                accessKey: 'K',
-                icon: <Copy size={14} />,
-                onClick: () => copyToClipboard(item.key)
-            },
-            {
-                label: 'Copy Value',
-                accessKey: 'V',
-                icon: <Copy size={14} />,
-                onClick: () => copyToClipboard(formatValueForClipboard(item.value))
-            },
-            {
-                label: 'Copy Raw Value',
-                accessKey: 'R',
-                icon: <Copy size={14} />,
-                onClick: () => copyToClipboard(getRawValue(item.value))
-            },
-            {
-                label: 'Copy Key & Value',
-                accessKey: 'B',
-                icon: <Copy size={14} />,
-                onClick: () => {
-                    const formattedValue = formatValueForClipboard(item.value);
-                    copyToClipboard(`"${item.key}": ${formattedValue}`);
-                }
-            },
-            { divider: true },
-            {
-                label: 'Copy JSON Path',
-                accessKey: 'P',
-                icon: <Copy size={14} />,
-                onClick: () => {
-                    const path = item.path.filter(p => p !== 'root').join('.');
-                    copyToClipboard(path || 'document');
-                }
-            },
-            { divider: true },
-            {
-                label: 'Expand All',
-                accessKey: 'E',
-                onClick: () => expandAll(item)
-            },
-            {
-                label: 'Collapse All',
-                accessKey: 'C',
-                onClick: () => collapseAll(item)
-            },
-            { divider: true },
-            {
-                label: 'Follow Link...',
-                accessKey: 'F',
-                icon: <Link size={14} />,
-                onClick: () => {
-                    internalRef.current?.focus();
-                    onFollowLink?.(item, true);
-                }
-            },
-            item.type === 'primitive' && {
-                label: 'Add Translation...',
-                accessKey: 'T',
-                icon: <Languages size={14} />,
-                onClick: () => {
-                    onAddTranslation?.(item);
-                }
-            }
-        ].filter(Boolean) as ContextMenuItem[];
-    };
+
 
     // Flatten the visible tree structure
     const flattenedItems = useMemo(() => {
@@ -294,15 +225,123 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
         return items;
     }, [data, expandedKeys, storedLinks, accountName, activeTabId]);
 
+    const isNumeric = (s: string) => s.length > 0 && !isNaN(Number(s));
+    const isSimilar = (k1: string, k2: string) => k1 === k2 || (isNumeric(k1) && isNumeric(k2));
+
+    const expandLevel = (item: FlattenedItem) => {
+        const newKeys = new Set(expandedKeys);
+        flattenedItems.forEach(other => {
+            if (other.level === item.level && other.hasChildren && isSimilar(item.key, other.key)) {
+                newKeys.add(other.id);
+            }
+        });
+        setExpandedKeys(newKeys);
+    };
+
+    const collapseLevel = (item: FlattenedItem) => {
+        const newKeys = new Set(expandedKeys);
+        flattenedItems.forEach(other => {
+            if (other.level === item.level && isSimilar(item.key, other.key)) {
+                newKeys.delete(other.id);
+            }
+        });
+        setExpandedKeys(newKeys);
+    };
+
+    const getContextMenuItems = (item: FlattenedItem): ContextMenuItem[] => {
+        return [
+            {
+                label: 'Copy Key',
+                accessKey: 'K',
+                shortcut: '⌥K',
+                icon: <Copy size={14} />,
+                onClick: () => copyToClipboard(item.key)
+            },
+            {
+                label: 'Copy Value',
+                accessKey: 'V',
+                shortcut: '⌥V',
+                icon: <Copy size={14} />,
+                onClick: () => copyToClipboard(formatValueForClipboard(item.value))
+            },
+            {
+                label: 'Copy Raw Value',
+                accessKey: 'R',
+                shortcut: '⌥R',
+                icon: <Copy size={14} />,
+                onClick: () => copyToClipboard(getRawValue(item.value))
+            },
+            {
+                label: 'Copy Key & Value',
+                accessKey: 'B',
+                shortcut: '⌥B',
+                icon: <Copy size={14} />,
+                onClick: () => {
+                    const formattedValue = formatValueForClipboard(item.value);
+                    copyToClipboard(`"${item.key}": ${formattedValue}`);
+                }
+            },
+            { divider: true },
+            {
+                label: 'Copy JSON Path',
+                accessKey: 'P',
+                shortcut: '⌥P',
+                icon: <Copy size={14} />,
+                onClick: () => {
+                    const path = item.path.filter(p => p !== 'root').join('.');
+                    copyToClipboard(path || 'document');
+                }
+            },
+            { divider: true },
+            {
+                label: 'Expand Level',
+                shortcut: '⌥→',
+                onClick: () => expandLevel(item)
+            },
+            {
+                label: 'Collapse Level',
+                shortcut: '⌥←',
+                onClick: () => collapseLevel(item)
+            },
+            { divider: true },
+            {
+                label: 'Expand All',
+                accessKey: 'E',
+                onClick: () => expandAll(item)
+            },
+            {
+                label: 'Collapse All',
+                accessKey: 'C',
+                onClick: () => collapseAll(item)
+            },
+            { divider: true },
+            {
+                label: 'Follow Link...',
+                accessKey: 'F',
+                shortcut: 'F',
+                icon: <Link size={14} />,
+                onClick: () => {
+                    internalRef.current?.focus();
+                    onFollowLink?.(item, true);
+                }
+            },
+            item.type === 'primitive' && {
+                label: 'Add Translation...',
+                accessKey: 'T',
+                icon: <Languages size={14} />,
+                onClick: () => {
+                    onAddTranslation?.(item);
+                }
+            }
+        ].filter(Boolean) as ContextMenuItem[];
+    };
+
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (flattenedItems.length === 0) return;
 
         const currentIndex = flattenedItems.findIndex(item => item.id === focusedPath);
         let newIndex = currentIndex;
-
-        const isNumeric = (s: string) => s.length > 0 && !isNaN(Number(s));
-        const isSimilar = (k1: string, k2: string) => k1 === k2 || (isNumeric(k1) && isNumeric(k2));
 
         if (e.altKey) {
             const item = flattenedItems[currentIndex];
@@ -351,13 +390,7 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
                 const item = flattenedItems[currentIndex];
                 if (item.hasChildren) {
                     if (e.altKey) {
-                        const newKeys = new Set(expandedKeys);
-                        flattenedItems.forEach(other => {
-                            if (other.level === item.level && other.hasChildren && isSimilar(item.key, other.key)) {
-                                newKeys.add(other.id);
-                            }
-                        });
-                        setExpandedKeys(newKeys);
+                        expandLevel(item);
                     } else if (!item.expanded) {
                         const newKeys = new Set(expandedKeys);
                         newKeys.add(item.id);
@@ -375,13 +408,7 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
                 if (currentIndex === -1) return;
                 const item = flattenedItems[currentIndex];
                 if (e.altKey && item.hasChildren && item.expanded) {
-                    const newKeys = new Set(expandedKeys);
-                    flattenedItems.forEach(other => {
-                        if (other.level === item.level && isSimilar(item.key, other.key)) {
-                            newKeys.delete(other.id);
-                        }
-                    });
-                    setExpandedKeys(newKeys);
+                    collapseLevel(item);
                 } else if (item.hasChildren && item.expanded) {
                     const newKeys = new Set(expandedKeys);
                     newKeys.delete(item.id);

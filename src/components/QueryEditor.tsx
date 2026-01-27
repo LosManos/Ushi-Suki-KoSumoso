@@ -79,7 +79,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
 
     const getContextMenuItems = (): ContextMenuItem[] => {
         return [
-            { label: 'Run Query', icon: <Play size={16} />, onClick: onRunQuery },
+            { label: 'Run Query', icon: <Play size={16} />, shortcut: '⌘↵', onClick: onRunQuery },
             { label: 'Discover Schema', icon: <Search size={16} />, onClick: onDiscoverSchema },
             { divider: true },
             { label: 'select * from c', icon: <Database size={16} />, onClick: () => appendQuery('select * from c') },
