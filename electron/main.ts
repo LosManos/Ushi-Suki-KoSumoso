@@ -96,12 +96,20 @@ function createWindow() {
         width: savedState?.width ?? defaultWidth,
         height: savedState?.height ?? defaultHeight,
         icon: path.join(getVitePublicPath(), isDev ? 'v_dev.png' : 'icon.icns'),
+        title: isDev ? 'Dev - Kosumoso' : 'Kosumoso',
         webPreferences: {
-
-
             preload: path.join(__dirname, 'preload.js'),
         },
     });
+
+    if (isDev) {
+        win.on('page-title-updated', (event, title) => {
+            if (!title.startsWith('Dev - ')) {
+                event.preventDefault();
+                win?.setTitle(`Dev - ${title}`);
+            }
+        });
+    }
 
     // Restore maximized state if applicable
     if (savedState?.isMaximized) {
@@ -286,12 +294,19 @@ ipcMain.handle('compare:open', async (_, documents: any[]) => {
             height: savedState?.height ?? defaultHeight,
             icon: path.join(getVitePublicPath(), isDev ? 'v_dev.png' : 'icon.icns'),
             webPreferences: {
-
-
                 preload: path.join(__dirname, 'preload.js'),
             },
-            title: 'Compare Documents',
+            title: isDev ? 'Dev - Compare Documents' : 'Compare Documents',
         });
+
+        if (isDev) {
+            compareWin.on('page-title-updated', (event, title) => {
+                if (!title.startsWith('Dev - ')) {
+                    event.preventDefault();
+                    compareWin.setTitle(`Dev - ${title}`);
+                }
+            });
+        }
 
         // Restore maximized state if applicable
         if (savedState?.isMaximized) {
