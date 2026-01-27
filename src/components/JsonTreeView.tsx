@@ -301,6 +301,9 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
         const currentIndex = flattenedItems.findIndex(item => item.id === focusedPath);
         let newIndex = currentIndex;
 
+        const isNumeric = (s: string) => s.length > 0 && !isNaN(Number(s));
+        const isSimilar = (k1: string, k2: string) => k1 === k2 || (isNumeric(k1) && isNumeric(k2));
+
         if (e.altKey) {
             const item = flattenedItems[currentIndex];
             if (item) {
@@ -347,7 +350,15 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
                 if (currentIndex === -1) return;
                 const item = flattenedItems[currentIndex];
                 if (item.hasChildren) {
-                    if (!item.expanded) {
+                    if (e.altKey) {
+                        const newKeys = new Set(expandedKeys);
+                        flattenedItems.forEach(other => {
+                            if (other.level === item.level && other.hasChildren && isSimilar(item.key, other.key)) {
+                                newKeys.add(other.id);
+                            }
+                        });
+                        setExpandedKeys(newKeys);
+                    } else if (!item.expanded) {
                         const newKeys = new Set(expandedKeys);
                         newKeys.add(item.id);
                         setExpandedKeys(newKeys);
@@ -363,7 +374,15 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
                 e.preventDefault();
                 if (currentIndex === -1) return;
                 const item = flattenedItems[currentIndex];
-                if (item.hasChildren && item.expanded) {
+                if (e.altKey && item.hasChildren && item.expanded) {
+                    const newKeys = new Set(expandedKeys);
+                    flattenedItems.forEach(other => {
+                        if (other.level === item.level && isSimilar(item.key, other.key)) {
+                            newKeys.delete(other.id);
+                        }
+                    });
+                    setExpandedKeys(newKeys);
+                } else if (item.hasChildren && item.expanded) {
                     const newKeys = new Set(expandedKeys);
                     newKeys.delete(item.id);
                     setExpandedKeys(newKeys);
