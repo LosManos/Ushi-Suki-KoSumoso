@@ -83,6 +83,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
             { label: 'Discover Schema', icon: <Search size={16} />, onClick: onDiscoverSchema },
             { divider: true },
             { label: 'select * from c', icon: <Database size={16} />, onClick: () => appendQuery('select * from c') },
+            { label: 'select count(1) from c', icon: <Database size={16} />, onClick: () => appendQuery('select count(1) from c') },
             { label: 'select * from c where c.id = ', icon: <Code size={16} />, onClick: () => appendQuery('select * from c where c.id = ""') }
         ];
     };
