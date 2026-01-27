@@ -89,12 +89,15 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
 
     useEffect(() => {
         if (activeTabId) {
-            const textarea = document.getElementById('query-editor-textarea');
+            const textarea = document.getElementById('query-editor-textarea') as HTMLTextAreaElement;
             if (textarea) {
                 textarea.focus();
+                if (cursorPositionRef && cursorPositionRef.current !== null) {
+                    textarea.setSelectionRange(cursorPositionRef.current, cursorPositionRef.current);
+                }
             }
         }
-    }, [activeTabId]);
+    }, [activeTabId, cursorPositionRef]);
 
     const updateCursorPosition = () => {
         const textarea = document.getElementById('query-editor-textarea') as HTMLTextAreaElement;
@@ -136,11 +139,13 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
                     if (num >= 1 && num <= 8) {
                         // Switch to specific tab index 0-7
                         if (tabs[num - 1]) {
+                            updateCursorPosition();
                             onTabSelect(tabs[num - 1].id);
                         }
                     } else if (num === 9) {
                         // Switch to last tab
                         if (tabs.length > 0) {
+                            updateCursorPosition();
                             onTabSelect(tabs[tabs.length - 1].id);
                         }
                     }
@@ -160,10 +165,12 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
                 if (e.shiftKey) {
                     // Previous tab (round robin)
                     const prevIndex = currentIndex === 0 ? tabs.length - 1 : currentIndex - 1;
+                    updateCursorPosition();
                     onTabSelect(tabs[prevIndex].id);
                 } else {
                     // Next tab (round robin)
                     const nextIndex = currentIndex === tabs.length - 1 ? 0 : currentIndex + 1;
+                    updateCursorPosition();
                     onTabSelect(tabs[nextIndex].id);
                 }
             }

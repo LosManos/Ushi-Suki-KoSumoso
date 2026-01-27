@@ -71,8 +71,46 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
   const prevSearchShowRef = React.useRef(false);
   const templateContainerRef = React.useRef<HTMLDivElement>(null);
   const { resolvedTheme } = useTheme();
+  const resultsCursorRef = React.useRef<number | null>(null);
 
   const { contextMenu, showContextMenu, closeContextMenu } = useContextMenu();
+
+  /* New Ref for JsonTreeView */
+  const jsonViewRef = React.useRef<HTMLDivElement>(null);
+
+  /* Ref for page size selector */
+  const pageSizeSelectRef = React.useRef<HTMLSelectElement>(null);
+
+  // Derived filtered data
+  const filteredResults = React.useMemo(() => {
+    // If in text view, we don't filter top-level results/documents, but solely on text.
+    if (!search.query || !search.show || viewMode === 'text') return results;
+
+    try {
+      const regex = search.isRegex ?
+        new RegExp(search.query, 'i') :
+        new RegExp(search.query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+
+      return results.filter(item => regex.test(JSON.stringify(item)));
+    } catch (err) {
+      return results;
+    }
+  }, [results, search.query, search.show, search.isRegex, viewMode]);
+
+  // Focus helper
+  const focusActiveView = React.useCallback(() => {
+    if (viewMode === 'text') {
+      const textarea = document.getElementById('results-text-editor') as HTMLTextAreaElement;
+      if (textarea) {
+        textarea.focus();
+        if (resultsCursorRef.current !== null) {
+          textarea.setSelectionRange(resultsCursorRef.current, resultsCursorRef.current);
+        }
+      }
+    } else if (viewMode === 'json') {
+      jsonViewRef.current?.focus();
+    }
+  }, [viewMode]);
 
   const getContextMenuItems = (): ContextMenuItem[] => {
     const line = getCurrentLineFromTextarea();
@@ -122,11 +160,70 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
     return items;
   };
 
-  /* New Ref for JsonTreeView */
-  const jsonViewRef = React.useRef<HTMLDivElement>(null);
+  const updateResultsCursor = () => {
+    const textarea = document.getElementById('results-text-editor') as HTMLTextAreaElement;
+    if (textarea) {
+      resultsCursorRef.current = textarea.selectionStart;
+    }
+  };
 
-  /* Ref for page size selector */
-  const pageSizeSelectRef = React.useRef<HTMLSelectElement>(null);
+  // Auto-focus when switching modes
+  React.useEffect(() => {
+    focusActiveView();
+  }, [viewMode, focusActiveView]);
+
+  // Helper to get a nested value from an object using dot notation
+  const getNestedValue = (obj: any, path: string): any => {
+    const parts = path.split('.');
+    let current = obj;
+    for (const part of parts) {
+      if (current === null || current === undefined) return undefined;
+      current = current[part];
+    }
+    return current;
+  };
+
+  // Apply template to a single result object
+  // Supports escaping: {{ becomes literal {, }} becomes literal }
+  const applyTemplate = (templateStr: string, data: any): string => {
+    // Use placeholder tokens for escaped braces
+    const OPEN_BRACE_TOKEN = '\u0000OPEN\u0000';
+    const CLOSE_BRACE_TOKEN = '\u0000CLOSE\u0000';
+
+    // First, replace escaped braces with tokens
+    let result = templateStr
+      .replace(/\{\{/g, OPEN_BRACE_TOKEN)
+      .replace(/\}\}/g, CLOSE_BRACE_TOKEN);
+
+    // Now replace {fieldName} placeholders with values
+    result = result.replace(/\{([^}]+)\}/g, (match, key) => {
+      const value = getNestedValue(data, key.trim());
+      if (value === undefined) return match; // Keep placeholder if key not found
+      if (typeof value === 'object') return JSON.stringify(value);
+      return String(value);
+    });
+
+    // Finally, restore escaped braces to literal { and }
+    return result
+      .replace(new RegExp(OPEN_BRACE_TOKEN, 'g'), '{')
+      .replace(new RegExp(CLOSE_BRACE_TOKEN, 'g'), '}');
+  };
+
+  // Update template output when template or results change
+  React.useEffect(() => {
+    if (!template || filteredResults.length === 0) {
+      setTemplateOutput('');
+      return;
+    }
+    const output = filteredResults.map((item) => applyTemplate(template, item)).join('\n');
+    setTemplateOutput(output);
+  }, [template, filteredResults, applyTemplate]);
+
+  // Template resize handlers
+  const handleTemplateResizeMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizingTemplate(true);
+  };
 
   // Helper to get current line from textarea
   const getCurrentLineFromTextarea = (): string | null => {
@@ -209,21 +306,6 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
     }
   };
 
-  const filteredResults = React.useMemo(() => {
-    // If in text view, we don't filter top-level results/documents, but solely on text.
-
-    if (!search.query || !search.show || viewMode === 'text') return results;
-
-    try {
-      const regex = search.isRegex ?
-        new RegExp(search.query, 'i') :
-        new RegExp(search.query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-
-      return results.filter(item => regex.test(JSON.stringify(item)));
-    } catch (err) {
-      return results;
-    }
-  }, [results, search.query, search.show, search.isRegex, viewMode]);
 
   // Calculate hit count for the search bar
   const matchCount = React.useMemo(() => {
@@ -249,59 +331,6 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
       setContent(JSON.stringify(filteredResults, null, 2));
     }
   }, [results, filteredResults, viewMode]);
-
-  // Helper to get a nested value from an object using dot notation
-  const getNestedValue = (obj: any, path: string): any => {
-    const parts = path.split('.');
-    let current = obj;
-    for (const part of parts) {
-      if (current === null || current === undefined) return undefined;
-      current = current[part];
-    }
-    return current;
-  };
-
-  // Apply template to a single result object
-  // Supports escaping: {{ becomes literal {, }} becomes literal }
-  const applyTemplate = (templateStr: string, data: any): string => {
-    // Use placeholder tokens for escaped braces
-    const OPEN_BRACE_TOKEN = '\u0000OPEN\u0000';
-    const CLOSE_BRACE_TOKEN = '\u0000CLOSE\u0000';
-
-    // First, replace escaped braces with tokens
-    let result = templateStr
-      .replace(/\{\{/g, OPEN_BRACE_TOKEN)
-      .replace(/\}\}/g, CLOSE_BRACE_TOKEN);
-
-    // Now replace {fieldName} placeholders with values
-    result = result.replace(/\{([^}]+)\}/g, (match, key) => {
-      const value = getNestedValue(data, key.trim());
-      if (value === undefined) return match; // Keep placeholder if key not found
-      if (typeof value === 'object') return JSON.stringify(value);
-      return String(value);
-    });
-
-    // Finally, restore escaped braces to literal { and }
-    return result
-      .replace(new RegExp(OPEN_BRACE_TOKEN, 'g'), '{')
-      .replace(new RegExp(CLOSE_BRACE_TOKEN, 'g'), '}');
-  };
-
-  // Update template output when template or results change
-  React.useEffect(() => {
-    if (!template || filteredResults.length === 0) {
-      setTemplateOutput('');
-      return;
-    }
-    const output = filteredResults.map((item) => applyTemplate(template, item)).join('\n');
-    setTemplateOutput(output);
-  }, [template, filteredResults]);
-
-  // Template resize handlers
-  const handleTemplateResizeMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsResizingTemplate(true);
-  };
 
   React.useEffect(() => {
     if (!isResizingTemplate) return;
@@ -342,17 +371,32 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
         }
       }
 
-      // ... existing mode switch logic ...
-      // Cmd/Ctrl + T to switch to Text view
+      // Cmd/Ctrl + T to switch to Text view or focus it
       if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && (e.key === 't' || e.key === 'T')) {
         e.preventDefault();
-        setViewMode('text');
+        if (viewMode !== 'text') {
+          setViewMode('text');
+        } else {
+          // Force focus if already there
+          focusActiveView();
+        }
       }
 
-      // Cmd/Ctrl + Shift + T to switch to Hierarchical view
+      // Cmd/Ctrl + E to focus query editor
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && (e.key === 'e' || e.key === 'E')) {
+        e.preventDefault();
+        document.getElementById('query-editor-textarea')?.focus();
+      }
+
+      // Cmd/Ctrl + Shift + T to switch to Hierarchical view or focus it
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && !e.altKey && (e.key === 't' || e.key === 'T')) {
         e.preventDefault();
-        setViewMode('json');
+        if (viewMode !== 'json') {
+          setViewMode('json');
+        } else {
+          // Force focus if already there
+          focusActiveView();
+        }
       }
 
       // Cmd/Ctrl + Alt + T to switch to Template view
@@ -661,6 +705,9 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                     textareaClassName="json-editor"
                     textareaId="results-text-editor"
                     ref={containerRef as any}
+                    onSelect={updateResultsCursor}
+                    onClick={updateResultsCursor}
+                    onKeyUp={updateResultsCursor}
                     onContextMenu={(e) => showContextMenu(e)}
                     onKeyDown={(e) => {
                       if (e.shiftKey && e.key === 'F10') {
