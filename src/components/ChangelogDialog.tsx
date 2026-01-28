@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { X, Calendar, Zap, ExternalLink, Loader2 } from 'lucide-react';
+import { X, Calendar, ExternalLink, Loader2 } from 'lucide-react';
 import './ChangelogDialog.css';
 
 interface ChangelogItem {
@@ -60,6 +60,8 @@ export const ChangelogDialog: React.FC<ChangelogDialogProps> = ({ onClose }) => 
         // Just return the raw lines
         return lines.length > 0 ? lines : [version];
     };
+
+
 
     const renderTextWithLinks = (text: string) => {
         // More robust URL regex that handles trailing punctuation better
@@ -134,7 +136,7 @@ export const ChangelogDialog: React.FC<ChangelogDialogProps> = ({ onClose }) => 
                                         <ul>
                                             {parseHighlights(item.body, `v${item.version}`).map((highlight, hIndex) => (
                                                 <li key={hIndex}>
-                                                    <Zap size={14} className="list-icon" />
+                                                    <span className="list-bullet">&bull;</span>
                                                     <span>{renderTextWithLinks(highlight)}</span>
                                                 </li>
                                             ))}
