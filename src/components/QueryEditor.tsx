@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Play, Search, Database, Code } from 'lucide-react';
+import { Play, Search, Database, Code, Sparkles } from 'lucide-react';
 import Editor from 'react-simple-code-editor';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-sql';
@@ -54,13 +54,18 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
     const [quickId, setQuickId] = useState('');
     const [selectedProperty, setSelectedProperty] = useState('');
     const [propertyValue, setPropertyValue] = useState('');
+    const [isHelperMode, setIsHelperMode] = useState(false);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
+    const [suggestionIndex, setSuggestionIndex] = useState(0);
+    const [suggestionPosition, setSuggestionPosition] = useState({ top: 0, left: 0 });
+    const lastPartialRef = useRef<string | null>(null);
 
     // Derived state from active tab
     const activeTab = tabs.find(t => t.id === activeTabId);
     const query = activeTab?.query || '';
 
-    // We only need local refs for text area and ID lookup now
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    // We only need local refs for ID lookup now
     const quickIdInputRef = useRef<HTMLInputElement>(null);
     const propertySelectRef = useRef<HTMLSelectElement>(null);
     const tabsContainerRef = useRef<HTMLDivElement>(null);
@@ -105,6 +110,68 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
         if (textarea && cursorPositionRef) {
             cursorPositionRef.current = textarea.selectionStart;
         }
+
+        if (isHelperMode && textarea) {
+            handleSuggestions(textarea);
+        } else {
+            setShowSuggestions(false);
+        }
+    };
+
+    const handleSuggestions = (textarea: HTMLTextAreaElement) => {
+        const pos = textarea.selectionStart;
+        const text = textarea.value;
+        const textBefore = text.slice(0, pos);
+
+        // Match "c." followed by optional partial property name
+        const match = textBefore.match(/c\.([a-zA-Z0-9_]*)$/);
+
+        if (match && activeTab?.schemaKeys) {
+            const partial = match[1];
+
+            // Only update suggestions if the partial text has changed
+            // This prevents resetting the suggestionIndex to 0 on every cursor update (like Arrow keys)
+            // AND prevents re-opening on KeyUp if Escape was just pressed (which sets showSuggestions to false but keeps partial the same)
+            if (partial === lastPartialRef.current) {
+                return;
+            }
+            lastPartialRef.current = partial;
+
+            const filtered = activeTab.schemaKeys
+                .filter(key => key.toLowerCase().startsWith(partial.toLowerCase()))
+                .slice(0, 100);
+
+            const suggestions = filtered;
+
+            if (suggestions.length > 0) {
+                setFilteredSuggestions(suggestions);
+                setSuggestionIndex(0);
+                setShowSuggestions(true);
+
+                // Calculate position
+                const { top, left } = getCaretCoordinates(textarea, pos);
+                setSuggestionPosition({ top, left });
+            } else {
+                setShowSuggestions(false);
+                lastPartialRef.current = null;
+            }
+        } else {
+            setShowSuggestions(false);
+            lastPartialRef.current = null;
+        }
+    };
+
+    // Helper to get caret coordinates
+    const getCaretCoordinates = (_textarea: HTMLTextAreaElement, _pos: number) => {
+        // This is a rough estimation since real caret positioning is complex without a library
+        // We can use a mirror div if we want more accuracy, but for now let's try 
+        // a simple approach or a fixed position.
+        // Actually, let's use a fixed position for the suggestion box 
+        // relative to the editor area to keep it simple and robust.
+        return {
+            top: 40, // Below the toolbar
+            left: 20 // Fixed relative position
+        };
     };
 
     useEffect(() => {
@@ -123,12 +190,19 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
             // Cmd/Ctrl + E to focus query editor
             if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'e') {
                 e.preventDefault();
-                textareaRef.current?.focus();
+                document.getElementById('query-editor-textarea')?.focus();
             }
             // Cmd/Ctrl + Shift + K to focus property lookup
             if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'k') {
                 e.preventDefault();
                 propertySelectRef.current?.focus();
+            }
+
+            // Cmd/Ctrl + Shift + H to toggle helper mode
+            if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'h') {
+                e.preventDefault();
+                setIsHelperMode(prev => !prev);
+                document.getElementById('query-editor-textarea')?.focus();
             }
 
             // Tab Navigation Cmd+1 through Cmd+9
@@ -175,11 +249,66 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
                     onTabSelect(tabs[nextIndex].id);
                 }
             }
+
+            // Handle Suggestions navigation
+            if (showSuggestions) {
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    setSuggestionIndex(prev => (prev + 1) % filteredSuggestions.length);
+                    return;
+                }
+                if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    setSuggestionIndex(prev => (prev - 1 + filteredSuggestions.length) % filteredSuggestions.length);
+                    return;
+                }
+                if (e.key === 'Enter' || e.key === 'Tab') {
+                    e.preventDefault();
+                    insertSuggestion(filteredSuggestions[suggestionIndex]);
+                    return;
+                }
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setShowSuggestions(false);
+                    // Keep lastPartialRef as is so it doesn't re-open on KeyUp
+                    document.getElementById('query-editor-textarea')?.focus();
+                    return;
+                }
+            }
         };
 
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [query, onRunQuery, tabs, onTabSelect]);
+        window.addEventListener('keydown', handleKeyDown, true);
+        return () => window.removeEventListener('keydown', handleKeyDown, true);
+    }, [query, onRunQuery, tabs, onTabSelect, showSuggestions, filteredSuggestions, suggestionIndex, isHelperMode]);
+
+    const insertSuggestion = (suggestion: string) => {
+        const textarea = document.getElementById('query-editor-textarea') as HTMLTextAreaElement;
+        if (!textarea) return;
+
+        const pos = textarea.selectionStart;
+        const text = textarea.value;
+        const textBefore = text.slice(0, pos);
+        const textAfter = text.slice(pos);
+
+        // Find where the "c." or "c.partial" starts
+        const match = textBefore.match(/c\.[a-zA-Z0-9_]*$/);
+        if (!match) return;
+
+        const startPos = match.index! + 2; // After "c."
+        const newText = text.slice(0, startPos) + suggestion + textAfter;
+        onQueryChange(newText);
+        setShowSuggestions(false);
+        lastPartialRef.current = suggestion; // Prevent re-opening for this property immediately
+
+        // Set cursor position after the inserted suggestion
+        setTimeout(() => {
+            const newPos = startPos + suggestion.length;
+            textarea.focus();
+            textarea.setSelectionRange(newPos, newPos);
+            if (cursorPositionRef) cursorPositionRef.current = newPos;
+        }, 0);
+    };
 
     // Check for overflow on resize and tabs change
     useEffect(() => {
@@ -369,9 +498,49 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
                         title="Focus ID Lookup (Cmd+Shift+I)"
                     />
                     <button onClick={handleQuickLookup}>Get</button>
+
+                    <div className="id-lookup-separator"></div>
+
+                    <button
+                        className={`helper-mode-btn ${isHelperMode ? 'active' : ''}`}
+                        onClick={() => setIsHelperMode(!isHelperMode)}
+                        title="Toggle Query Helper Mode - Property Suggestions (Cmd+Shift+H)"
+                    >
+                        <Sparkles size={16} />
+                        <span>{isHelperMode ? 'Helper: On' : 'Helper: Off'}</span>
+                    </button>
                 </div>
             </div>
             <div className="editor-area">
+                {showSuggestions && (
+                    <div
+                        className="query-suggestions-popup"
+                        style={{
+                            top: suggestionPosition.top,
+                            right: 20 // Suggestion box on the right side
+                        }}
+                    >
+                        <div className="suggestions-header">
+                            Suggestions ({filteredSuggestions.length})
+                        </div>
+                        <div className="suggestions-list">
+                            {filteredSuggestions.map((s, i) => (
+                                <div
+                                    key={s}
+                                    className={`suggestion-item ${i === suggestionIndex ? 'selected' : ''}`}
+                                    onClick={() => insertSuggestion(s)}
+                                    onMouseEnter={() => setSuggestionIndex(i)}
+                                >
+                                    <Code size={12} className="suggestion-icon" />
+                                    <span className="suggestion-text">{s}</span>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="suggestions-footer">
+                            ↑↓ to navigate, Enter to select
+                        </div>
+                    </div>
+                )}
                 <Editor
                     value={query}
                     onValueChange={(code) => onQueryChange(code)}

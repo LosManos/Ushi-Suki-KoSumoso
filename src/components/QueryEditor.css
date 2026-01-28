@@ -237,3 +237,115 @@
 .property-lookup.discovering input {
     animation: pulsate-lookup 1.5s infinite ease-in-out;
 }
+
+/* Query Helper Styles */
+.helper-mode-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.2rem 0.6rem !important;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all 0.2s ease;
+}
+
+.helper-mode-btn.active {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+    color: white;
+}
+
+.helper-mode-btn:hover:not(.active) {
+    border-color: var(--accent-color);
+    color: var(--text-primary);
+}
+
+.query-suggestions-popup {
+    position: absolute;
+    z-index: 1000;
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--accent-color);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    width: 280px;
+    max-height: 300px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: slide-in-right 0.2s ease-out;
+}
+
+@keyframes slide-in-right {
+    from {
+        opacity: 0;
+        transform: translateX(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.suggestions-header {
+    padding: 0.5rem 0.8rem;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.suggestions-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 0;
+    scrollbar-width: thin;
+}
+
+.suggestion-item {
+    padding: 0.6rem 0.8rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    transition: background 0.1s;
+}
+
+.suggestion-item:hover,
+.suggestion-item.selected {
+    background-color: var(--accent-color);
+    color: white;
+}
+
+.suggestion-icon {
+    opacity: 0.6;
+}
+
+.suggestion-item.selected .suggestion-icon {
+    opacity: 1;
+}
+
+.suggestion-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.suggestions-footer {
+    padding: 0.4rem 0.8rem;
+    border-top: 1px solid var(--border-color);
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    font-style: italic;
+    background-color: rgba(0, 0, 0, 0.2);
+}

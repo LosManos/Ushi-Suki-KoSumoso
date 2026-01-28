@@ -26,6 +26,7 @@ The editor supports standard Cosmos DB SQL syntax with syntax colouring.
 *   **Execute Query**: Press `Cmd + Enter` (Mac) or `Ctrl + Enter` (Windows/Linux).
 *   **Execute Paragraph**: If you have multiple queries, Kosumoso will execute the specific block of text where your cursor is currently located.
 *   **ID Lookup**: To quickly find a document by ID, use the "Get by ID".
+*   **Query Helper Mode (`Cmd + Shift + H`)**: A toggleable mode that provides intellisense-like autocomplete for property names. Type `c.` to see a list of available properties from the discovered schema. Use `*` to quickly select all properties.
 *   **Schema Discovery**: Use "Select property" to discover (from the first 100 documents) the properties for the current container. Write value and select "Append" to have the query written for you.
 
 ### Query History
@@ -89,6 +90,7 @@ Quickly jump to any container in your account without using the sidebar. Just st
 | **`Cmd + Shift + T`** | Switch to Hierarchical Results |
 | **`Cmd + Alt + T`** | Switch to Template Results |
 | **`Cmd + E`** | Focus Query Editor |
+| **`Cmd + Shift + H`**| Toggle Query Helper Mode |
 | **`Cmd + R`** | Focus Results View |
 | **`Cmd + F`** | Find/Filter in Results |
 | **`Cmd + S`** | Save Results to File |
