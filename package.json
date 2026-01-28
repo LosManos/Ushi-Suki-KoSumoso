@@ -36,7 +36,7 @@
         "concurrently": "^8.2.2",
         "cross-env": "^7.0.3",
         "electron": "^35.7.5",
-        "electron-builder": "^24.13.3",
+        "electron-builder": "^26.6.0",
         "typescript": "^5.2.2",
         "vite": "^7.3.0",
         "wait-on": "^7.2.0"
