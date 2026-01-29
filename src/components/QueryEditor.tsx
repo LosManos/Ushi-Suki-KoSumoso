@@ -66,6 +66,14 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
     const activeTab = tabs.find(t => t.id === activeTabId);
     const query = activeTab?.query || '';
 
+    // Automatically enable helper mode if a schema is known for the container
+    useEffect(() => {
+        if (activeTab) {
+            const hasSchema = (activeTab.schemaKeys || []).length > 0;
+            setIsHelperMode(hasSchema);
+        }
+    }, [activeTab?.id, (activeTab?.schemaKeys || []).length]);
+
     // We only need local refs for ID lookup now
     const quickIdInputRef = useRef<HTMLInputElement>(null);
     const propertySelectRef = useRef<HTMLSelectElement>(null);
