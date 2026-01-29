@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Play, Search, Database, Code, Sparkles } from 'lucide-react';
+import { Play, Search, Database, Code, Sparkles, X } from 'lucide-react';
 import Editor from 'react-simple-code-editor';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-sql';
@@ -411,7 +411,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
                                     }}
                                     title="Close Tab"
                                 >
-                                    ×
+                                    <X size={14} />
                                 </button>
                             </span>
                         )

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Trash2 } from 'lucide-react';
 import { cosmos } from '../services/cosmos';
 import './ConnectionForm.css';
 
@@ -258,7 +259,7 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect, onCan
                                     onClick={handleDeleteConnection}
                                     title="Delete saved connection"
                                 >
-                                    🗑️
+                                    <Trash2 size={16} />
                                 </button>
                             )}
                         </div>

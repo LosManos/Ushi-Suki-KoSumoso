@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { ChevronRight, ChevronDown, Copy, Link } from 'lucide-react';
+import { ChevronRight, ChevronDown, Copy, Link, Languages, X } from 'lucide-react';
 import { useContextMenu } from '../hooks/useContextMenu';
 import { ContextMenu, ContextMenuItem } from './ContextMenu';
 import { LinkMapping } from '../services/linkService';
 import { ContainerTranslations } from '../services/translationService';
 import './JsonTreeView.css';
-import { Languages } from 'lucide-react';
 
 // Helper to format value for clipboard
 const formatValueForClipboard = (value: any): string => {
@@ -602,6 +601,7 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
                 <div className="filter-banner">
                     <span>Property Isolation: <strong>{filterKey}</strong></span>
                     <button className="clear-filter" onClick={(e) => { e.stopPropagation(); setFilterKey(null); }}>
+                        <X size={12} style={{ marginRight: '4px' }} />
                         Clear (Esc or Alt+W)
                     </button>
                 </div>
