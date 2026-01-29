@@ -455,11 +455,32 @@ function App() {
         }));
     };
 
+    useEffect(() => {
+        const handleFocus = (e: FocusEvent) => {
+            const target = e.target as HTMLElement;
+            // Don't track resize handles as "where I was" for error dismissal
+            if (target && target.classList && !target.className.includes('resize-handle')) {
+                lastFocusedElementRef.current = target;
+            }
+        };
+        window.addEventListener('focusin', handleFocus);
+        return () => window.removeEventListener('focusin', handleFocus);
+    }, []);
+
     const handleDismissError = () => {
         if (!activeTabId) return;
         setTabs(prev => prev.map(t =>
             t.id === activeTabId ? { ...t, error: undefined } : t
         ));
+
+        // Restore focus to where we were
+        setTimeout(() => {
+            if (lastFocusedElementRef.current && document.contains(lastFocusedElementRef.current)) {
+                lastFocusedElementRef.current.focus();
+            } else {
+                document.getElementById('query-editor-textarea')?.focus();
+            }
+        }, 0);
     };
 
     const handleSelectHistory = (item: HistoryItem) => {

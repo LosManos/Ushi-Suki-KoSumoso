@@ -407,6 +407,8 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
 
       // Escape to dismiss error
       if (e.key === 'Escape' && error && onDismissError) {
+        e.preventDefault();
+        e.stopPropagation();
         onDismissError();
       }
 
