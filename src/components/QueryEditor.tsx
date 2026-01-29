@@ -9,6 +9,7 @@ import './SQLHighlight.css';
 import { QueryTab } from '../types';
 import { useContextMenu } from '../hooks/useContextMenu';
 import { ContextMenu, ContextMenuItem } from './ContextMenu';
+import { fuzzyMatch } from '../utils';
 
 // Extend Prism SQL for Cosmos DB specific functions if not already present
 if (Prism.languages.sql) {
@@ -123,8 +124,8 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
         const text = textarea.value;
         const textBefore = text.slice(0, pos);
 
-        // Match "c." followed by optional partial property name
-        const match = textBefore.match(/c\.([a-zA-Z0-9_]*)$/);
+        // Match "c." followed by optional partial property name (including *)
+        const match = textBefore.match(/c\.([a-zA-Z0-9_*]*)$/);
 
         if (match && activeTab?.schemaKeys) {
             const partial = match[1];
@@ -137,11 +138,24 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
             }
             lastPartialRef.current = partial;
 
-            const filtered = activeTab.schemaKeys
-                .filter(key => key.toLowerCase().startsWith(partial.toLowerCase()))
-                .slice(0, 100);
+            const lowerPartial = partial.toLowerCase();
+            const allPossibleKeys = ['*', ...activeTab.schemaKeys];
 
-            const suggestions = filtered;
+            // Prioritize: 
+            // 1. Starts with partial
+            // 2. Contains partial
+            // 3. Fuzzy match
+            const startsWithItems = allPossibleKeys.filter(key => key.toLowerCase().startsWith(lowerPartial));
+            const containsItems = allPossibleKeys.filter(key =>
+                !key.toLowerCase().startsWith(lowerPartial) &&
+                key.toLowerCase().includes(lowerPartial)
+            );
+            const fuzzyItems = allPossibleKeys.filter(key =>
+                !key.toLowerCase().includes(lowerPartial) &&
+                fuzzyMatch(partial, key)
+            );
+
+            const suggestions = [...startsWithItems, ...containsItems, ...fuzzyItems].slice(0, 100);
 
             if (suggestions.length > 0) {
                 setFilteredSuggestions(suggestions);
@@ -292,18 +306,26 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
         const textAfter = text.slice(pos);
 
         // Find where the "c." or "c.partial" starts
-        const match = textBefore.match(/c\.[a-zA-Z0-9_]*$/);
+        const match = textBefore.match(/c\.[a-zA-Z0-9_*]*$/);
         if (!match) return;
 
-        const startPos = match.index! + 2; // After "c."
-        const newText = text.slice(0, startPos) + suggestion + textAfter;
+        let startPos, replacement;
+        if (suggestion === '*') {
+            startPos = match.index!;
+            replacement = '*';
+        } else {
+            startPos = match.index! + 2; // After "c."
+            replacement = suggestion;
+        }
+
+        const newText = text.slice(0, startPos) + replacement + textAfter;
         onQueryChange(newText);
         setShowSuggestions(false);
         lastPartialRef.current = suggestion; // Prevent re-opening for this property immediately
 
         // Set cursor position after the inserted suggestion
         setTimeout(() => {
-            const newPos = startPos + suggestion.length;
+            const newPos = startPos + replacement.length;
             textarea.focus();
             textarea.setSelectionRange(newPos, newPos);
             if (cursorPositionRef) cursorPositionRef.current = newPos;

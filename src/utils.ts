@@ -91,3 +91,22 @@ export const updateValueAtPath = (obj: any, path: string[], newValue: any): any 
 
     return newObjArrayOrObject;
 };
+
+/**
+ * Simple fuzzy match. Returns true if all characters in query appear in order within text.
+ */
+export const fuzzyMatch = (query: string, text: string): boolean => {
+    if (!query) return true;
+    query = query.toLowerCase();
+    text = text.toLowerCase();
+    let queryIdx = 0;
+    for (let textIdx = 0; textIdx < text.length; textIdx++) {
+        if (text[textIdx] === query[queryIdx]) {
+            queryIdx++;
+        }
+        if (queryIdx === query.length) {
+            return true;
+        }
+    }
+    return false;
+};
