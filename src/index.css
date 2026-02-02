@@ -33,6 +33,9 @@
   --sh-number: #ae81ff;
   --sh-function: #a6e22e;
   --font-mono: 'Consolas', 'Monaco', 'Andale Mono', 'Ubuntu Mono', monospace;
+
+  /* Custom Cursors */
+  --cursor-info: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Cpath d='M8 4v20l6-6h10L8 4z' fill='%23000' stroke='%23fff' stroke-width='2'/%3E%3Ccircle cx='22' cy='22' r='7' fill='%23007acc' stroke='%23fff' stroke-width='1.5'/%3E%3Ctext x='22' y='25' fill='%23fff' font-family='Arial' font-size='9' font-weight='bold' text-anchor='middle'%3Ei%3C/text%3E%3C/svg%3E") 8 4, auto;
 }
 
 :root.light {

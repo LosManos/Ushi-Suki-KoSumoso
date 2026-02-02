@@ -706,8 +706,32 @@ const JsonNode: React.FC<{
     const propertyPath = item.path.filter((p: any) => p !== 'root' && isNaN(Number(p))).join('.');
     const translation = translations[propertyPath]?.[String(item.value)];
 
+    // Get all translations for the current property
+    const allTranslations = useMemo(() => {
+        const mappings = translations[propertyPath];
+        if (!mappings) return null;
+
+        const entries = Object.entries(mappings);
+        if (entries.length === 0) return null;
+
+        // Sort entries: numeric if possible, otherwise string sort
+        const sortedEntries = [...entries].sort((a, b) => {
+            const isANumeric = !isNaN(Number(a[0]));
+            const isBNumeric = !isNaN(Number(b[0]));
+            if (isANumeric && isBNumeric) return Number(a[0]) - Number(b[0]);
+            return a[0].localeCompare(b[0]);
+        });
+
+        const lines = sortedEntries.map(([val, label]) => {
+            const isCurrent = String(val) === String(item.value);
+            return `${isCurrent ? '● ' : '  '}${val}: ${label}`;
+        });
+
+        return `Property: ${propertyPath}\n\nTranslations:\n${lines.join('\n')}`;
+    }, [translations, propertyPath, item.value]);
+
     const translatedDisplay = translation ? (
-        <span className="json-translation">
+        <span className="json-translation" title={allTranslations || undefined}>
             ({translation})
         </span>
     ) : null;
