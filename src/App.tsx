@@ -12,7 +12,7 @@ import { QueryTab, HistoryItem } from './types';
 import { historyService } from './services/history';
 import { templateService } from './services/templates';
 import { schemaService } from './services/schema';
-import { extractParagraphAtCursor, updateValueAtPath } from './utils';
+import { extractParagraphAtCursor, updateValueAtPath, getPropertyPath } from './utils';
 import { linkService, LinkMapping } from './services/linkService';
 import { translationService } from './services/translationService';
 import { FlattenedItem } from './components/JsonTreeView';
@@ -575,7 +575,7 @@ function App() {
         if (!activeTabId) return;
 
         // Construct a source key for link persistence
-        const propertyPath = item.path.filter((p: any) => p !== 'root' && typeof p !== 'number').join('.');
+        const propertyPath = getPropertyPath(item.path);
         const sourceKey = `${accountName}/${activeTabId}:${propertyPath}`;
         const mapping = item.linkTarget || storedLinks[sourceKey];
 
@@ -679,7 +679,7 @@ function App() {
     const handleAddTranslation = (item: FlattenedItem) => {
         if (!activeTabId) return;
         // Skip 'root' and any numeric path segments (array indices)
-        const propertyPath = item.path.filter((p: any) => p !== 'root' && isNaN(Number(p))).join('.');
+        const propertyPath = getPropertyPath(item.path);
         if (!propertyPath) return;
         setTranslationItem({ item, sourceTabId: activeTabId, propertyPath });
     };

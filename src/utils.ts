@@ -110,3 +110,11 @@ export const fuzzyMatch = (query: string, text: string): boolean => {
     }
     return false;
 };
+
+/**
+ * Converts a full document path into a property path for link/translation mapping.
+ * Strips 'root' and numeric segments (array indices).
+ */
+export const getPropertyPath = (path: string[]): string => {
+    return (path || []).filter((p: any) => p !== 'root' && isNaN(Number(p))).join('.');
+};

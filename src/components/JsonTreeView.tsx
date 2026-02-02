@@ -4,6 +4,7 @@ import { useContextMenu } from '../hooks/useContextMenu';
 import { ContextMenu, ContextMenuItem } from './ContextMenu';
 import { LinkMapping } from '../services/linkService';
 import { ContainerTranslations } from '../services/translationService';
+import { getPropertyPath } from '../utils';
 import './JsonTreeView.css';
 
 // Helper to format value for clipboard
@@ -80,6 +81,50 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
     const [filterKey, setFilterKey] = useState<string | null>(null);
     const internalRef = useRef<HTMLDivElement | null>(null);
     const { contextMenu, showContextMenu, closeContextMenu } = useContextMenu();
+    const processedLinksRef = useRef<WeakSet<any>>(new WeakSet());
+
+    // Auto-expand singleton link results
+    useEffect(() => {
+        if (!data) return;
+
+        const pathsToAutoExpand: string[] = [];
+
+        const scan = (obj: any, path: string[]) => {
+            if (obj && typeof obj === 'object') {
+                const pathStr = path.join('.');
+                if (obj.__isLinked__ && !processedLinksRef.current.has(obj)) {
+                    processedLinksRef.current.add(obj);
+                    pathsToAutoExpand.push(pathStr);
+                    // If it's a single result, also expand the first index to show document fields
+                    if (Array.isArray(obj.linkedData) && obj.linkedData.length === 1) {
+                        pathsToAutoExpand.push([...path, '0'].join('.'));
+                    }
+                }
+
+                // Recursively scan children to find nested link results
+                const searchObj = obj.__isLinked__ ? obj.linkedData : obj;
+                if (searchObj && typeof searchObj === 'object') {
+                    Object.entries(searchObj).forEach(([k, v]) => {
+                        scan(v, [...path, k]);
+                    });
+                }
+            }
+        };
+
+        if (Array.isArray(data)) {
+            data.forEach((item, i) => scan(item, ['root', String(i)]));
+        } else {
+            scan(data, ['root']);
+        }
+
+        if (pathsToAutoExpand.length > 0) {
+            setExpandedKeys(prev => {
+                const next = new Set(prev);
+                pathsToAutoExpand.forEach(p => next.add(p));
+                return next;
+            });
+        }
+    }, [data]);
 
     // Merge local and forwarded refs
     const setBufferRef = (element: HTMLDivElement | null) => {
@@ -254,7 +299,7 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
         if (Object.keys(storedLinks).length > 0 && accountName && activeTabId) {
             items.forEach(item => {
                 // Same logic as in App.tsx for sourceKey
-                const propertyPath = item.path.filter((p: any) => p !== 'root' && isNaN(Number(p))).join('.');
+                const propertyPath = getPropertyPath(item.path);
                 if (!propertyPath) return;
                 const sourceKey = `${accountName}/${activeTabId}:${propertyPath}`;
                 const mapping = storedLinks[sourceKey];
@@ -703,7 +748,7 @@ const JsonNode: React.FC<{
 
     // Translation logic
     // Skip 'root' and any numeric path segments (array indices)
-    const propertyPath = item.path.filter((p: any) => p !== 'root' && isNaN(Number(p))).join('.');
+    const propertyPath = getPropertyPath(item.path);
     const translation = translations[propertyPath]?.[String(item.value)];
 
     // Get all translations for the current property
