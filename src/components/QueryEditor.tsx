@@ -91,6 +91,18 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
         onQueryChange(updatedQuery);
     };
 
+    const handlePasteIdToQuery = async (quoted: boolean) => {
+        try {
+            const text = await navigator.clipboard.readText();
+            if (text) {
+                const queryToAppend = quoted ? `select * from c where c.id = '${text}'` : `select * from c where c.id = ${text}`;
+                appendQuery(queryToAppend);
+            }
+        } catch (err) {
+            console.error('Failed to read clipboard', err);
+        }
+    };
+
     const getContextMenuItems = (): ContextMenuItem[] => {
         return [
             { label: 'Run Query', icon: <Play size={16} />, shortcut: '⌘↵', onClick: onRunQuery },
@@ -98,7 +110,10 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
             { divider: true },
             { label: 'select * from c', icon: <Database size={16} />, onClick: () => appendQuery('select * from c') },
             { label: 'select count(1) from c', icon: <Database size={16} />, onClick: () => appendQuery('select count(1) from c') },
-            { label: 'select * from c where c.id = ', icon: <Code size={16} />, onClick: () => appendQuery('select * from c where c.id = ""') }
+            { label: 'select * from c where c.id = ', icon: <Code size={16} />, onClick: () => appendQuery('select * from c where c.id = ""') },
+            { divider: true },
+            { label: "select * from c where c.id = '{clipboard}'", icon: <Database size={16} />, shortcut: '⌘⌥I', onClick: () => handlePasteIdToQuery(true) },
+            { label: "select * from c where c.id = {clipboard}", icon: <Database size={16} />, shortcut: '⌘⌥⇧I', onClick: () => handlePasteIdToQuery(false) },
         ];
     };
 
@@ -205,12 +220,26 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
                 onRunQuery();
             }
             // Cmd/Ctrl + Shift + I to focus ID lookup
-            if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'i') {
+            if ((e.metaKey || e.ctrlKey) && e.shiftKey && !e.altKey && e.key.toLowerCase() === 'i') {
                 e.preventDefault();
                 quickIdInputRef.current?.focus();
             }
+
+            // Quoted ID query from clipboard (Cmd + Opt + I)
+            // On Mac, Alt (Option) produces special characters in e.key, so we use e.code
+            if ((e.metaKey || e.ctrlKey) && e.altKey && !e.shiftKey && e.code === 'KeyI') {
+                e.preventDefault();
+                handlePasteIdToQuery(true);
+            }
+
+            // Unquoted ID query from clipboard (Cmd + Opt + Shift + I)
+            if ((e.metaKey || e.ctrlKey) && e.altKey && e.shiftKey && e.code === 'KeyI') {
+                e.preventDefault();
+                handlePasteIdToQuery(false);
+            }
+
             // Cmd/Ctrl + E to focus query editor
-            if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'e') {
+            if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'e') {
                 e.preventDefault();
                 document.getElementById('query-editor-textarea')?.focus();
             }

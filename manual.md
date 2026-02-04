@@ -102,6 +102,8 @@ Quickly jump to any container in your account without using the sidebar. Just st
 | **`Alt + W`** | Focus Property Isolation |
 | **`Cmd + 1-8`** | Switch to Query view 1-9 |
 | **`Cmd + 9`** | Switch to last Query view |
+| **`Cmd + Opt + I`** | Query for {clipboard} (quoted) |
+| **`Cmd + Opt + Shift + I`** | Query for {clipboard} |
 | **`Cmd + ,`** | Open main menu |
 
 ---
