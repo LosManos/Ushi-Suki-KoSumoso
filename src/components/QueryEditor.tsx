@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Play, Search, Database, Code, Sparkles, X } from 'lucide-react';
+import { Play, Search, Terminal, Code, Sparkles, X } from 'lucide-react';
 import Editor from 'react-simple-code-editor';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-sql';
@@ -108,12 +108,12 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
             { label: 'Run Query', icon: <Play size={16} />, shortcut: '⌘↵', onClick: onRunQuery },
             { label: 'Discover Schema', icon: <Search size={16} />, onClick: onDiscoverSchema },
             { divider: true },
-            { label: 'select * from c', icon: <Database size={16} />, onClick: () => appendQuery('select * from c') },
-            { label: 'select count(1) from c', icon: <Database size={16} />, onClick: () => appendQuery('select count(1) from c') },
-            { label: 'select * from c where c.id = ', icon: <Code size={16} />, onClick: () => appendQuery('select * from c where c.id = ""') },
+            { label: 'select * from c', icon: <Terminal size={16} />, onClick: () => appendQuery('select * from c') },
+            { label: 'select count(1) from c', icon: <Terminal size={16} />, onClick: () => appendQuery('select count(1) from c') },
+            { label: 'select * from c where c.id = ', icon: <Terminal size={16} />, onClick: () => appendQuery('select * from c where c.id = ""') },
             { divider: true },
-            { label: "select * from c where c.id = '{clipboard}'", icon: <Database size={16} />, shortcut: '⌘⌥I', onClick: () => handlePasteIdToQuery(true) },
-            { label: "select * from c where c.id = {clipboard}", icon: <Database size={16} />, shortcut: '⌘⌥⇧I', onClick: () => handlePasteIdToQuery(false) },
+            { label: "select * from c where c.id = '{clipboard}'", icon: <Terminal size={16} />, shortcut: '⌘⌥I', onClick: () => handlePasteIdToQuery(true) },
+            { label: "select * from c where c.id = {clipboard}", icon: <Terminal size={16} />, shortcut: '⌘⌥⇧I', onClick: () => handlePasteIdToQuery(false) },
         ];
     };
 
