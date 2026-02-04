@@ -23,7 +23,7 @@ You can connect with Managed Identity or Connection String.
 
 ### SQL Editor (`Cmd + E`)
 The editor supports standard Cosmos DB SQL syntax with syntax colouring.
-*   **Execute Query**: Press `Cmd + Enter` (Mac) or `Ctrl + Enter` (Windows/Linux).
+*   **Execute Query**: Press `Shift + Enter` (or `Cmd + Enter` on Mac / `Ctrl + Enter` on Windows/Linux).
 *   **Execute Paragraph**: If you have multiple queries, Kosumoso will execute the specific block of text where your cursor is currently located.
 *   **ID Lookup**: To quickly find a document by ID, use the "Get by ID".
 *   **Query Helper Mode (`Cmd + Shift + H`)**: A toggleable mode that provides intellisense-like autocomplete for property names. Type `c.` to see a list of available properties from the discovered schema. Use `*` to quickly select all properties.
@@ -84,7 +84,7 @@ Quickly jump to any container in your account without using the sidebar. Just st
 
 | Shortcut | Action |
 | :--- | :--- |
-| **`Cmd + Enter`** | Execute current query/paragraph |
+| **`Shift + Enter`** | Execute current query/paragraph (also `Cmd+Enter`) |
 | **`Cmd + P`** | Open Container Palette |
 | **`Cmd + T`** | Switch to Text Results |
 | **`Cmd + Shift + T`** | Switch to Hierarchical Results |

@@ -105,7 +105,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
 
     const getContextMenuItems = (): ContextMenuItem[] => {
         return [
-            { label: 'Run Query', icon: <Play size={16} />, shortcut: '⌘↵', onClick: onRunQuery },
+            { label: 'Run Query', icon: <Play size={16} />, shortcut: 'Shift+Enter', onClick: onRunQuery },
             { label: 'Discover Schema', icon: <Search size={16} />, onClick: onDiscoverSchema },
             { divider: true },
             { label: 'select * from c', icon: <Terminal size={16} />, onClick: () => appendQuery('select * from c') },
@@ -213,8 +213,8 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            // Cmd/Ctrl + Enter to run query
-            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+            // Cmd/Ctrl + Enter OR Shift + Enter to run query
+            if (((e.metaKey || e.ctrlKey) && e.key === 'Enter') || (e.shiftKey && e.key === 'Enter')) {
                 e.preventDefault();
                 updateCursorPosition();
                 onRunQuery();
@@ -512,7 +512,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
                             ref={propertySelectRef}
                             value={selectedProperty}
                             onChange={handlePropertySelectChange}
-                            title="Filter by property (Cmd+Shift+K)"
+                            title="Filter by property (Cmd/Ctrl+Shift+K)"
                             className="property-select"
                             disabled={activeTab.isDiscovering}
                         >
@@ -546,7 +546,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
 
                     <div className="id-lookup-separator"></div>
 
-                    <label title="Focus ID Lookup (Cmd+Shift+I)">Get by Document Id:</label>
+                    <label title="Focus ID Lookup (Cmd/Ctrl+Shift+I)">Get by Document Id:</label>
                     <input
                         ref={quickIdInputRef}
                         type="text"
@@ -554,7 +554,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
                         value={quickId}
                         onChange={(e) => setQuickId(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleQuickLookup()}
-                        title="Focus ID Lookup (Cmd+Shift+I)"
+                        title="Focus ID Lookup (Cmd/Ctrl+Shift+I)"
                     />
                     <button onClick={handleQuickLookup}>Get</button>
 
@@ -563,7 +563,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
                     <button
                         className={`helper-mode-btn ${isHelperMode ? 'active' : ''}`}
                         onClick={() => setIsHelperMode(!isHelperMode)}
-                        title="Toggle Query Helper Mode - Property Suggestions (Cmd+Shift+H)"
+                        title="Toggle Query Helper Mode - Property Suggestions (Cmd/Ctrl+Shift+H)"
                     >
                         <Sparkles size={16} />
                         <span>{isHelperMode ? 'Helper: On' : 'Helper: Off'}</span>
@@ -628,7 +628,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
                         }
                     }}
                     placeholder="SELECT * FROM c"
-                    title="Query Editor (Cmd+E)"
+                    title="Query Editor (Cmd/Ctrl+E)"
                 />
             </div>
             {contextMenu && (

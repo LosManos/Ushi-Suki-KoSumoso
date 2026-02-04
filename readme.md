@@ -24,7 +24,7 @@ I am presently working on a Mac, so the other OSs are untested. Please test and 
 
 See the [manual](manual.md) for detailed instructions.
 
-Executes the paragraph you're on. Cmd-enter to Execute.  
+Executes the paragraph you're on. `Shift+Enter` to Execute (also `Cmd/Ctrl+Enter`).  
 
 Has text output as regular json text.
 
@@ -42,7 +42,7 @@ Can write simple = queries for you.
 
 Is keyboard navigatable.
 
-Use Cmd-P for quick access to the containers.
+Use `Cmd/Ctrl+P` for quick access to the containers.
 
 Starts faster than Microsoft's web cosmos query tool.
 

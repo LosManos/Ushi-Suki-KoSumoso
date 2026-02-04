@@ -540,7 +540,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                     >
                       <span>Go to Container...</span>
-                      <span style={{ opacity: 0.6, fontSize: '0.85em' }}>⌘P</span>
+                      <span style={{ opacity: 0.6, fontSize: '0.85em' }}>Cmd/Ctrl+P</span>
                     </button>
 
                     <div className="menu-separator"></div>
@@ -632,7 +632,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                     >
                       <span>Quit</span>
-                      <span style={{ opacity: 0.6, fontSize: '0.85em' }}>⌘Q</span>
+                      <span style={{ opacity: 0.6, fontSize: '0.85em' }}>Cmd/Ctrl+Q</span>
                     </button>
 
                     <div className="menu-separator"></div>
@@ -715,7 +715,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="sidebar-logo-item">
             <img src="v_windows.png" alt="" className="sidebar-logo-img" />
           </div>
-          <h2 title={`${accountName}\nFocus Sidebar (Cmd+Shift+E)`}>
+          <h2 title={`${accountName}\nFocus Sidebar (Cmd/Ctrl+Shift+E)`}>
             {accountName}
           </h2>
         </div>
@@ -760,7 +760,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         e.stopPropagation();
                         setInfoPanel({ databaseId: db, containerId: container });
                       }}
-                      title="View container info (⌘I)"
+                      title="View container info (Cmd/Ctrl+I)"
                     >
                       <Info size={12} />
                     </button>

@@ -524,12 +524,12 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
   return (
     <div className="results-view-container">
       <div className="results-header">
-        <h3 title="Focus Results View (Cmd+R)">Results</h3>
+        <h3 title="Focus Results View (Cmd/Ctrl+R)">Results</h3>
         <div className="results-actions">
           <button
             className="action-btn"
             onClick={handleCopyToClipboard}
-            title="Copy results to clipboard (Cmd+Shift+S)"
+            title="Copy results to clipboard (Cmd/Ctrl+Shift+S)"
             disabled={filteredResults.length === 0}
           >
             <Copy size={16} />
@@ -537,7 +537,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
           <button
             className="action-btn"
             onClick={handleSaveToFile}
-            title="Save results to file (Cmd+S)"
+            title="Save results to file (Cmd/Ctrl+S)"
             disabled={filteredResults.length === 0}
           >
             <Save size={16} />
@@ -549,12 +549,12 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
               key="run-cancel-btn"
               className={`run-btn-small ${loading ? 'cancel' : ''}`}
               onClick={loading ? onCancelQuery : onRunQuery}
-              title={loading ? "Cancel Query (Cmd+Enter)" : "Run Query (Cmd+Enter)"}
+              title={loading ? "Cancel Query (Shift+Enter)" : "Run Query (Shift+Enter)"}
             >
               {loading ? 'Cancel' : 'Run'}
             </button>
             <div className="page-size-selector-small">
-              <label htmlFor="page-size-select" title="Change page size (Cmd+Shift+R)">Rows:</label>
+              <label htmlFor="page-size-select" title="Change page size (Cmd/Ctrl+Shift+R)">Rows:</label>
               <select
                 ref={pageSizeSelectRef}
                 id="page-size-select"
@@ -563,7 +563,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                   const val = e.target.value;
                   onPageSizeChange(val === 'All' ? 'All' : Number(val));
                 }}
-                title="Change page size (Cmd+Shift+R)"
+                title="Change page size (Cmd/Ctrl+Shift+R)"
               >
                 <option value={1}>1</option>
                 <option value={10}>10</option>
@@ -578,21 +578,21 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
             <button
               className={viewMode === 'text' ? 'active' : ''}
               onClick={() => setViewMode('text')}
-              title="Text View (Cmd+T)"
+              title="Text View (Cmd/Ctrl+T)"
             >
               Text
             </button>
             <button
               className={viewMode === 'json' ? 'active' : ''}
               onClick={() => setViewMode('json')}
-              title="Hierarchical View (Cmd+Shift+T)"
+              title="Hierarchical View (Cmd/Ctrl+Shift+T)"
             >
               Hierarchical
             </button>
             <button
               className={viewMode === 'template' ? 'active' : ''}
               onClick={() => setViewMode('template')}
-              title="Template View (Cmd+Alt+T)"
+              title="Template View (Cmd/Ctrl+Alt+T)"
             >
               Template
             </button>
@@ -601,7 +601,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
             <button
               className="compare-btn"
               onClick={handleCompare}
-              title="Compare documents side by side (Cmd+Alt+C)"
+              title="Compare documents side by side (Cmd/Ctrl+Alt+C)"
             >
               Compare
             </button>
