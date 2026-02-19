@@ -1,5 +1,5 @@
 import React from 'react';
-import { Copy, Save, X } from 'lucide-react';
+import { Copy, Save, X, Edit } from 'lucide-react';
 import { JsonTreeView } from './JsonTreeView';
 import { useTheme } from '../context/ThemeContext';
 import { useContextMenu } from '../hooks/useContextMenu';
@@ -31,6 +31,7 @@ interface ResultsViewProps {
   activeTabId?: string;
   translations?: ContainerTranslations;
   onAddTranslation?: (item: FlattenedItem) => void;
+  onEditDocument?: (doc: any) => void;
 }
 
 type ViewMode = 'text' | 'json' | 'template';
@@ -58,7 +59,8 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
   accountName = '',
   activeTabId = '',
   translations = {},
-  onAddTranslation
+  onAddTranslation,
+  onEditDocument
 }) => {
   const containerRef = React.useRef<HTMLTextAreaElement>(null);
   const [content, setContent] = React.useState('');
@@ -120,6 +122,15 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
       { label: 'Copy All Results', icon: <Copy size={16} />, onClick: handleCopyToClipboard },
       { label: 'Save Results to File', icon: <Save size={16} />, onClick: handleSaveToFile },
     ];
+
+    if (results.length === 1) {
+      items.push({ divider: true });
+      items.push({
+        label: 'Edit Document',
+        icon: <Edit size={16} />,
+        onClick: () => onEditDocument?.(results[0])
+      });
+    }
 
     if (parsed) {
       items.push({ divider: true });
@@ -388,6 +399,14 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
         document.getElementById('query-editor-textarea')?.focus();
       }
 
+      // Cmd/Ctrl + Alt + E to edit document (when 1 result)
+      if ((e.metaKey || e.ctrlKey) && e.altKey && e.code === 'KeyE') {
+        e.preventDefault();
+        if (results.length === 1) {
+          onEditDocument?.(results[0]);
+        }
+      }
+
       // Cmd/Ctrl + Shift + T to switch to Hierarchical view or focus it
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && !e.altKey && (e.key === 't' || e.key === 'T')) {
         e.preventDefault();
@@ -424,14 +443,9 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
       }
 
       // Cmd/Ctrl + S to save results to file
-      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 's') {
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.code === 'KeyS') {
         e.preventDefault();
-        if (filteredResults.length > 0) {
-          const jsonString = JSON.stringify(filteredResults, null, 2);
-          (window as any).ipcRenderer.invoke('file:saveResults', jsonString).catch((err: any) => {
-            console.error('Failed to save to file:', err);
-          });
-        }
+        handleSave();
       }
 
       // Cmd/Ctrl + Shift + R to focus page size selector
@@ -483,8 +497,29 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
     }
     prevSearchShowRef.current = search.show;
 
+    const handleSave = () => {
+      // Don't handle if a modal is open (like the Edit Document dialog)
+      if (document.querySelector('.modal-overlay')) return;
+
+      if (filteredResults.length > 0) {
+        const jsonString = JSON.stringify(filteredResults, null, 2);
+        (window as any).ipcRenderer.invoke('file:saveResults', jsonString).catch((err: any) => {
+          console.error('Failed to save to file:', err);
+        });
+      }
+    };
+
+    const handleIpcSave = () => {
+      handleSave();
+    };
+
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    (window as any).ipcRenderer.on('menu:save', handleIpcSave);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      (window as any).ipcRenderer.off('menu:save', handleIpcSave);
+    };
   }, [viewMode, error, onDismissError, results, search.show]);
 
   // Handler for copying results to clipboard
@@ -542,6 +577,15 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
           >
             <Save size={16} />
           </button>
+          {results.length === 1 && (
+            <button
+              className="action-btn"
+              onClick={() => onEditDocument?.(results[0])}
+              title="Edit document (Cmd/Ctrl+Alt+E)"
+            >
+              <Edit size={16} />
+            </button>
+          )}
         </div>
         <div className="header-controls">
           <div className="control-group">
@@ -743,6 +787,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                   searchIsRegex={search.isRegex}
                   translations={translations}
                   onAddTranslation={onAddTranslation}
+                  onEditDocument={onEditDocument}
                 />
               </div>
             ) : (

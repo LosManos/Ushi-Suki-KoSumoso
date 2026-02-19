@@ -44,5 +44,9 @@ export const cosmos = {
 
     deleteConnection: async (name: string): Promise<CosmosResponse<void>> => {
         return await window.ipcRenderer.invoke('storage:deleteConnection', name);
+    },
+
+    upsertDocument: async (databaseId: string, containerId: string, document: any): Promise<CosmosResponse<any>> => {
+        return await window.ipcRenderer.invoke('cosmos:upsertDocument', databaseId, containerId, document);
     }
 };

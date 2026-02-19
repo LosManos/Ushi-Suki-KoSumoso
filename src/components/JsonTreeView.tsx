@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { ChevronRight, ChevronDown, Copy, Link, Languages, X } from 'lucide-react';
+import { ChevronRight, ChevronDown, Copy, Link, Languages, X, Edit } from 'lucide-react';
 import { useContextMenu } from '../hooks/useContextMenu';
 import { ContextMenu, ContextMenuItem } from './ContextMenu';
 import { LinkMapping } from '../services/linkService';
@@ -46,6 +46,7 @@ interface JsonTreeViewProps {
     searchIsRegex?: boolean;
     translations?: ContainerTranslations;
     onAddTranslation?: (item: FlattenedItem) => void;
+    onEditDocument?: (doc: any) => void;
 }
 
 export interface FlattenedItem {
@@ -74,7 +75,8 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
     searchQuery = '',
     searchIsRegex = false,
     translations = {},
-    onAddTranslation
+    onAddTranslation,
+    onEditDocument
 }, ref) => {
     const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set(['root']));
     const [focusedPath, setFocusedPath] = useState<string>('root');
@@ -444,6 +446,13 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
                 onClick: () => {
                     onAddTranslation?.(item);
                 }
+            },
+            { divider: true },
+            item.type === 'object' && {
+                label: 'Edit Document',
+                accessKey: 'E',
+                icon: <Edit size={14} />,
+                onClick: () => onEditDocument?.(item.value)
             }
         ].filter(Boolean) as ContextMenuItem[];
     };
@@ -594,6 +603,16 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
                 if (item) {
                     e.preventDefault();
                     onFollowLink?.(item);
+                }
+                break;
+            }
+            case 'e':
+            case 'E': {
+                if (e.metaKey || e.ctrlKey || e.altKey) break;
+                const item = flattenedItems[currentIndex];
+                if (item && item.type === 'object') {
+                    e.preventDefault();
+                    onEditDocument?.(item.value);
                 }
                 break;
             }

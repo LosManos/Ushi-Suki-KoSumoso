@@ -330,5 +330,18 @@ export const cosmosService = {
             console.error('GetContainerKeys Error:', error);
             return { success: false, error: error.message };
         }
+    },
+
+    upsertDocument: async (databaseId: string, containerId: string, document: any) => {
+        if (!client) return { success: false, error: 'Not connected' };
+        try {
+            const database = client.database(databaseId);
+            const container = database.container(containerId);
+            const { resource } = await container.items.upsert(document);
+            return { success: true, data: resource };
+        } catch (error: any) {
+            console.error('UpsertDocument Error:', error);
+            return { success: false, error: error.message };
+        }
     }
 };

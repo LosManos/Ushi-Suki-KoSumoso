@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, ExternalLink } from 'lucide-react';
-import './FollowLinkDialog.css';
+import './ModalDialog.css';
 import { LinkMapping } from '../services/linkService';
 
 interface FollowLinkDialogProps {
@@ -111,7 +111,7 @@ export const FollowLinkDialog: React.FC<FollowLinkDialogProps> = ({
 
     return (
         <div className="modal-overlay">
-            <div className="follow-link-dialog" ref={dialogRef}>
+            <div className="modal-dialog" ref={dialogRef}>
                 <div className="dialog-header">
                     <h3>Follow Link</h3>
                     <button className="close-btn" onClick={onClose} title="Close (Esc)"><X size={18} /></button>

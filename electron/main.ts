@@ -119,11 +119,16 @@ function createWindow() {
     // Track window state changes
     trackWindowState(win, 'main');
 
-    // Intercept Cmd+W to close tab instead of window
+    // Intercept Cmd+W/Cmd+S to handle them in renderer instead of default browser behavior
     win.webContents.on('before-input-event', (event, input) => {
-        if (input.type === 'keyDown' && input.key === 'w' && (input.meta || input.control) && !input.shift && !input.alt) {
-            event.preventDefault();
-            win?.webContents.send('close-active-tab');
+        if (input.type === 'keyDown' && (input.meta || input.control) && !input.shift && !input.alt) {
+            if (input.key === 'w') {
+                event.preventDefault();
+                win?.webContents.send('close-active-tab');
+            } else if (input.key.toLowerCase() === 's' || input.code === 'KeyS') {
+                event.preventDefault();
+                win?.webContents.send('menu:save');
+            }
         }
     });
 
@@ -393,6 +398,11 @@ app.whenReady().then(() => {
                     label: 'Close Tab',
                     accelerator: 'CmdOrCtrl+W',
                     click: () => win?.webContents.send('close-active-tab')
+                },
+                {
+                    label: 'Save',
+                    accelerator: 'CmdOrCtrl+S',
+                    click: () => win?.webContents.send('menu:save')
                 },
                 { type: 'separator' },
                 isMac ? { role: 'close' } : { role: 'quit' }
@@ -1006,6 +1016,10 @@ app.whenReady().then(() => {
 
     ipcMain.handle('cosmos:getContainerKeys', async (_, dbId, containerId, sampleSize) => {
         return await cosmosService.getContainerKeys(dbId, containerId, sampleSize);
+    });
+
+    ipcMain.handle('cosmos:upsertDocument', async (_, dbId, containerId, document) => {
+        return await cosmosService.upsertDocument(dbId, containerId, document);
     });
 
     // IPC handler for saving query results to file

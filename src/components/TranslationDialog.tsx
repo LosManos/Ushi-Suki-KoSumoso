@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Check } from 'lucide-react';
-import './FollowLinkDialog.css'; // Reusing modal styles if possible, or create new one
+import './ModalDialog.css'; // Reusing modal styles if possible, or create new one
 
 interface TranslationDialogProps {
     onClose: () => void;
@@ -54,7 +54,7 @@ export const TranslationDialog: React.FC<TranslationDialogProps> = ({
 
     return (
         <div className="modal-overlay">
-            <div className="follow-link-dialog" ref={dialogRef} style={{ maxWidth: '400px' }}>
+            <div className="modal-dialog" ref={dialogRef} style={{ maxWidth: '400px' }}>
                 <div className="dialog-header">
                     <h3>Value Translation</h3>
                     <button className="close-btn" onClick={onClose} title="Close (Esc)"><X size={18} /></button>

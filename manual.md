@@ -64,6 +64,22 @@ Transform your JSON results into custom text formats.
 
 ---
 
+## Editing Data
+
+Kosumoso allows you to modify existing documents directly.
+
+### Editing a Document
+*   **From Hierarchical View**: Right-click on any object (usually the root of a result) and select **Edit Document** (or press `E` when focused).
+*   **From results list**: If your query returns exactly one document, an **Edit** button appears in the Results header (or press **`Cmd + Alt + E`**).
+*   **Shortcuts**:
+    *   **`E`**: Open the editor for the selected object in Hierarchical view.
+    *   **`Cmd + Alt + E`**: Open the editor when exactly one result is present.
+    *   **`Cmd + S`**: Save while in the document editor.
+
+> **Note**: The editor uses the `upsert` operation, which updates the document if it exists. Ensure the `id` and partition key fields are present for a successful update.
+
+---
+
 ## Advanced Features
 
 ### Document Comparison
@@ -100,6 +116,9 @@ Quickly jump to any container in your account without using the sidebar. Just st
 | **`Cmd + Shift + M`**| Focus Sidebar Resize Handle |
 | **`Alt + Enter`** | Open Context Menu |
 | **`Alt + W`** | Focus Property Isolation |
+| **`E`** | Edit selected document (Hierarchical) |
+| **`Cmd + Alt + E`** | Edit document (when 1 result) |
+| **`Cmd + S`** | Save document (in Editor) |
 | **`Cmd + 1-8`** | Switch to Query view 1-9 |
 | **`Cmd + 9`** | Switch to last Query view |
 | **`Cmd + Opt + I`** | Query for {clipboard} (quoted) |

@@ -74,6 +74,13 @@ if (e.altKey && !e.ctrlKey && !e.metaKey) {
 
 Following the Windows/accessibility convention, **underline the shortcut letter** in control labels to indicate Alt-accessible shortcuts. This helps users discover keyboard shortcuts visually.
 
+## Dialogues
+
+When a dialogue is opened it also gets the focus.  
+Appropriate control on the dialogue gets the focus.  
+Enter typically select the default behaviour.  
+Esc bails by closing the dialogue and not change is applied.
+
 ### Implementation
 
 Use the `<u>` tag to underline the shortcut letter:

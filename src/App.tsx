@@ -19,6 +19,7 @@ import { FlattenedItem } from './components/JsonTreeView';
 import { UpdateBanner } from './components/UpdateBanner';
 import { TranslationDialog } from './components/TranslationDialog';
 import { ChangelogDialog } from './components/ChangelogDialog';
+import { EditDocumentDialog } from './components/EditDocumentDialog';
 import './App.css';
 
 function App() {
@@ -57,6 +58,9 @@ function App() {
     const [translations, setTranslations] = useState<any>({});
     // Translation Dialog State
     const [translationItem, setTranslationItem] = useState<{ item: FlattenedItem; sourceTabId: string; propertyPath: string } | null>(null);
+
+    // Edit Document State
+    const [editingDocument, setEditingDocument] = useState<{ doc: any; dbId: string; containerId: string } | null>(null);
 
     // Update State
     const [updateInfo, setUpdateInfo] = useState<{ isNewer: boolean; latestVersion: string; url: string } | null>(null);
@@ -718,6 +722,28 @@ function App() {
         setTranslationItem(null);
     };
 
+    const handleEditDocument = (doc: any) => {
+        if (!activeTab) return;
+        setEditingDocument({
+            doc,
+            dbId: activeTab.databaseId,
+            containerId: activeTab.containerId
+        });
+    };
+
+    const handleSaveDocument = async (doc: any) => {
+        if (!editingDocument) return;
+        const { dbId, containerId } = editingDocument;
+
+        const result = await cosmos.upsertDocument(dbId, containerId, doc);
+
+        if (result.success) {
+            executeActiveQuery();
+        } else {
+            throw new Error(result.error);
+        }
+    };
+
 
     const executeActiveQuery = () => {
         if (!activeTab || !activeTabId) return;
@@ -882,6 +908,7 @@ function App() {
                                     return (translations[accountName] as any)?.[dbId]?.[containerId] || {};
                                 })()}
                                 onAddTranslation={handleAddTranslation}
+                                onEditDocument={handleEditDocument}
                             />
                         </>
                     }
@@ -922,6 +949,13 @@ function App() {
                 )}
                 {showChangelog && (
                     <ChangelogDialog onClose={() => setShowChangelog(false)} />
+                )}
+                {editingDocument && (
+                    <EditDocumentDialog
+                        document={editingDocument.doc}
+                        onClose={() => setEditingDocument(null)}
+                        onSave={handleSaveDocument}
+                    />
                 )}
             </div>
         </ThemeProvider>

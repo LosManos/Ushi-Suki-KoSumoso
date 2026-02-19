@@ -29,7 +29,7 @@
     }
 }
 
-.follow-link-dialog {
+.modal-dialog {
     background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
@@ -55,7 +55,7 @@
     }
 }
 
-.follow-link-dialog .dialog-header {
+.modal-dialog .dialog-header {
     padding: 18px 24px;
     background: rgba(255, 255, 255, 0.03);
     border-bottom: 1px solid var(--border-color);
@@ -64,7 +64,7 @@
     align-items: center;
 }
 
-.follow-link-dialog .dialog-header h3 {
+.modal-dialog .dialog-header h3 {
     margin: 0;
     font-size: 16px;
     font-weight: 600;
@@ -72,7 +72,7 @@
     color: var(--text-primary);
 }
 
-.follow-link-dialog .close-btn {
+.modal-dialog .close-btn {
     background: transparent;
     border: none;
     color: var(--text-secondary);
@@ -85,19 +85,19 @@
     justify-content: center;
 }
 
-.follow-link-dialog .close-btn:hover {
+.modal-dialog .close-btn:hover {
     background: rgba(255, 255, 255, 0.1);
     color: #ff4d4d;
 }
 
-.follow-link-dialog .dialog-body {
+.modal-dialog .dialog-body {
     padding: 24px;
     display: flex;
     flex-direction: column;
     gap: 20px;
 }
 
-.follow-link-dialog .description {
+.modal-dialog .description {
     margin: 0;
     font-size: 13px;
     line-height: 1.5;
@@ -108,7 +108,7 @@
     border-radius: 4px;
 }
 
-.follow-link-dialog code {
+.modal-dialog code {
     background: rgba(255, 255, 255, 0.1);
     padding: 2px 6px;
     border-radius: 4px;
@@ -117,13 +117,13 @@
     font-weight: 500;
 }
 
-.follow-link-dialog .form-group {
+.modal-dialog .form-group {
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
-.follow-link-dialog label {
+.modal-dialog label {
     font-size: 11px;
     font-weight: 700;
     color: var(--text-secondary);
@@ -131,12 +131,12 @@
     letter-spacing: 0.8px;
 }
 
-.follow-link-dialog .input-wrapper {
+.modal-dialog .input-wrapper {
     position: relative;
 }
 
-.follow-link-dialog input,
-.follow-link-dialog select {
+.modal-dialog input,
+.modal-dialog select {
     width: 100%;
     background: var(--bg-tertiary);
     border: 1px solid var(--border-color);
@@ -149,18 +149,18 @@
     box-sizing: border-box;
 }
 
-.follow-link-dialog input:focus,
-.follow-link-dialog select:focus {
+.modal-dialog input:focus,
+.modal-dialog select:focus {
     border-color: var(--accent-color);
     box-shadow: var(--input-focus-shadow);
     background: var(--bg-secondary);
 }
 
-.follow-link-dialog input::placeholder {
+.modal-dialog input::placeholder {
     color: rgba(255, 255, 255, 0.3);
 }
 
-.follow-link-dialog .help-text {
+.modal-dialog .help-text {
     font-size: 11px;
     color: var(--text-secondary);
     font-family: 'JetBrains Mono', monospace;
@@ -172,7 +172,7 @@
     opacity: 0.7;
 }
 
-.follow-link-dialog .dialog-footer {
+.modal-dialog .dialog-footer {
     padding: 18px 24px;
     background: rgba(0, 0, 0, 0.1);
     border-top: 1px solid var(--border-color);
@@ -181,7 +181,7 @@
     gap: 12px;
 }
 
-.follow-link-dialog button {
+.modal-dialog button {
     padding: 10px 20px;
     border-radius: 6px;
     font-size: 14px;
@@ -193,30 +193,49 @@
     gap: 8px;
 }
 
-.follow-link-dialog .secondary-btn {
+.modal-dialog .secondary-btn {
     background: transparent;
     border: 1px solid var(--border-color);
     color: var(--text-primary);
 }
 
-.follow-link-dialog .secondary-btn:hover {
+.modal-dialog .secondary-btn:hover {
     background: rgba(255, 255, 255, 0.05);
     border-color: var(--text-secondary);
 }
 
-.follow-link-dialog .primary-btn {
+.modal-dialog .primary-btn {
     background: var(--accent-color);
     border: 1px solid var(--accent-color);
     color: white;
     box-shadow: 0 4px 12px rgba(0, 120, 215, 0.3);
 }
 
-.follow-link-dialog .primary-btn:hover {
+.modal-dialog .primary-btn:hover {
     background: #0088f5;
     transform: translateY(-1px);
     box-shadow: 0 6px 16px rgba(0, 120, 215, 0.4);
 }
 
-.follow-link-dialog .primary-btn:active {
+.modal-dialog .primary-btn:active {
     transform: translateY(0);
+}
+
+.modal-dialog u {
+    text-decoration: underline;
+    text-underline-offset: 1px;
+    text-decoration-thickness: 1px;
+    color: inherit;
+}
+
+.shortcut-label {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0;
+    line-height: 1;
+}
+
+.shortcut-label u {
+    margin-right: -0.05em;
+    /* Tighten the gap caused by underline */
 }
