@@ -476,7 +476,7 @@ app.whenReady().then(() => {
                 {
                     label: 'View Schemas File...',
                     click: async () => {
-                        if (!fs.existsSync(schemasPath)) await fs.promises.writeFile(schemasPath, '{}');
+                        if (!fs.existsSync(schemasPath)) await fs.promises.writeFile(schemasPath, JSON.stringify({ Accounts: [] }, null, 2));
                         shell.showItemInFolder(schemasPath);
                     }
                 }
@@ -540,18 +540,42 @@ app.whenReady().then(() => {
 
 
     // Schema storage handlers
-    ipcMain.handle('storage:saveSchema', async (_, containerId: string, keys: string[]) => {
+    ipcMain.handle('storage:saveSchema', async (_, storageKey: string, keys: string[]) => {
         try {
-            let schemas: Record<string, { keys: string[]; lastUpdated: number }> = {};
+            let data: any = { Accounts: [] };
             try {
-                const data = await fs.promises.readFile(schemasPath, 'utf8');
-                schemas = JSON.parse(data);
-            } catch (error) {
-                // File might not exist yet
+                if (fs.existsSync(schemasPath)) {
+                    const content = await fs.promises.readFile(schemasPath, 'utf8');
+                    data = JSON.parse(content);
+                }
+            } catch (e) { }
+
+            if (!data.Accounts) data = { Accounts: [] };
+
+            const [accountName, databaseId, containerId] = storageKey.split('/');
+
+            let accountObj = data.Accounts.find((a: any) => a.Name === accountName);
+            if (!accountObj) {
+                accountObj = { Name: accountName, Databases: [] };
+                data.Accounts.push(accountObj);
             }
 
-            schemas[containerId] = { keys, lastUpdated: Date.now() };
-            await fs.promises.writeFile(schemasPath, JSON.stringify(schemas, null, 2));
+            let databaseObj = accountObj.Databases.find((d: any) => d.Name === databaseId);
+            if (!databaseObj) {
+                databaseObj = { Name: databaseId, Containers: [] };
+                accountObj.Databases.push(databaseObj);
+            }
+
+            let containerObj = databaseObj.Containers.find((c: any) => c.Name === containerId);
+            if (!containerObj) {
+                containerObj = { Name: containerId, Keys: [], LastUpdated: '' };
+                databaseObj.Containers.push(containerObj);
+            }
+
+            containerObj.Keys = keys;
+            containerObj.LastUpdated = new Date().toISOString();
+
+            await fs.promises.writeFile(schemasPath, JSON.stringify(data, null, 2));
             return { success: true };
         } catch (error: any) {
             console.error('[Main] Failed to save schema:', error);
@@ -561,19 +585,26 @@ app.whenReady().then(() => {
 
     ipcMain.handle('storage:getSchemas', async () => {
         try {
-            try {
-                const data = await fs.promises.readFile(schemasPath, 'utf8');
-                const schemas = JSON.parse(data);
-                // Convert to simple containerId -> keys array map
-                const result: Record<string, string[]> = {};
-                for (const [key, value] of Object.entries(schemas)) {
-                    result[key] = (value as any).keys || [];
+            if (!fs.existsSync(schemasPath)) return { success: true, data: {} };
+
+            const content = await fs.promises.readFile(schemasPath, 'utf8');
+            const data = JSON.parse(content);
+
+            // Reconstruct flat map for renderer
+            const flatSchemas: Record<string, string[]> = {};
+            if (data && data.Accounts) {
+                for (const account of data.Accounts) {
+                    for (const db of account.Databases) {
+                        for (const cont of db.Containers) {
+                            const storageKey = `${account.Name}/${db.Name}/${cont.Name}`;
+                            flatSchemas[storageKey] = cont.Keys || [];
+                        }
+                    }
                 }
-                return { success: true, data: result };
-            } catch (error) {
-                return { success: true, data: {} };
             }
+            return { success: true, data: flatSchemas };
         } catch (error: any) {
+            console.error('[Main] Failed to get schemas:', error);
             return { success: false, error: error.message };
         }
     });
