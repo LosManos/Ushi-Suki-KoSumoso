@@ -878,40 +878,95 @@ app.whenReady().then(() => {
         }
     });
 
+    function migrateToExplicitHierarchy(data: any): any {
+        if (!data || (data.Accounts && Array.isArray(data.Accounts))) {
+            return data || { Accounts: [] };
+        }
+
+        const hierarchical: any = { Accounts: [] };
+
+        if (Array.isArray(data)) {
+            data.forEach((h: any) => {
+                const accName = h.accountName || 'Default Account';
+                const dbId = h.databaseId || 'Default DB';
+                const contId = h.containerId || 'Default Container';
+
+                let account = hierarchical.Accounts.find((a: any) => a.Name === accName);
+                if (!account) {
+                    account = { Name: accName, Databases: [] };
+                    hierarchical.Accounts.push(account);
+                }
+
+                let database = account.Databases.find((d: any) => d.Name === dbId);
+                if (!database) {
+                    database = { Name: dbId, Containers: [] };
+                    account.Databases.push(database);
+                }
+
+                let container = database.Containers.find((c: any) => c.Name === contId);
+                if (!container) {
+                    container = { Name: contId, Items: [] };
+                    database.Containers.push(container);
+                }
+
+                const itemQuery = h.query || h.Query;
+                if (!container.Items.find((i: any) => i.Query === itemQuery)) {
+                    container.Items.push({
+                        Id: h.id || h.Id || Math.random().toString(36).substring(2, 15),
+                        Query: itemQuery,
+                        Timestamp: h.timestamp || h.Timestamp || Date.now()
+                    });
+                }
+            });
+        }
+
+        return hierarchical;
+    }
+
     ipcMain.handle('storage:saveHistory', async (_, item: any) => {
         try {
-            let history: any[] = [];
+            let currentData: any = { Accounts: [] };
             try {
-                const data = await fs.promises.readFile(historyPath, 'utf8');
-                history = JSON.parse(data);
-            } catch (error) {
-                // Ignore, start empty
+                if (fs.existsSync(historyPath)) {
+                    const content = await fs.promises.readFile(historyPath, 'utf8');
+                    currentData = JSON.parse(content);
+                }
+            } catch (e) { }
+
+            const history = migrateToExplicitHierarchy(currentData);
+            const { accountName, databaseId, containerId, query, timestamp, id } = item;
+
+            let account = history.Accounts.find((a: any) => a.Name === accountName);
+            if (!account) {
+                account = { Name: accountName, Databases: [] };
+                history.Accounts.push(account);
             }
 
-            // Ensure ID (for migration of old items if we were doing that) or just usage
-            if (!item.id) {
-                // If the frontend didn't send an ID (shouldn't happen with new code), generate one
-                // But we don't have crypto here easily without require, let's assume frontend sends it.
-                // Or use a simple random string.
-                item.id = Math.random().toString(36).substring(2, 15);
+            let database = account.Databases.find((d: any) => d.Name === databaseId);
+            if (!database) {
+                database = { Name: databaseId, Containers: [] };
+                account.Databases.push(database);
             }
 
-            // Remove existing item with same key (account, db, container, query)
-            // We still want to deduplicate by content, but we'll use the NEW item (which has a new ID)
-            history = history.filter(h =>
-                !(h.accountName === item.accountName &&
-                    h.databaseId === item.databaseId &&
-                    h.containerId === item.containerId &&
-                    h.query === item.query)
-            );
+            let container = database.Containers.find((c: any) => c.Name === containerId);
+            if (!container) {
+                container = { Name: containerId, Items: [] };
+                database.Containers.push(container);
+            }
 
-            // Add new item
-            history.unshift(item);
+            // Deduplicate in this container
+            container.Items = container.Items.filter((i: any) => i.Query !== query);
 
-            // Optional: Limit history size? User didn't ask, but good practice. 
-            // Let's cap at 1000 for sanity.
-            if (history.length > 1000) {
-                history = history.slice(0, 1000);
+            // Add to top with requested keys
+            container.Items.unshift({
+                Id: id || Math.random().toString(36).substring(2, 15),
+                Query: query,
+                Timestamp: timestamp || Date.now()
+            });
+
+            // Limit per container
+            if (container.Items.length > 100) {
+                container.Items = container.Items.slice(0, 100);
             }
 
             await fs.promises.writeFile(historyPath, JSON.stringify(history, null, 2));
@@ -924,61 +979,69 @@ app.whenReady().then(() => {
 
     ipcMain.handle('storage:getHistory', async () => {
         try {
-            try {
-                const data = await fs.promises.readFile(historyPath, 'utf8');
-                let history: any[] = JSON.parse(data);
+            if (!fs.existsSync(historyPath)) return { success: true, data: [] };
 
-                // Filter out items missing required fields
-                const validHistory = history.filter(h =>
-                    h.accountName && h.databaseId && h.containerId && h.query
-                );
+            const content = await fs.promises.readFile(historyPath, 'utf8');
+            const rawData = JSON.parse(content);
+            const history = migrateToExplicitHierarchy(rawData);
 
-                // Deduplicate by (accountName, databaseId, containerId, query), keeping newest (first occurrence since sorted by timestamp desc)
-                const seen = new Set<string>();
-                const deduped: any[] = [];
-                for (const h of validHistory) {
-                    const key = `${h.accountName}|${h.databaseId}|${h.containerId}|${h.query}`;
-                    if (!seen.has(key)) {
-                        seen.add(key);
-                        deduped.push(h);
+            // Force save the migrated version so the user sees the change in the file immediately
+            await fs.promises.writeFile(historyPath, JSON.stringify(history, null, 2));
+
+            // Flat list for renderer
+            const flatList: any[] = [];
+            for (const account of history.Accounts) {
+                for (const db of account.Databases) {
+                    for (const cont of db.Containers) {
+                        for (const item of cont.Items) {
+                            flatList.push({
+                                id: item.Id,
+                                accountName: account.Name,
+                                databaseId: db.Name,
+                                containerId: cont.Name,
+                                query: item.Query,
+                                timestamp: item.Timestamp
+                            });
+                        }
                     }
                 }
-
-                // If we cleaned anything, save the cleaned version
-                if (deduped.length !== history.length) {
-                    await fs.promises.writeFile(historyPath, JSON.stringify(deduped, null, 2));
-                }
-
-                return { success: true, data: deduped };
-            } catch (error) {
-                return { success: true, data: [] };
             }
+
+            flatList.sort((a, b) => b.timestamp - a.timestamp);
+            return { success: true, data: flatList };
         } catch (error: any) {
+            console.error('[Main] Failed to get history:', error);
             return { success: false, error: error.message };
         }
     });
 
     ipcMain.handle('storage:deleteHistory', async (_, item: any) => {
         try {
-            let history: any[] = [];
-            try {
-                const data = await fs.promises.readFile(historyPath, 'utf8');
-                history = JSON.parse(data);
-            } catch (error) {
-                return { success: true };
-            }
+            if (!fs.existsSync(historyPath)) return { success: true };
 
-            // Delete by ID if available, otherwise by fallback properties (legacy support)
-            if (item.id) {
-                history = history.filter(h => h.id !== item.id);
-            } else {
-                history = history.filter(h =>
-                    !(h.accountName === item.accountName &&
-                        h.databaseId === item.databaseId &&
-                        h.containerId === item.containerId &&
-                        h.query === item.query &&
-                        h.timestamp === item.timestamp)
-                );
+            const content = await fs.promises.readFile(historyPath, 'utf8');
+            const data = JSON.parse(content);
+            const history = migrateToExplicitHierarchy(data);
+
+            const { accountName, databaseId, containerId, id } = item;
+            const account = history.Accounts.find((a: any) => a.Name === accountName);
+            if (account) {
+                const database = account.Databases.find((d: any) => d.Name === databaseId);
+                if (database) {
+                    const container = database.Containers.find((c: any) => c.Name === containerId);
+                    if (container) {
+                        container.Items = container.Items.filter((i: any) => (i.Id || i.id) !== id);
+                        if (container.Items.length === 0) {
+                            database.Containers = database.Containers.filter((c: any) => c.Name !== containerId);
+                        }
+                    }
+                    if (database.Containers.length === 0) {
+                        account.Databases = account.Databases.filter((d: any) => d.Name !== databaseId);
+                    }
+                }
+                if (account.Databases.length === 0) {
+                    history.Accounts = history.Accounts.filter((a: any) => a.Name !== accountName);
+                }
             }
 
             await fs.promises.writeFile(historyPath, JSON.stringify(history, null, 2));

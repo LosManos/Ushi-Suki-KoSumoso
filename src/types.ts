@@ -23,6 +23,23 @@ export interface HistoryItem {
     timestamp: number;
 }
 
+export interface HierarchicalHistory {
+    Accounts: {
+        Name: string;
+        Databases: {
+            Name: string;
+            Containers: {
+                Name: string;
+                Items: {
+                    Id: string;
+                    Query: string;
+                    Timestamp: number;
+                }[];
+            }[];
+        }[];
+    }[];
+}
+
 export interface ContainerInfo {
     id: string;
     partitionKeyPaths: string[];
