@@ -79,6 +79,20 @@ export interface HierarchicalTranslations {
     }[];
 }
 
+export interface HierarchicalTemplates {
+    Accounts: {
+        Name: string;
+        Databases: {
+            Name: string;
+            Containers: {
+                Name: string;
+                Template: string;
+                LastUpdated: string; // ISO 8601
+            }[];
+        }[];
+    }[];
+}
+
 export interface ContainerInfo {
     id: string;
     partitionKeyPaths: string[];

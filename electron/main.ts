@@ -469,7 +469,7 @@ app.whenReady().then(() => {
                 {
                     label: 'View Templates File...',
                     click: async () => {
-                        if (!fs.existsSync(templatesPath)) await fs.promises.writeFile(templatesPath, '{}');
+                        if (!fs.existsSync(templatesPath)) await fs.promises.writeFile(templatesPath, JSON.stringify({ Accounts: [] }, null, 2));
                         shell.showItemInFolder(templatesPath);
                     }
                 },
@@ -579,24 +579,55 @@ app.whenReady().then(() => {
     });
 
     // Template storage handlers
-    ipcMain.handle('storage:saveTemplate', async (_, containerId: string, template: string) => {
+    ipcMain.handle('storage:saveTemplate', async (_, storageKey: string, template: string) => {
         try {
-            let templates: Record<string, { template: string; lastUpdated: number }> = {};
+            let data: any = { Accounts: [] };
             try {
-                const data = await fs.promises.readFile(templatesPath, 'utf8');
-                templates = JSON.parse(data);
-            } catch (error) {
-                // File might not exist yet
+                if (fs.existsSync(templatesPath)) {
+                    const content = await fs.promises.readFile(templatesPath, 'utf8');
+                    data = JSON.parse(content);
+                }
+            } catch (e) { }
+
+            if (!data.Accounts) data = { Accounts: [] };
+
+            const [accountName, databaseId, containerId] = storageKey.split('/');
+
+            let accountObj = data.Accounts.find((a: any) => a.Name === accountName);
+            if (!accountObj) {
+                accountObj = { Name: accountName, Databases: [] };
+                data.Accounts.push(accountObj);
             }
+
+            let databaseObj = accountObj.Databases.find((d: any) => d.Name === databaseId);
+            if (!databaseObj) {
+                databaseObj = { Name: databaseId, Containers: [] };
+                accountObj.Databases.push(databaseObj);
+            }
+
+            let containerObj = databaseObj.Containers.find((c: any) => c.Name === containerId);
 
             if (template.trim()) {
-                templates[containerId] = { template, lastUpdated: Date.now() };
-            } else {
-                // Remove empty templates
-                delete templates[containerId];
+                if (!containerObj) {
+                    containerObj = { Name: containerId, Template: '', LastUpdated: '' };
+                    databaseObj.Containers.push(containerObj);
+                }
+                containerObj.Template = template;
+                containerObj.LastUpdated = new Date().toISOString();
+            } else if (containerObj) {
+                // Remove container if template is empty
+                databaseObj.Containers = databaseObj.Containers.filter((c: any) => c.Name !== containerId);
+
+                // Cleanup empty objects up the tree
+                if (databaseObj.Containers.length === 0) {
+                    accountObj.Databases = accountObj.Databases.filter((d: any) => d.Name !== databaseId);
+                }
+                if (accountObj.Databases.length === 0) {
+                    data.Accounts = data.Accounts.filter((a: any) => a.Name !== accountName);
+                }
             }
 
-            await fs.promises.writeFile(templatesPath, JSON.stringify(templates, null, 2));
+            await fs.promises.writeFile(templatesPath, JSON.stringify(data, null, 2));
             return { success: true };
         } catch (error: any) {
             console.error('[Main] Failed to save template:', error);
@@ -606,37 +637,61 @@ app.whenReady().then(() => {
 
     ipcMain.handle('storage:getTemplates', async () => {
         try {
-            try {
-                const data = await fs.promises.readFile(templatesPath, 'utf8');
-                const templates = JSON.parse(data);
-                // Convert to simple containerId -> template string map
-                const result: Record<string, string> = {};
-                for (const [key, value] of Object.entries(templates)) {
-                    result[key] = (value as any).template || '';
+            if (!fs.existsSync(templatesPath)) return { success: true, data: {} };
+
+            const content = await fs.promises.readFile(templatesPath, 'utf8');
+            const data = JSON.parse(content);
+
+            // Reconstruct flat map for renderer
+            const flatTemplates: Record<string, string> = {};
+            if (data && data.Accounts) {
+                for (const account of data.Accounts) {
+                    for (const db of account.Databases) {
+                        for (const cont of db.Containers) {
+                            const storageKey = `${account.Name}/${db.Name}/${cont.Name}`;
+                            flatTemplates[storageKey] = cont.Template || '';
+                        }
+                    }
                 }
-                return { success: true, data: result };
-            } catch (error) {
-                return { success: true, data: {} };
             }
+            return { success: true, data: flatTemplates };
         } catch (error: any) {
+            console.error('[Main] Failed to get templates:', error);
             return { success: false, error: error.message };
         }
     });
 
-    ipcMain.handle('storage:deleteTemplate', async (_, containerId: string) => {
+    ipcMain.handle('storage:deleteTemplate', async (_, storageKey: string) => {
         try {
-            let templates: Record<string, any> = {};
-            try {
-                const data = await fs.promises.readFile(templatesPath, 'utf8');
-                templates = JSON.parse(data);
-            } catch (error) {
-                return { success: true };
+            if (!fs.existsSync(templatesPath)) return { success: true };
+
+            const content = await fs.promises.readFile(templatesPath, 'utf8');
+            const data = JSON.parse(content);
+
+            if (!data.Accounts) return { success: true };
+
+            const [accountName, databaseId, containerId] = storageKey.split('/');
+
+            const accountObj = data.Accounts.find((a: any) => a.Name === accountName);
+            if (accountObj) {
+                const databaseObj = accountObj.Databases.find((d: any) => d.Name === databaseId);
+                if (databaseObj) {
+                    databaseObj.Containers = databaseObj.Containers.filter((c: any) => c.Name !== containerId);
+
+                    // Cleanup
+                    if (databaseObj.Containers.length === 0) {
+                        accountObj.Databases = accountObj.Databases.filter((d: any) => d.Name !== databaseId);
+                    }
+                    if (accountObj.Databases.length === 0) {
+                        data.Accounts = data.Accounts.filter((a: any) => a.Name !== accountName);
+                    }
+                }
             }
 
-            delete templates[containerId];
-            await fs.promises.writeFile(templatesPath, JSON.stringify(templates, null, 2));
+            await fs.promises.writeFile(templatesPath, JSON.stringify(data, null, 2));
             return { success: true };
         } catch (error: any) {
+            console.error('[Main] Failed to delete template:', error);
             return { success: false, error: error.message };
         }
     });
