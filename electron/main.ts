@@ -461,7 +461,7 @@ app.whenReady().then(() => {
                 {
                     label: 'View Translations File...',
                     click: async () => {
-                        if (!fs.existsSync(translationsPath)) await fs.promises.writeFile(translationsPath, '{}');
+                        if (!fs.existsSync(translationsPath)) await fs.promises.writeFile(translationsPath, JSON.stringify({ Accounts: [] }, null, 2));
                         shell.showItemInFolder(translationsPath);
                     }
                 },
@@ -744,47 +744,74 @@ app.whenReady().then(() => {
     // Translation storage handlers
     ipcMain.handle('storage:saveTranslation', async (_, account: string, containerPath: string, propertyPath: string, value: any, translation: string) => {
         try {
-            let translations: any = {};
+            let data: any = { Accounts: [] };
             try {
                 if (fs.existsSync(translationsPath)) {
-                    const data = await fs.promises.readFile(translationsPath, 'utf8');
-                    translations = JSON.parse(data);
+                    const content = await fs.promises.readFile(translationsPath, 'utf8');
+                    data = JSON.parse(content);
                 }
-            } catch (error) {
-                // Ignore error, start fresh if file is corrupt
-            }
+            } catch (e) { }
 
-            // Split containerPath (dbId/containerId)
+            if (!data.Accounts) data = { Accounts: [] };
+
             const [dbId, containerId] = containerPath.split('/');
 
-            if (!translations[account]) translations[account] = {};
-            if (!translations[account][dbId]) translations[account][dbId] = {};
-            if (!translations[account][dbId][containerId]) translations[account][dbId][containerId] = {};
-            if (!translations[account][dbId][containerId][propertyPath]) translations[account][dbId][containerId][propertyPath] = {};
+            let accountObj = data.Accounts.find((a: any) => a.Name === account);
+            if (!accountObj) {
+                accountObj = { Name: account, Databases: [] };
+                data.Accounts.push(accountObj);
+            }
 
-            // Convert value to string to use as key
-            const valueKey = String(value);
+            let databaseObj = accountObj.Databases.find((d: any) => d.Name === dbId);
+            if (!databaseObj) {
+                databaseObj = { Name: dbId, Containers: [] };
+                accountObj.Databases.push(databaseObj);
+            }
+
+            let containerObj = databaseObj.Containers.find((c: any) => c.Name === containerId);
+            if (!containerObj) {
+                containerObj = { Name: containerId, Properties: [] };
+                databaseObj.Containers.push(containerObj);
+            }
+
+            let propertyObj = containerObj.Properties.find((p: any) => p.Path === propertyPath);
+            if (!propertyObj) {
+                propertyObj = { Path: propertyPath, Mappings: [] };
+                containerObj.Properties.push(propertyObj);
+            }
+
+            const valueStr = String(value);
             if (translation && translation.trim()) {
-                translations[account][dbId][containerId][propertyPath][valueKey] = translation;
+                const newMapping = {
+                    Value: valueStr,
+                    Translation: translation,
+                    LastUpdated: new Date().toISOString()
+                };
+                const existingIndex = propertyObj.Mappings.findIndex((m: any) => m.Value === valueStr);
+                if (existingIndex >= 0) {
+                    propertyObj.Mappings[existingIndex] = newMapping;
+                } else {
+                    propertyObj.Mappings.push(newMapping);
+                }
             } else {
-                delete translations[account][dbId][containerId][propertyPath][valueKey];
+                propertyObj.Mappings = propertyObj.Mappings.filter((m: any) => m.Value !== valueStr);
 
-                // Clean up empty objects up the tree
-                if (Object.keys(translations[account][dbId][containerId][propertyPath]).length === 0) {
-                    delete translations[account][dbId][containerId][propertyPath];
+                // Cleanup empty objects up the tree
+                if (propertyObj.Mappings.length === 0) {
+                    containerObj.Properties = containerObj.Properties.filter((p: any) => p.Path !== propertyPath);
                 }
-                if (Object.keys(translations[account][dbId][containerId]).length === 0) {
-                    delete translations[account][dbId][containerId];
+                if (containerObj.Properties.length === 0) {
+                    databaseObj.Containers = databaseObj.Containers.filter((c: any) => c.Name !== containerId);
                 }
-                if (Object.keys(translations[account][dbId]).length === 0) {
-                    delete translations[account][dbId];
+                if (databaseObj.Containers.length === 0) {
+                    accountObj.Databases = accountObj.Databases.filter((d: any) => d.Name !== dbId);
                 }
-                if (Object.keys(translations[account]).length === 0) {
-                    delete translations[account];
+                if (accountObj.Databases.length === 0) {
+                    data.Accounts = data.Accounts.filter((a: any) => a.Name !== account);
                 }
             }
 
-            await fs.promises.writeFile(translationsPath, JSON.stringify(translations, null, 2));
+            await fs.promises.writeFile(translationsPath, JSON.stringify(data, null, 2));
             return { success: true };
         } catch (error: any) {
             console.error('[Main] Failed to save translation:', error);
@@ -794,13 +821,33 @@ app.whenReady().then(() => {
 
     ipcMain.handle('storage:getTranslations', async () => {
         try {
-            if (fs.existsSync(translationsPath)) {
-                const data = await fs.promises.readFile(translationsPath, 'utf8');
-                const translations = JSON.parse(data);
-                return { success: true, data: translations };
+            if (!fs.existsSync(translationsPath)) return { success: true, data: {} };
+
+            const content = await fs.promises.readFile(translationsPath, 'utf8');
+            const data = JSON.parse(content);
+
+            // Reconstruct nested object format for renderer
+            const result: any = {};
+            if (data && data.Accounts) {
+                for (const account of data.Accounts) {
+                    result[account.Name] = {};
+                    for (const db of account.Databases) {
+                        result[account.Name][db.Name] = {};
+                        for (const cont of db.Containers) {
+                            result[account.Name][db.Name][cont.Name] = {};
+                            for (const prop of cont.Properties) {
+                                result[account.Name][db.Name][cont.Name][prop.Path] = {};
+                                for (const mapping of prop.Mappings) {
+                                    result[account.Name][db.Name][cont.Name][prop.Path][mapping.Value] = mapping.Translation;
+                                }
+                            }
+                        }
+                    }
+                }
             }
-            return { success: true, data: {} };
+            return { success: true, data: result };
         } catch (error: any) {
+            console.error('[Main] Failed to get translations:', error);
             return { success: false, error: error.message };
         }
     });
@@ -808,11 +855,12 @@ app.whenReady().then(() => {
     ipcMain.handle('storage:showTranslationsFile', async () => {
         try {
             if (!fs.existsSync(translationsPath)) {
-                await fs.promises.writeFile(translationsPath, '{}');
+                await fs.promises.writeFile(translationsPath, JSON.stringify({ Accounts: [] }, null, 2));
             }
             shell.showItemInFolder(translationsPath);
             return { success: true };
         } catch (error: any) {
+            console.error('[Main] Failed to show translations file:', error);
             return { success: false, error: error.message };
         }
     });
