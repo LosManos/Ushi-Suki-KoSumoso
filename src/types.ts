@@ -40,6 +40,25 @@ export interface HierarchicalHistory {
     }[];
 }
 
+export interface HierarchicalLinks {
+    Accounts: {
+        Name: string;
+        Databases: {
+            Name: string;
+            Containers: {
+                Name: string;
+                Links: {
+                    PropertyPath: string;
+                    TargetDb: string;
+                    TargetContainer: string;
+                    TargetPropertyName: string;
+                    LastUpdated: string; // ISO 8601
+                }[];
+            }[];
+        }[];
+    }[];
+}
+
 export interface ContainerInfo {
     id: string;
     partitionKeyPaths: string[];

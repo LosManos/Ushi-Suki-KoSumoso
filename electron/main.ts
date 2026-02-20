@@ -454,7 +454,7 @@ app.whenReady().then(() => {
                 {
                     label: 'View Link Mappings File...',
                     click: async () => {
-                        if (!fs.existsSync(linksPath)) await fs.promises.writeFile(linksPath, '{}');
+                        if (!fs.existsSync(linksPath)) await fs.promises.writeFile(linksPath, JSON.stringify({ Accounts: [] }, null, 2));
                         shell.showItemInFolder(linksPath);
                     }
                 },
@@ -644,16 +644,61 @@ app.whenReady().then(() => {
     // Link storage handlers
     ipcMain.handle('storage:saveLink', async (_, sourceKey: string, mapping: any) => {
         try {
-            let links: Record<string, any> = {};
+            let data: any = { Accounts: [] };
             try {
-                const data = await fs.promises.readFile(linksPath, 'utf8');
-                links = JSON.parse(data);
-            } catch (error) {
-                // File might not exist yet
+                if (fs.existsSync(linksPath)) {
+                    const content = await fs.promises.readFile(linksPath, 'utf8');
+                    data = JSON.parse(content);
+                }
+            } catch (e) { }
+
+            if (!data.Accounts) data = { Accounts: [] };
+
+            // sourceKey is "accountName/dbId/containerId:propertyPath"
+            const [accountDbContainer, propertyPath] = sourceKey.split(':');
+            const parts = accountDbContainer.split('/');
+            if (parts.length < 3) throw new Error('Invalid sourceKey');
+
+            const accountName = parts[0];
+            const databaseId = parts[1];
+            const containerId = parts.slice(2).join('/');
+
+            let account = data.Accounts.find((a: any) => a.Name === accountName);
+            if (!account) {
+                account = { Name: accountName, Databases: [] };
+                data.Accounts.push(account);
             }
 
-            links[sourceKey] = { ...mapping, lastUpdated: Date.now() };
-            await fs.promises.writeFile(linksPath, JSON.stringify(links, null, 2));
+            let database = account.Databases.find((d: any) => d.Name === databaseId);
+            if (!database) {
+                database = { Name: databaseId, Containers: [] };
+                account.Databases.push(database);
+            }
+
+            let container = database.Containers.find((c: any) => c.Name === containerId);
+            if (!container) {
+                container = { Name: containerId, Links: [] };
+                database.Containers.push(container);
+            }
+
+            // Update or add link
+            const newLink = {
+                PropertyPath: propertyPath,
+                TargetDb: mapping.targetDb,
+                TargetContainer: mapping.targetContainer,
+                TargetPropertyName: mapping.targetPropertyName,
+                LastUpdated: new Date().toISOString()
+            };
+
+            if (!container.Links) container.Links = [];
+            const existingIndex = container.Links.findIndex((l: any) => l.PropertyPath === propertyPath);
+            if (existingIndex >= 0) {
+                container.Links[existingIndex] = newLink;
+            } else {
+                container.Links.push(newLink);
+            }
+
+            await fs.promises.writeFile(linksPath, JSON.stringify(data, null, 2));
             return { success: true };
         } catch (error: any) {
             console.error('[Main] Failed to save link mapping:', error);
@@ -663,14 +708,35 @@ app.whenReady().then(() => {
 
     ipcMain.handle('storage:getLinks', async () => {
         try {
-            try {
-                const data = await fs.promises.readFile(linksPath, 'utf8');
-                const links = JSON.parse(data);
-                return { success: true, data: links };
-            } catch (error) {
-                return { success: true, data: {} };
+            if (!fs.existsSync(linksPath)) return { success: true, data: {} };
+
+            const content = await fs.promises.readFile(linksPath, 'utf8');
+            const data = JSON.parse(content);
+
+            // Reconstruct flat map for renderer
+            const flatLinks: Record<string, any> = {};
+            if (data && data.Accounts) {
+                for (const account of data.Accounts) {
+                    for (const db of account.Databases) {
+                        for (const cont of db.Containers) {
+                            if (cont.Links) {
+                                for (const link of cont.Links) {
+                                    const sourceKey = `${account.Name}/${db.Name}/${cont.Name}:${link.PropertyPath}`;
+                                    flatLinks[sourceKey] = {
+                                        targetDb: link.TargetDb,
+                                        targetContainer: link.TargetContainer,
+                                        targetPropertyName: link.TargetPropertyName,
+                                        lastUpdated: link.LastUpdated
+                                    };
+                                }
+                            }
+                        }
+                    }
+                }
             }
+            return { success: true, data: flatLinks };
         } catch (error: any) {
+            console.error('[Main] Failed to get links:', error);
             return { success: false, error: error.message };
         }
     });
@@ -780,7 +846,7 @@ app.whenReady().then(() => {
     ipcMain.handle('storage:showLinksFile', async () => {
         try {
             if (!fs.existsSync(linksPath)) {
-                await fs.promises.writeFile(linksPath, '{}');
+                await fs.promises.writeFile(linksPath, JSON.stringify({ Accounts: [] }, null, 2));
             }
             shell.showItemInFolder(linksPath);
             return { success: true };

@@ -6,6 +6,7 @@ export interface LinkMapping {
     targetDb: string;
     targetContainer: string;
     targetPropertyName: string;
+    lastUpdated?: string;
 }
 
 export const linkService = {
