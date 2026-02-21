@@ -74,27 +74,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
       return [
         {
           label: isExpanded ? 'Collapse' : 'Expand',
+          accessKey: isExpanded ? 'C' : 'E',
+          shortcut: isExpanded ? 'C' : 'E',
           icon: isExpanded ? <Folder size={14} /> : <FolderOpen size={14} />,
           onClick: () => onSelectDatabase(isExpanded ? null : data.id)
         }
       ];
     }
 
-    // Fetch version on mount
-    React.useEffect(() => {
-      window.ipcRenderer.invoke('app:getVersion').then(v => setAppVersion(v));
-    }, []);
-
     if (data.type === 'container') {
       return [
         {
           label: 'Open',
+          accessKey: 'O',
+          shortcut: 'O',
           icon: <FileText size={14} />,
           onClick: () => onSelectContainer(data.parentId, data.id)
         },
         { divider: true },
         {
           label: 'Properties',
+          accessKey: 'P',
+          shortcut: 'P',
           icon: <Info size={14} />,
           onClick: () => setInfoPanel({ databaseId: data.parentId, containerId: data.id })
         }
@@ -105,17 +106,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
       return [
         {
           label: 'Open in Tab',
+          accessKey: 'O',
+          shortcut: 'O',
           icon: <FolderOpen size={14} />,
           onClick: () => onSelectHistory(data.data)
         },
         {
           label: 'Copy to Editor',
+          accessKey: 'C',
+          shortcut: 'C',
           icon: <Copy size={14} />,
           onClick: () => onCopyHistory(data.data)
         },
         { divider: true },
         {
           label: 'Delete from History',
+          accessKey: 'D',
+          shortcut: 'D',
           icon: <Trash2 size={14} />,
           onClick: () => onDeleteHistory(data.data)
         }
@@ -123,7 +130,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
 
     return [
-      { label: 'Properties', onClick: () => console.log('Properties of:', data) }
+      {
+        label: 'Properties',
+        accessKey: 'P',
+        shortcut: 'P',
+        onClick: () => console.log('Properties of:', data)
+      }
     ];
   };
 
@@ -479,6 +491,42 @@ export const Sidebar: React.FC<SidebarProps> = ({
       } else {
         setIsSettingsOpen(false);
       }
+    } else {
+      // Letter shortcuts for menu items
+      const char = e.key.toLowerCase();
+      if (char.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        if (menuView === 'main') {
+          const charMap: Record<string, number> = {
+            'a': 0, // Account
+            'g': 1, // Go to Container
+            't': 2, // Theme
+            'c': 3, // Changelog
+            'h': 4, // View History File
+            'n': 5, // View Connections File
+            'l': 6, // View Link Mapping File
+            'q': 7  // Quit
+          };
+          const targetIndex = charMap[char];
+          if (targetIndex !== undefined) {
+            e.preventDefault();
+            e.stopPropagation();
+            menuItemsRef.current[targetIndex]?.click();
+          }
+        } else if (menuView === 'theme') {
+          const themeMap: Record<string, number> = {
+            'b': 0, // Back
+            'l': 1, // Light
+            'd': 2, // Dark
+            's': 3  // System
+          };
+          const targetIndex = themeMap[char];
+          if (targetIndex !== undefined) {
+            e.preventDefault();
+            e.stopPropagation();
+            menuItemsRef.current[targetIndex]?.click();
+          }
+        }
+      }
     }
   };
 
@@ -507,7 +555,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 setIsSettingsOpen(!isSettingsOpen);
                 setMenuView('main');
               }}
-              title="Menu"
+              title="Menu (Cmd+,)"
               ref={settingsBtnRef}
               onKeyDown={handleToggleKeyDown}
             >
@@ -524,9 +572,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         onChangeConnection();
                         setIsSettingsOpen(false);
                       }}
-                      onKeyDown={(e) => handleMenuKeyDown(e, 0, 7)}
+                      onKeyDown={(e) => handleMenuKeyDown(e, 0, 8)}
                     >
-                      Account...
+                      <u>A</u>ccount...
                     </button>
 
                     <button
@@ -536,10 +584,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         onOpenCommandPalette();
                         setIsSettingsOpen(false);
                       }}
-                      onKeyDown={(e) => handleMenuKeyDown(e, 1, 7)}
+                      onKeyDown={(e) => handleMenuKeyDown(e, 1, 8)}
                       style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                     >
-                      <span>Go to Container...</span>
+                      <span><u>G</u>o to Container...</span>
                       <span style={{ opacity: 0.6, fontSize: '0.85em' }}>Cmd/Ctrl+P</span>
                     </button>
 
@@ -557,12 +605,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           e.preventDefault();
                           setMenuView('theme');
                         } else {
-                          handleMenuKeyDown(e, 2, 7);
+                          handleMenuKeyDown(e, 2, 8);
                         }
                       }}
                       style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                     >
-                      <span>Theme</span>
+                      <span><u>T</u>heme</span>
                       <span>›</span>
                     </button>
 
@@ -578,7 +626,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       onKeyDown={(e) => handleMenuKeyDown(e, 3, 8)}
                       style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
                     >
-                      <span>Changelog...</span>
+                      <span><u>C</u>hangelog...</span>
                     </button>
 
                     <div className="menu-separator"></div>
@@ -592,7 +640,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       }}
                       onKeyDown={(e) => handleMenuKeyDown(e, 4, 8)}
                     >
-                      View History File...
+                      View <u>H</u>istory File...
                     </button>
 
                     <button
@@ -604,7 +652,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       }}
                       onKeyDown={(e) => handleMenuKeyDown(e, 5, 8)}
                     >
-                      View Connections File...
+                      View Co<u>n</u>nections File...
                     </button>
 
                     <button
@@ -616,7 +664,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       }}
                       onKeyDown={(e) => handleMenuKeyDown(e, 6, 8)}
                     >
-                      View Link Mapping File...
+                      View <u>L</u>ink Mapping File...
                     </button>
 
                     <div className="menu-separator"></div>
@@ -631,7 +679,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       onKeyDown={(e) => handleMenuKeyDown(e, 7, 8)}
                       style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                     >
-                      <span>Quit</span>
+                      <span><u>Q</u>uit</span>
                       <span style={{ opacity: 0.6, fontSize: '0.85em' }}>Cmd/Ctrl+Q</span>
                     </button>
 
@@ -657,7 +705,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       }}
                       style={{ color: 'var(--text-secondary)', fontSize: '0.85em', borderBottom: '1px solid var(--border-color)', marginBottom: '4px' }}
                     >
-                      ‹ Back
+                      ‹ <u>B</u>ack
                     </button>
 
                     <div className="theme-options">
@@ -674,7 +722,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           }
                         }}
                       >
-                        <Sun size={14} style={{ marginRight: '8px' }} /> Light
+                        <Sun size={14} style={{ marginRight: '8px' }} /> <u>L</u>ight
                       </button>
                       <button
                         ref={(el) => (menuItemsRef.current[2] = el)}
@@ -689,7 +737,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           }
                         }}
                       >
-                        <Moon size={14} style={{ marginRight: '8px' }} /> Dark
+                        <Moon size={14} style={{ marginRight: '8px' }} /> <u>D</u>ark
                       </button>
                       <button
                         ref={(el) => (menuItemsRef.current[3] = el)}
@@ -704,7 +752,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           }
                         }}
                       >
-                        <Monitor size={14} style={{ marginRight: '8px' }} /> System
+                        <Monitor size={14} style={{ marginRight: '8px' }} /> <u>S</u>ystem
                       </button>
                     </div>
                   </>

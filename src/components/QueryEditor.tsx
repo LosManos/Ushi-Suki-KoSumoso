@@ -105,15 +105,53 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
 
     const getContextMenuItems = (): ContextMenuItem[] => {
         return [
-            { label: 'Run Query', icon: <Play size={16} />, shortcut: 'Shift+Enter', onClick: onRunQuery },
-            { label: 'Discover Schema', icon: <Search size={16} />, onClick: onDiscoverSchema },
+            {
+                label: 'Run Query',
+                accessKey: 'R',
+                icon: <Play size={16} />,
+                shortcut: 'Shift+Enter',
+                onClick: onRunQuery
+            },
+            {
+                label: 'Discover Schema',
+                accessKey: 'D',
+                icon: <Search size={16} />,
+                onClick: onDiscoverSchema
+            },
             { divider: true },
-            { label: 'select * from c', icon: <Terminal size={16} />, onClick: () => appendQuery('select * from c') },
-            { label: 'select count(1) from c', icon: <Terminal size={16} />, onClick: () => appendQuery('select count(1) from c') },
-            { label: 'select * from c where c.id = ', icon: <Terminal size={16} />, onClick: () => appendQuery('select * from c where c.id = ""') },
+            {
+                label: 'select * from c',
+                accessKey: 'S',
+                icon: <Terminal size={16} />,
+                onClick: () => appendQuery('select * from c')
+            },
+            {
+                label: 'select count(1) from c',
+                accessKey: 'C',
+                icon: <Terminal size={16} />,
+                onClick: () => appendQuery('select count(1) from c')
+            },
+            {
+                label: 'select * from c where c.id = ',
+                accessKey: 'I',
+                icon: <Terminal size={16} />,
+                onClick: () => appendQuery('select * from c where c.id = ""')
+            },
             { divider: true },
-            { label: "select * from c where c.id = '{clipboard}'", icon: <Terminal size={16} />, shortcut: '⌘⌥I', onClick: () => handlePasteIdToQuery(true) },
-            { label: "select * from c where c.id = {clipboard}", icon: <Terminal size={16} />, shortcut: '⌘⌥⇧I', onClick: () => handlePasteIdToQuery(false) },
+            {
+                label: "select * from c where c.id = '{clipboard}'",
+                accessKey: 'A',
+                icon: <Terminal size={16} />,
+                shortcut: '⌘⌥I',
+                onClick: () => handlePasteIdToQuery(true)
+            },
+            {
+                label: "select * from c where c.id = {clipboard}",
+                accessKey: 'P',
+                icon: <Terminal size={16} />,
+                shortcut: '⌘⌥⇧I',
+                onClick: () => handlePasteIdToQuery(false)
+            },
         ];
     };
 

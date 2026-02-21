@@ -397,6 +397,7 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
             { divider: true },
             {
                 label: filterKey ? 'Clear Property Isolation' : 'Property Isolation',
+                accessKey: 'W',
                 shortcut: '⌥W',
                 onClick: () => {
                     if (filterKey) {

@@ -115,3 +115,13 @@ Add subtle underline styling in CSS:
 2. **Avoid conflicts**: Ensure shortcut letters don't conflict within the same view
 3. **Include descriptive tooltips**: The `title` attribute should explain what the control does AND mention the shortcut (e.g., `"Toggle synchronized scrolling (Alt+S)"`)
 4. **Be consistent**: Apply this pattern to all Alt-accessible controls in the same view
+
+## Menu
+
+The menu/menus should largely behave like they do in Windows.  
+When the main menu is opened with cmd-comma, or a context menu with alt-enter,
+the UI should follow the same pattern.  
+Each item has a shortcut. The letter is underlined.  
+If possible the shortcut should be unique, but if it cannot be - then the user can iterate between them by pressing the same letter.
+If a menu item has a special global shortcut - it should be visible. E.g. the Quit menu item.
+

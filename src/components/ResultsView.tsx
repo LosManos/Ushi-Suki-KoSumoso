@@ -119,14 +119,28 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
     const parsed = line ? parseJsonLine(line) : null;
 
     const items: ContextMenuItem[] = [
-      { label: 'Copy All Results', icon: <Copy size={16} />, onClick: handleCopyToClipboard },
-      { label: 'Save Results to File', icon: <Save size={16} />, onClick: handleSaveToFile },
+      {
+        label: 'Copy All Results',
+        accessKey: 'A',
+        shortcut: 'Cmd+Shift+S',
+        icon: <Copy size={16} />,
+        onClick: handleCopyToClipboard
+      },
+      {
+        label: 'Save Results to File',
+        accessKey: 'S',
+        shortcut: 'Cmd+S',
+        icon: <Save size={16} />,
+        onClick: handleSaveToFile
+      },
     ];
 
     if (results.length === 1) {
       items.push({ divider: true });
       items.push({
         label: 'Edit Document',
+        accessKey: 'E',
+        shortcut: 'Cmd+Alt+E',
         icon: <Edit size={16} />,
         onClick: () => onEditDocument?.(results[0])
       });
@@ -136,11 +150,15 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
       items.push({ divider: true });
       items.push({
         label: `Copy Key: "${parsed.key}"`,
+        accessKey: 'K',
+        shortcut: 'Alt+K',
         icon: <Copy size={16} />,
         onClick: copyKeyFromLine
       });
       items.push({
-        label: `Copy Value: ${parsed.value.length > 30 ? parsed.value.substring(0, 30) + '...' : parsed.value}`,
+        label: `Copy Value`,
+        accessKey: 'V',
+        shortcut: 'Alt+V',
         icon: <Copy size={16} />,
         onClick: copyValueFromLine
       });
@@ -148,6 +166,8 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
       if (parsed.value.startsWith('"') && parsed.value.endsWith('"')) {
         items.push({
           label: 'Copy Raw Value (No Quotes)',
+          accessKey: 'R',
+          shortcut: 'Alt+R',
           icon: <Copy size={16} />,
           onClick: copyRawValueFromLine
         });
@@ -155,6 +175,8 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
 
       items.push({
         label: 'Copy Key & Value',
+        accessKey: 'B',
+        shortcut: 'Alt+B',
         icon: <Copy size={16} />,
         onClick: copyBothFromLine
       });
@@ -164,6 +186,8 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
       items.push({ divider: true });
       items.push({
         label: 'Compare Documents...',
+        accessKey: 'C',
+        shortcut: 'Cmd+Alt+C',
         onClick: handleCompare
       });
     }
