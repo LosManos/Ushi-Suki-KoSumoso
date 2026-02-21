@@ -18,6 +18,9 @@ export const ChangelogDialog: React.FC<ChangelogDialogProps> = ({ onClose }) => 
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const dialogRef = useRef<HTMLDivElement>(null);
+    const bodyRef = useRef<HTMLDivElement>(null);
+    const awesomeBtnRef = useRef<HTMLButtonElement>(null);
+
 
     const openExternal = (url: string) => {
         window.ipcRenderer.invoke('app:openExternal', url);
@@ -41,15 +44,47 @@ export const ChangelogDialog: React.FC<ChangelogDialogProps> = ({ onClose }) => 
 
         fetchReleases();
 
+        // Focus the scrollable body when the dialog opens
+        // This allows immediate keyboard scrolling (arrows, PgUp/PgDn)
+        const focusTimeout = setTimeout(() => {
+            bodyRef.current?.focus();
+        }, 100);
+
+        return () => clearTimeout(focusTimeout);
+    }, []);
+
+    useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
                 onClose();
+            } else if (e.key === 'Enter') {
+                // If focus is on a button, let the button's click handler perform its action.
+                // Otherwise, close the dialog.
+                if (!(document.activeElement instanceof HTMLButtonElement)) {
+                    onClose();
+                }
+            }
+
+            // Alt+A for Awesome!
+            // Using e.code for Mac compatibility as per rules.md
+            if (e.altKey && e.code === 'KeyA') {
+                e.preventDefault();
+                onClose();
+            }
+
+            // Alt+G for first GitHub link
+            if (e.altKey && e.code === 'KeyG') {
+                e.preventDefault();
+                const latestRelease = releases[0];
+                if (latestRelease) {
+                    openExternal(latestRelease.url);
+                }
             }
         };
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [onClose]);
+    }, [onClose, releases]);
 
     const parseHighlights = (body: string, version: string) => {
         if (!body || body.trim() === '') return [version];
@@ -100,7 +135,12 @@ export const ChangelogDialog: React.FC<ChangelogDialogProps> = ({ onClose }) => 
                         <X size={18} />
                     </button>
                 </div>
-                <div className="dialog-body">
+                <div
+                    ref={bodyRef}
+                    className="dialog-body"
+                    tabIndex={0}
+                    style={{ outline: 'none' }}
+                >
                     {isLoading ? (
                         <div className="changelog-loading">
                             <Loader2 size={32} className="spin-icon" />
@@ -128,8 +168,9 @@ export const ChangelogDialog: React.FC<ChangelogDialogProps> = ({ onClose }) => 
                                                 openExternal(item.url);
                                             }}
                                             className="view-on-github-btn"
+                                            title={index === 0 ? "View on GitHub (Alt+G)" : "View on GitHub"}
                                         >
-                                            GitHub <ExternalLink size={10} />
+                                            {index === 0 ? <u>G</u> : 'G'}itHub <ExternalLink size={10} />
                                         </button>
                                     </div>
                                     <div className="changelog-content">
@@ -148,8 +189,13 @@ export const ChangelogDialog: React.FC<ChangelogDialogProps> = ({ onClose }) => 
                     )}
                 </div>
                 <div className="dialog-footer">
-                    <button className="primary-btn" onClick={onClose}>
-                        Awesome!
+                    <button
+                        ref={awesomeBtnRef}
+                        className="primary-btn"
+                        onClick={onClose}
+                        title="Close this dialog (Alt+A or Enter)"
+                    >
+                        <u>A</u>wesome!
                     </button>
                 </div>
             </div>

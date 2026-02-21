@@ -218,3 +218,9 @@
     transform: translateY(-1px);
     box-shadow: 0 6px 16px rgba(216, 67, 21, 0.4);
 }
+
+.changelog-dialog .primary-btn u,
+.changelog-dialog .view-on-github-btn u {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
