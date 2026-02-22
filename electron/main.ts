@@ -81,6 +81,7 @@ function trackWindowState(win: BrowserWindow, windowName: 'main' | 'compare'): v
 }
 
 let win: BrowserWindow | null;
+let isQuitting = false;
 // 🚧 Use ['ENV_NAME'] avoid vite:define plugin - Vite@2.x
 const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL'];
 
@@ -118,6 +119,15 @@ function createWindow() {
 
     // Track window state changes
     trackWindowState(win, 'main');
+
+    win.on('close', (event) => {
+        if (isQuitting) return;
+
+        if (process.platform !== 'darwin') {
+            event.preventDefault();
+            app.quit();
+        }
+    });
 
     // Intercept Cmd+W/Cmd+S to handle them in renderer instead of default browser behavior
     win.webContents.on('before-input-event', (event, input) => {
@@ -159,6 +169,26 @@ app.on('activate', () => {
     // dock icon is clicked and there are no other windows open.
     if (BrowserWindow.getAllWindows().length === 0) {
         createWindow();
+    }
+});
+
+app.on('before-quit', (event) => {
+    if (isQuitting) return;
+
+    const winForDialog = BrowserWindow.getFocusedWindow() || (win && !win.isDestroyed() ? win : undefined);
+    const choice = dialog.showMessageBoxSync(winForDialog as any, {
+        type: 'question',
+        buttons: ['Yes', 'No'],
+        title: 'Confirm Quit',
+        message: 'Are you sure you want to quit Kosumoso?',
+        defaultId: 0,
+        cancelId: 1
+    });
+
+    if (choice === 1) {
+        event.preventDefault();
+    } else {
+        isQuitting = true;
     }
 });
 
