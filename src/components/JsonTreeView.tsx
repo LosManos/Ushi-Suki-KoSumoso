@@ -801,6 +801,21 @@ const JsonNode: React.FC<{
         </span>
     ) : null;
 
+    // Special handling for _ts (Cosmos internal timestamp)
+    let tsDisplay = null;
+    if (item.key === '_ts' && typeof item.value === 'number') {
+        try {
+            const date = new Date(item.value * 1000);
+            tsDisplay = (
+                <span className="json-translation" title="Cosmos DB Timestamp (ISO 8601)">
+                    ({date.toISOString()})
+                </span>
+            );
+        } catch (e) {
+            // Invalid date, ignore
+        }
+    }
+
     // Copy handlers
     const handleCopyKey = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -862,6 +877,7 @@ const JsonNode: React.FC<{
             )}
             {valueDisplay}
             {translatedDisplay}
+            {tsDisplay}
             <span className="copy-buttons">
                 <button className="copy-btn" onClick={handleCopyKey} title="Copy key (Alt+K)">
                     <Copy size={10} /><span>K</span>
