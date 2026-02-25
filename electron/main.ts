@@ -509,6 +509,14 @@ app.whenReady().then(() => {
                         if (!fs.existsSync(schemasPath)) await fs.promises.writeFile(schemasPath, JSON.stringify({ Accounts: [] }, null, 2));
                         shell.showItemInFolder(schemasPath);
                     }
+        },
+        {
+            label: 'Tools',
+            submenu: [
+                {
+                    label: 'Timestamp Converter',
+                    accelerator: 'CmdOrCtrl+T',
+                    click: () => win?.webContents.send('menu:show-timestamp-converter')
                 }
             ] as MenuItemConstructorOptions[]
         },

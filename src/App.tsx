@@ -66,6 +66,7 @@ function App() {
     const [updateInfo, setUpdateInfo] = useState<{ isNewer: boolean; latestVersion: string; url: string } | null>(null);
     const [showUpdateBanner, setShowUpdateBanner] = useState(false);
     const [showChangelog, setShowChangelog] = useState(false);
+    const [isTimestampConverterOpen, setIsTimestampConverterOpen] = useState(false);
 
     // Load history, templates and schemas on startup
     useEffect(() => {
@@ -148,14 +149,20 @@ function App() {
             setShowChangelog(true);
         };
 
+        const handleShowTimestampConverter = () => {
+            setIsTimestampConverterOpen(true);
+        };
+
         window.ipcRenderer.on('close-active-tab', handleCloseTab);
         window.ipcRenderer.on('menu:new-tab', handleNewTab);
         window.ipcRenderer.on('menu:show-changelog', handleShowChangelog);
+        window.ipcRenderer.on('menu:show-timestamp-converter', handleShowTimestampConverter);
         // Note: cleanup may not work due to preload `off` bug, but we only register once
         return () => {
             window.ipcRenderer.off('close-active-tab', handleCloseTab);
             window.ipcRenderer.off('menu:new-tab', handleNewTab);
             window.ipcRenderer.off('menu:show-changelog', handleShowChangelog);
+            window.ipcRenderer.off('menu:show-timestamp-converter', handleShowTimestampConverter);
         };
     }, []); // Empty dependency - register only once
 
@@ -955,6 +962,11 @@ function App() {
                         document={editingDocument.doc}
                         onClose={() => setEditingDocument(null)}
                         onSave={handleSaveDocument}
+                    />
+                )}
+                {isTimestampConverterOpen && (
+                    <TimestampConverterDialog
+                        onClose={() => setIsTimestampConverterOpen(false)}
                     />
                 )}
             </div>
