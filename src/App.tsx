@@ -15,11 +15,13 @@ import { schemaService } from './services/schema';
 import { extractParagraphAtCursor, updateValueAtPath, getPropertyPath } from './utils';
 import { linkService, LinkMapping } from './services/linkService';
 import { translationService } from './services/translationService';
+import { queryService } from './services/queryService';
 import { FlattenedItem } from './components/JsonTreeView';
 import { UpdateBanner } from './components/UpdateBanner';
 import { TranslationDialog } from './components/TranslationDialog';
 import { ChangelogDialog } from './components/ChangelogDialog';
 import { EditDocumentDialog } from './components/EditDocumentDialog';
+import { TimestampConverterDialog } from './components/TimestampConverterDialog';
 import './App.css';
 
 function App() {
@@ -52,6 +54,8 @@ function App() {
     const storedTemplatesRef = React.useRef<Record<string, string>>({});
     // Store schemas per container (loaded from disk)
     const storedSchemasRef = React.useRef<Record<string, string[]>>({});
+    // Store queries per container (loaded from disk)
+    const storedQueriesRef = React.useRef<Record<string, string>>({});
     // Store link mappings (loaded from disk)
     const [storedLinks, setStoredLinks] = useState<Record<string, LinkMapping>>({});
     // Store translations (loaded from disk)
@@ -93,6 +97,11 @@ function App() {
         translationService.getTranslations().then(res => {
             if (res.success && res.data) {
                 setTranslations(res.data);
+            }
+        });
+        queryService.getQueries().then(res => {
+            if (res.success && res.data) {
+                storedQueriesRef.current = res.data;
             }
         });
 
@@ -295,6 +304,17 @@ function App() {
         }
     }, [activeTab?.containerId]);
 
+    // Persistence: save query whenever it changes
+    useEffect(() => {
+        if (activeTabId && activeTab) {
+            const storageKey = `${accountName}/${activeTabId}`;
+            if (storedQueriesRef.current[storageKey] !== activeTab.query) {
+                storedQueriesRef.current[storageKey] = activeTab.query;
+                queryService.saveQuery(storageKey, activeTab.query);
+            }
+        }
+    }, [activeTabId, activeTab?.query, accountName]);
+
     const handleConnect = async (connStr: string) => {
         const result = await cosmos.connect(connStr);
         if (result.success && result.data) {
@@ -349,7 +369,7 @@ function App() {
                 id: newTabId,
                 databaseId: dbId,
                 containerId: containerId,
-                query: 'SELECT * FROM c',
+                query: storedQueriesRef.current[storageKey] || 'SELECT * FROM c',
                 results: [],
                 isQuerying: false,
                 pageSize: 10,

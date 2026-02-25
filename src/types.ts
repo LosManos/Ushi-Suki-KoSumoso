@@ -107,6 +107,20 @@ export interface HierarchicalSchemas {
     }[];
 }
 
+export interface HierarchicalQueries {
+    Accounts: {
+        Name: string;
+        Databases: {
+            Name: string;
+            Containers: {
+                Name: string;
+                Query: string;
+                LastUpdated: string; // ISO 8601
+            }[];
+        }[];
+    }[];
+}
+
 export interface ContainerInfo {
     id: string;
     partitionKeyPaths: string[];

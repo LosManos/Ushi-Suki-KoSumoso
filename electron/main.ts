@@ -380,6 +380,7 @@ app.whenReady().then(() => {
     const schemasPath = path.join(app.getPath('userData'), 'schemas.json');
     const linksPath = path.join(app.getPath('userData'), 'links.json');
     const translationsPath = path.join(app.getPath('userData'), 'translations.json');
+    const queriesPath = path.join(app.getPath('userData'), 'queries.json');
 
     createWindow();
 
@@ -509,6 +510,15 @@ app.whenReady().then(() => {
                         if (!fs.existsSync(schemasPath)) await fs.promises.writeFile(schemasPath, JSON.stringify({ Accounts: [] }, null, 2));
                         shell.showItemInFolder(schemasPath);
                     }
+                },
+                {
+                    label: 'View Query Tabs File...',
+                    click: async () => {
+                        if (!fs.existsSync(queriesPath)) await fs.promises.writeFile(queriesPath, JSON.stringify({ Accounts: [] }, null, 2));
+                        shell.showItemInFolder(queriesPath);
+                    }
+                }
+            ] as MenuItemConstructorOptions[]
         },
         {
             label: 'Tools',
@@ -761,6 +771,137 @@ app.whenReady().then(() => {
             return { success: true };
         } catch (error: any) {
             console.error('[Main] Failed to delete template:', error);
+            return { success: false, error: error.message };
+        }
+    });
+
+    // Query storage handlers
+    ipcMain.handle('storage:saveQuery', async (_, storageKey: string, query: string) => {
+        try {
+            let data: any = { Accounts: [] };
+            try {
+                if (fs.existsSync(queriesPath)) {
+                    const content = await fs.promises.readFile(queriesPath, 'utf8');
+                    data = JSON.parse(content);
+                }
+            } catch (e) { }
+
+            if (!data.Accounts) data = { Accounts: [] };
+
+            const [accountName, databaseId, containerId] = storageKey.split('/');
+
+            let accountObj = data.Accounts.find((a: any) => a.Name === accountName);
+            if (!accountObj) {
+                accountObj = { Name: accountName, Databases: [] };
+                data.Accounts.push(accountObj);
+            }
+
+            let databaseObj = accountObj.Databases.find((d: any) => d.Name === databaseId);
+            if (!databaseObj) {
+                databaseObj = { Name: databaseId, Containers: [] };
+                accountObj.Databases.push(databaseObj);
+            }
+
+            let containerObj = databaseObj.Containers.find((c: any) => c.Name === containerId);
+
+            if (query.trim()) {
+                if (!containerObj) {
+                    containerObj = { Name: containerId, Query: '', LastUpdated: '' };
+                    databaseObj.Containers.push(containerObj);
+                }
+                containerObj.Query = query;
+                containerObj.LastUpdated = new Date().toISOString();
+            } else if (containerObj) {
+                // Remove container if query is empty
+                databaseObj.Containers = databaseObj.Containers.filter((c: any) => c.Name !== containerId);
+
+                // Cleanup empty objects up the tree
+                if (databaseObj.Containers.length === 0) {
+                    accountObj.Databases = accountObj.Databases.filter((d: any) => d.Name !== databaseId);
+                }
+                if (accountObj.Databases.length === 0) {
+                    data.Accounts = data.Accounts.filter((a: any) => a.Name !== accountName);
+                }
+            }
+
+            await fs.promises.writeFile(queriesPath, JSON.stringify(data, null, 2));
+            return { success: true };
+        } catch (error: any) {
+            console.error('[Main] Failed to save query:', error);
+            return { success: false, error: error.message };
+        }
+    });
+
+    ipcMain.handle('storage:getQueries', async () => {
+        try {
+            if (!fs.existsSync(queriesPath)) return { success: true, data: {} };
+
+            const content = await fs.promises.readFile(queriesPath, 'utf8');
+            const data = JSON.parse(content);
+
+            // Reconstruct flat map for renderer
+            const flatQueries: Record<string, string> = {};
+            if (data && data.Accounts) {
+                for (const account of data.Accounts) {
+                    for (const db of account.Databases) {
+                        for (const cont of db.Containers) {
+                            const storageKey = `${account.Name}/${db.Name}/${cont.Name}`;
+                            flatQueries[storageKey] = cont.Query || '';
+                        }
+                    }
+                }
+            }
+            return { success: true, data: flatQueries };
+        } catch (error: any) {
+            console.error('[Main] Failed to get queries:', error);
+            return { success: false, error: error.message };
+        }
+    });
+
+    ipcMain.handle('storage:deleteQuery', async (_, storageKey: string) => {
+        try {
+            if (!fs.existsSync(queriesPath)) return { success: true };
+
+            const content = await fs.promises.readFile(queriesPath, 'utf8');
+            const data = JSON.parse(content);
+
+            if (!data.Accounts) return { success: true };
+
+            const [accountName, databaseId, containerId] = storageKey.split('/');
+
+            const accountObj = data.Accounts.find((a: any) => a.Name === accountName);
+            if (accountObj) {
+                const databaseObj = accountObj.Databases.find((d: any) => d.Name === databaseId);
+                if (databaseObj) {
+                    databaseObj.Containers = databaseObj.Containers.filter((c: any) => c.Name !== containerId);
+
+                    // Cleanup
+                    if (databaseObj.Containers.length === 0) {
+                        accountObj.Databases = accountObj.Databases.filter((d: any) => d.Name !== databaseId);
+                    }
+                    if (accountObj.Databases.length === 0) {
+                        data.Accounts = data.Accounts.filter((a: any) => a.Name !== accountName);
+                    }
+                }
+            }
+
+            await fs.promises.writeFile(queriesPath, JSON.stringify(data, null, 2));
+            return { success: true };
+        } catch (error: any) {
+            console.error('[Main] Failed to delete query:', error);
+            return { success: false, error: error.message };
+        }
+    });
+
+    ipcMain.handle('storage:showQueriesFile', async () => {
+        try {
+            if (!fs.existsSync(queriesPath)) {
+                await fs.promises.writeFile(queriesPath, JSON.stringify({ Accounts: [] }, null, 2));
+            }
+            shell.showItemInFolder(queriesPath);
+            return { success: true };
+        } catch (error: any) {
+            console.error('[Main] Failed to show queries file:', error);
             return { success: false, error: error.message };
         }
     });
