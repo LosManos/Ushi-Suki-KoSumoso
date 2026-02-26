@@ -452,6 +452,7 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
             item.type === 'object' && {
                 label: 'Edit Document',
                 accessKey: 'E',
+                shortcut: 'Cmd+D',
                 icon: <Edit size={14} />,
                 onClick: () => onEditDocument?.(item.value)
             }
@@ -609,7 +610,31 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
             }
             case 'e':
             case 'E': {
-                if (e.metaKey || e.ctrlKey || e.altKey) break;
+                if (e.metaKey || e.ctrlKey || e.altKey) {
+                    if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey) {
+                        // Cmd+E focusing query editor handled globally
+                    }
+                    break;
+                }
+                const item = flattenedItems[currentIndex];
+                if (item && item.type === 'object') {
+                    e.preventDefault();
+                    onEditDocument?.(item.value);
+                }
+                break;
+            }
+            case 'd':
+            case 'D': {
+                if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey) {
+                    const item = flattenedItems[currentIndex];
+                    if (item && item.type === 'object') {
+                        e.preventDefault();
+                        onEditDocument?.(item.value);
+                    }
+                }
+                break;
+            }
+            case 'F2': {
                 const item = flattenedItems[currentIndex];
                 if (item && item.type === 'object') {
                     e.preventDefault();

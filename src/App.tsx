@@ -805,8 +805,8 @@ function App() {
 
     useEffect(() => {
         const handleWindowKeyDown = (e: KeyboardEvent) => {
-            // Handle Ctrl+D (or Cmd+D) to change connection
-            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
+            // Handle Ctrl+Shift+A (or Cmd+Shift+A) to change connection
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'a') {
                 e.preventDefault();
                 handleChangeConnection();
             }

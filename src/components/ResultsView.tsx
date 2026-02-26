@@ -140,7 +140,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
       items.push({
         label: 'Edit Document',
         accessKey: 'E',
-        shortcut: 'Cmd+Alt+E',
+        shortcut: 'Cmd+D',
         icon: <Edit size={16} />,
         onClick: () => onEditDocument?.(results[0])
       });
@@ -423,8 +423,8 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
         document.getElementById('query-editor-textarea')?.focus();
       }
 
-      // Cmd/Ctrl + Alt + E to edit document (when 1 result)
-      if ((e.metaKey || e.ctrlKey) && e.altKey && e.code === 'KeyE') {
+      // Cmd/Ctrl + D OR F2 to edit document (when 1 result)
+      if (((e.metaKey || e.ctrlKey) && !e.shiftKey && (e.key === 'd' || e.key === 'D')) || e.key === 'F2') {
         e.preventDefault();
         if (results.length === 1) {
           onEditDocument?.(results[0]);
@@ -605,7 +605,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
             <button
               className="action-btn"
               onClick={() => onEditDocument?.(results[0])}
-              title="Edit document (Cmd/Ctrl+Alt+E)"
+              title="Edit document (Cmd/Ctrl+D or F2)"
             >
               <Edit size={16} />
             </button>

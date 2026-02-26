@@ -573,8 +573,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         setIsSettingsOpen(false);
                       }}
                       onKeyDown={(e) => handleMenuKeyDown(e, 0, 8)}
+                      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                     >
-                      <u>A</u>ccount...
+                      <span><u>A</u>ccount...</span>
+                      <span style={{ opacity: 0.6, fontSize: '0.85em' }}>Cmd/Ctrl+Shift+A</span>
                     </button>
 
                     <button
