@@ -451,6 +451,7 @@ export const CompareView: React.FC<CompareViewProps> = ({ documents }) => {
     // Handle keyboard shortcuts
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.repeat) return;
             // Close window on Escape
             if (e.key === 'Escape') {
                 window.close();

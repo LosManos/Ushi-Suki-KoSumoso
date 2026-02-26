@@ -42,6 +42,7 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect, onCan
     // Handle ESC key to cancel
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.repeat) return;
             if (e.key === 'Escape' && onCancel) {
                 onCancel();
                 return;

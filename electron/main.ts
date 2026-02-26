@@ -132,6 +132,8 @@ function createWindow() {
     // Intercept Cmd+W/Cmd+S to handle them in renderer instead of default browser behavior
     win.webContents.on('before-input-event', (event, input) => {
         if (input.type === 'keyDown' && (input.meta || input.control) && !input.shift && !input.alt) {
+            if (input.isAutoRepeat) return;
+
             if (input.key === 'w') {
                 event.preventDefault();
                 win?.webContents.send('close-active-tab');

@@ -391,6 +391,8 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
 
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.repeat) return;
+
       // Cmd/Ctrl + 3 to focus results view (or Cmd+R/Ctrl+R depending on implementation)
       if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'r') {
         e.preventDefault();
@@ -466,11 +468,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
         }
       }
 
-      // Cmd/Ctrl + S to save results to file
-      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.code === 'KeyS') {
-        e.preventDefault();
-        handleSave();
-      }
+
 
       // Cmd/Ctrl + Shift + R to focus page size selector
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'r') {

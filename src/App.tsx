@@ -245,6 +245,7 @@ function App() {
 
     useEffect(() => {
         const handleWindowKeyDown = (e: KeyboardEvent) => {
+            if (e.repeat) return;
             // Handle Ctrl+P (or Cmd+P) to open command palette
             if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'p') {
                 e.preventDefault();

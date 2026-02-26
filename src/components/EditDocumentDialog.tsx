@@ -43,15 +43,11 @@ export const EditDocumentDialog: React.FC<EditDocumentDialogProps> = ({
         }, 50);
 
         const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.repeat) return;
             if (e.key === 'Escape' && !isSaving) {
                 onClose();
             }
-            // Cmd+S or Ctrl+S to save
-            if ((e.metaKey || e.ctrlKey) && e.code === 'KeyS') {
-                e.preventDefault();
-                e.stopPropagation();
-                saveHandlerRef.current?.();
-            }
+
             // Alt shortcuts (Mac-safe using e.code)
             if (e.altKey && !e.metaKey && !e.ctrlKey) {
                 if (e.code === 'KeyS') {
