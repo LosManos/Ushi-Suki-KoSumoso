@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, Save, AlertCircle } from 'lucide-react';
+import { X, Save, AlertCircle, Trash2 } from 'lucide-react';
 import Editor from 'react-simple-code-editor';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-json';
@@ -10,23 +10,26 @@ import './ResultsView.css';
 interface EditDocumentDialogProps {
     onClose: () => void;
     onSave: (document: any) => Promise<void>;
+    onDelete?: (document: any) => Promise<void>;
     document: any;
 }
 
 export const EditDocumentDialog: React.FC<EditDocumentDialogProps> = ({
     onClose,
     onSave,
+    onDelete,
     document: initialDocument
 }) => {
     const [json, setJson] = useState(JSON.stringify(initialDocument, null, 2));
     const [error, setError] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const saveHandlerRef = React.useRef<() => void>();
 
     // Update the ref on every render to ensure it always captures the latest state
     saveHandlerRef.current = () => {
-        if (!isSaving) {
+        if (!isSaving && !isDeleting) {
             handleSave();
         }
     };
@@ -58,6 +61,10 @@ export const EditDocumentDialog: React.FC<EditDocumentDialogProps> = ({
                     e.preventDefault();
                     e.stopPropagation();
                     onClose();
+                } else if (e.code === 'KeyD' && onDelete) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleDelete();
                 }
             }
         };
@@ -95,6 +102,23 @@ export const EditDocumentDialog: React.FC<EditDocumentDialogProps> = ({
         }
     };
 
+    const handleDelete = async () => {
+        if (!onDelete) return;
+
+        const confirmDelete = window.confirm('Are you sure you want to delete this document? This action cannot be undone.');
+        if (!confirmDelete) return;
+
+        try {
+            setIsDeleting(true);
+            setError(null);
+            await onDelete(initialDocument);
+            onClose();
+        } catch (err: any) {
+            setError(err.message);
+            setIsDeleting(false);
+        }
+    };
+
     return (
         <div className="modal-overlay">
             <div className="modal-dialog edit-document-dialog" style={{ maxWidth: '800px', width: '90vw', height: '80vh', display: 'flex', flexDirection: 'column' }}>
@@ -129,27 +153,45 @@ export const EditDocumentDialog: React.FC<EditDocumentDialogProps> = ({
                     </div>
                 </div>
                 <div className="dialog-footer">
-                    <button
-                        type="button"
-                        className="secondary-btn"
-                        onClick={onClose}
-                        disabled={isSaving}
-                        title="Cancel and close (Alt+C, Esc)"
-                    >
-                        <span className="shortcut-label"><u>C</u>ancel</span>
-                    </button>
-                    <button
-                        type="button"
-                        className="primary-btn"
-                        onClick={handleSave}
-                        disabled={isSaving}
-                        title="Save changes to document (Alt+S, Cmd+S)"
-                    >
-                        <Save size={16} />
-                        <span className="shortcut-label">
-                            {isSaving ? 'Saving...' : <><u>S</u>ave Document</>}
-                        </span>
-                    </button>
+                    <div className="footer-left">
+                        {onDelete && (
+                            <button
+                                type="button"
+                                className="danger-btn"
+                                onClick={handleDelete}
+                                disabled={isSaving || isDeleting}
+                                title="Delete this document (Alt+D)"
+                            >
+                                <Trash2 size={16} />
+                                <span className="shortcut-label">
+                                    {isDeleting ? 'Deleting...' : <><u>D</u>elete</>}
+                                </span>
+                            </button>
+                        )}
+                    </div>
+                    <div className="footer-right" style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                            type="button"
+                            className="secondary-btn"
+                            onClick={onClose}
+                            disabled={isSaving || isDeleting}
+                            title="Cancel and close (Alt+C, Esc)"
+                        >
+                            <span className="shortcut-label"><u>C</u>ancel</span>
+                        </button>
+                        <button
+                            type="button"
+                            className="primary-btn"
+                            onClick={handleSave}
+                            disabled={isSaving || isDeleting}
+                            title="Save changes to document (Alt+S, Cmd+S)"
+                        >
+                            <Save size={16} />
+                            <span className="shortcut-label">
+                                {isSaving ? 'Saving...' : <><u>S</u>ave Document</>}
+                            </span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

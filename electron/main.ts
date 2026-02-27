@@ -1466,6 +1466,10 @@ app.whenReady().then(() => {
         return await cosmosService.upsertDocument(dbId, containerId, document);
     });
 
+    ipcMain.handle('cosmos:deleteDocument', async (_, dbId, containerId, docId, partitionKeyValue) => {
+        return await cosmosService.deleteDocument(dbId, containerId, docId, partitionKeyValue);
+    });
+
     // IPC handler for saving query results to file
     ipcMain.handle('file:saveResults', async (_, content: string) => {
         try {

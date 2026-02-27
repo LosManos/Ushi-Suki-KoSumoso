@@ -772,6 +772,47 @@ function App() {
         }
     };
 
+    const handleDeleteDocument = async (doc: any) => {
+        if (!editingDocument) return;
+        const { dbId, containerId } = editingDocument;
+
+        // 1. Fetch container info to get the partition key path
+        const infoResult = await cosmos.getContainerInfo(dbId, containerId);
+        let partitionKeyValue = doc.id; // Fallback
+
+        if (infoResult.success && infoResult.data) {
+            const paths = infoResult.data.partitionKeyPaths || [];
+            if (paths.length > 0) {
+                // Common case: ["/path"]
+                const path = paths[0].startsWith('/') ? paths[0].substring(1) : paths[0];
+                const segments = path.split('/');
+
+                // Extract nested value if necessary
+                let current = doc;
+                for (const segment of segments) {
+                    if (current && typeof current === 'object') {
+                        current = current[segment];
+                    } else {
+                        current = undefined;
+                        break;
+                    }
+                }
+
+                if (current !== undefined) {
+                    partitionKeyValue = current;
+                }
+            }
+        }
+
+        const result = await cosmos.deleteDocument(dbId, containerId, doc.id, partitionKeyValue);
+
+        if (result.success) {
+            executeActiveQuery();
+        } else {
+            throw new Error(result.error);
+        }
+    };
+
 
     const executeActiveQuery = () => {
         if (!activeTab || !activeTabId) return;
@@ -983,6 +1024,7 @@ function App() {
                         document={editingDocument.doc}
                         onClose={() => setEditingDocument(null)}
                         onSave={handleSaveDocument}
+                        onDelete={handleDeleteDocument}
                     />
                 )}
                 {isTimestampConverterOpen && (

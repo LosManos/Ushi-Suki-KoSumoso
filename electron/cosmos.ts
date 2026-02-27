@@ -343,5 +343,20 @@ export const cosmosService = {
             console.error('UpsertDocument Error:', error);
             return { success: false, error: error.message };
         }
+    },
+
+    deleteDocument: async (databaseId: string, containerId: string, docId: string, partitionKeyValue?: any) => {
+        if (!client) return { success: false, error: 'Not connected' };
+        try {
+            const database = client.database(databaseId);
+            const container = database.container(containerId);
+            // If partitionKeyValue is not provided, we fall back to docId (consistent with getDocument)
+            const pk = partitionKeyValue !== undefined ? partitionKeyValue : docId;
+            await container.item(docId, pk).delete();
+            return { success: true };
+        } catch (error: any) {
+            console.error('DeleteDocument Error:', error);
+            return { success: false, error: error.message };
+        }
     }
 };

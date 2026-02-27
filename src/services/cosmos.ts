@@ -48,5 +48,9 @@ export const cosmos = {
 
     upsertDocument: async (databaseId: string, containerId: string, document: any): Promise<CosmosResponse<any>> => {
         return await window.ipcRenderer.invoke('cosmos:upsertDocument', databaseId, containerId, document);
+    },
+
+    deleteDocument: async (databaseId: string, containerId: string, docId: string, partitionKeyValue?: any): Promise<CosmosResponse<void>> => {
+        return await window.ipcRenderer.invoke('cosmos:deleteDocument', databaseId, containerId, docId, partitionKeyValue);
     }
 };

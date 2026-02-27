@@ -178,6 +178,13 @@
     border-top: 1px solid var(--border-color);
     display: flex;
     justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+}
+
+.modal-dialog .footer-right {
+    margin-left: auto;
+    display: flex;
     gap: 12px;
 }
 
@@ -219,6 +226,22 @@
 
 .modal-dialog .primary-btn:active {
     transform: translateY(0);
+}
+
+.modal-dialog .danger-btn {
+    background: transparent;
+    border: 1px solid rgba(255, 77, 77, 0.3);
+    color: #ff4d4d;
+}
+
+.modal-dialog .danger-btn:hover {
+    background: rgba(255, 77, 77, 0.1);
+    border-color: #ff4d4d;
+}
+
+.modal-dialog .danger-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .modal-dialog u {
