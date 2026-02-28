@@ -195,10 +195,27 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
     return items;
   };
 
+  const [selectionMatch, setSelectionMatch] = React.useState<string | null>(null);
+
   const updateResultsCursor = () => {
     const textarea = document.getElementById('results-text-editor') as HTMLTextAreaElement;
     if (textarea) {
       resultsCursorRef.current = textarea.selectionStart;
+
+      // Handle selection highlighting
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      if (start !== end) {
+        const selectedText = textarea.value.substring(start, end);
+        // Only highlight if it's a reasonable selection (not just whitespace/newlines)
+        if (selectedText.trim().length > 0) {
+          setSelectionMatch(selectedText);
+        } else {
+          setSelectionMatch(null);
+        }
+      } else {
+        setSelectionMatch(null);
+      }
     }
   };
 
@@ -743,27 +760,28 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                     highlight={(code) => {
                       let highlighted = Prism.highlight(code, Prism.languages.json, 'json');
 
-                      // If there's a search term, inject <mark> tags into the highlighted HTML
-                      if (search.show && search.query) {
+                      const applyMark = (html: string, term: string, isRegex: boolean, className?: string) => {
                         try {
-                          const searchTerm = search.isRegex ? search.query : search.query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                          const regex = new RegExp(`(${searchTerm})`, 'gi');
-
-                          // We need to be careful not to break HTML tags. 
-                          // A simple way is to replace content outside of tags.
-                          // However, Prism output is mostly flat.
-                          // For now, let's just do a basic replace and hope for the best, 
-                          // or better: only highlight if not in a tag.
-
-                          // Better approach: use a temporary placeholder to avoid highlighting inside HTML tags
-                          const parts = highlighted.split(/(<[^>]+>)/g);
-                          highlighted = parts.map(part => {
+                          const pattern = isRegex ? term : term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                          const regex = new RegExp(`(${pattern})`, 'gi');
+                          const parts = html.split(/(<[^>]+>)/g);
+                          return parts.map(part => {
                             if (part.startsWith('<')) return part;
-                            return part.replace(regex, '<mark>$1</mark>');
+                            return part.replace(regex, className ? `<mark class="${className}">$1</mark>` : '<mark>$1</mark>');
                           }).join('');
                         } catch (e) {
-                          // Ignore regex errors
+                          return html;
                         }
+                      };
+
+                      // 1. Search highlighting
+                      if (search.show && search.query) {
+                        highlighted = applyMark(highlighted, search.query, search.isRegex);
+                      }
+
+                      // 2. Selection highlighting ("light up" similar texts)
+                      if (selectionMatch && selectionMatch.length > 0) {
+                        highlighted = applyMark(highlighted, selectionMatch, false, 'selection-light-up');
                       }
 
                       return highlighted;
@@ -807,6 +825,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                   activeTabId={activeTabId}
                   searchQuery={search.show ? search.query : ''}
                   searchIsRegex={search.isRegex}
+                  selectionQuery={selectionMatch}
                   translations={translations}
                   onAddTranslation={onAddTranslation}
                   onEditDocument={onEditDocument}

@@ -246,6 +246,18 @@
     color: #000;
 }
 
+.selection-highlight {
+    background-color: rgba(255, 211, 61, 0.5);
+    color: #000;
+    border-radius: 2px;
+    padding: 0 1px;
+}
+
+.dark .selection-highlight {
+    background-color: rgba(242, 204, 96, 0.4);
+    color: #000;
+}
+
 .json-node.focused .copy-btn:hover {
     background-color: rgba(255, 255, 255, 0.35);
 }

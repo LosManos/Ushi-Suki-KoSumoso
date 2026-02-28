@@ -44,6 +44,7 @@ interface JsonTreeViewProps {
     activeTabId?: string;
     searchQuery?: string;
     searchIsRegex?: boolean;
+    selectionQuery?: string | null;
     translations?: ContainerTranslations;
     onAddTranslation?: (item: FlattenedItem) => void;
     onEditDocument?: (doc: any) => void;
@@ -74,6 +75,7 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
     activeTabId = '',
     searchQuery = '',
     searchIsRegex = false,
+    selectionQuery = null,
     translations = {},
     onAddTranslation,
     onEditDocument
@@ -710,6 +712,7 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
                     onFollowLink={onFollowLink}
                     searchQuery={searchQuery}
                     searchIsRegex={searchIsRegex}
+                    selectionQuery={selectionQuery}
                     translations={translations}
                 />
             ))}
@@ -736,36 +739,60 @@ const JsonNode: React.FC<{
     onFollowLink?: (item: FlattenedItem, forceDialog?: boolean) => void;
     searchQuery?: string;
     searchIsRegex?: boolean;
+    selectionQuery?: string | null;
     translations?: ContainerTranslations;
-}> = ({ item, isFocused, onSelect, onToggle, onContextMenu, onFollowLink, searchQuery = '', searchIsRegex = false, translations = {} }) => {
+}> = ({ item, isFocused, onSelect, onToggle, onContextMenu, onFollowLink, searchQuery = '', searchIsRegex = false, selectionQuery = null, translations = {} }) => {
 
     const renderTextWithHighlight = (text: string) => {
-        if (!searchQuery) return text;
+        if (!searchQuery && !selectionQuery) return text;
 
         try {
-            let regex: RegExp;
-            if (searchIsRegex) {
-                regex = new RegExp(`(${searchQuery})`, 'gi');
-            } else {
-                // Escape special characters for plain text search
-                const escaped = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                regex = new RegExp(`(${escaped})`, 'gi');
+            const highlightParts = (currentText: React.ReactNode, query: string, isRegex: boolean, className: string): React.ReactNode => {
+                if (!query || typeof currentText !== 'string') return currentText;
+
+                let regex: RegExp;
+                if (isRegex) {
+                    regex = new RegExp(`(${query})`, 'gi');
+                } else {
+                    const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    regex = new RegExp(`(${escaped})`, 'gi');
+                }
+
+                const parts = currentText.split(regex);
+                if (parts.length === 1) return currentText;
+
+                return (
+                    <>
+                        {parts.map((part, i) =>
+                            regex.test(part) ? (
+                                <span key={i} className={className}>{part}</span>
+                            ) : (
+                                part
+                            )
+                        )}
+                    </>
+                );
+            };
+
+            let result: React.ReactNode = text;
+
+            // Apply search highlights
+            if (searchQuery) {
+                result = highlightParts(result, searchQuery, searchIsRegex, 'search-highlight');
             }
 
-            const parts = text.split(regex);
-            return (
-                <>
-                    {parts.map((part, i) =>
-                        regex.test(part) ? (
-                            <span key={i} className="search-highlight">{part}</span>
-                        ) : (
-                            part
-                        )
-                    )}
-                </>
-            );
+            // Apply selection highlights
+            if (selectionQuery) {
+                // If it's already a React fragment (from search highlights), we can't easily highlight inside it
+                // without a more complex recursive function. But for now, let's at least support it if no search match.
+                if (typeof result === 'string') {
+                    result = highlightParts(result, selectionQuery, false, 'selection-highlight');
+                }
+            }
+
+            return result;
         } catch (err) {
-            return text; // Fallback for invalid regex
+            return text;
         }
     };
 
