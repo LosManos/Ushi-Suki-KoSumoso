@@ -18,6 +18,7 @@ import { useContextMenu } from '../hooks/useContextMenu';
 import { ContextMenu, ContextMenuItem } from './ContextMenu';
 import { HistoryItem } from '../types';
 import { ContainerInfoPanel } from './ContainerInfoPanel';
+import { themes, themeOrder, type ThemeName } from '../themes/index';
 import './Sidebar.css';
 
 
@@ -381,7 +382,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
-  const { theme, setTheme } = useTheme();
+  const { mode, setMode, colorScheme, setColorScheme } = useTheme();
   const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
   const settingsRef = React.useRef<HTMLDivElement>(null);
 
@@ -448,24 +449,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   React.useEffect(() => {
     if (isSettingsOpen) {
-      // Use explicit timeout to ensure DOM is ready and painting
       const timer = setTimeout(() => {
-
         if (menuView === 'main') {
-          // Focus first item
           menuItemsRef.current[0]?.focus();
         } else if (menuView === 'theme') {
-          // Focus currently selected theme or first item
-          // Indices in theme view: 0=Back, 1=Light, 2=Dark, 3=System
-          // Map theme to index
-          const map: Record<string, number> = { 'light': 1, 'dark': 2, 'system': 3 };
-          const idx = map[theme] || 1;
-          menuItemsRef.current[idx]?.focus();
+          // Focus the currently active palette button
+          // Indices: 0=Back, 1..4=palettes, 5..7=modes
+          const paletteIdx = themeOrder.indexOf(colorScheme);
+          menuItemsRef.current[paletteIdx >= 0 ? paletteIdx + 1 : 1]?.focus();
         }
       }, 50);
       return () => clearTimeout(timer);
     } else {
-      // Return focus to toggle button when closed
       if (settingsBtnRef.current) {
         settingsBtnRef.current.focus();
       }
@@ -514,10 +509,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
           }
         } else if (menuView === 'theme') {
           const themeMap: Record<string, number> = {
-            'b': 0, // Back
-            'l': 1, // Light
-            'd': 2, // Dark
-            's': 3  // System
+            'x': 0, // eXit/back
+            'u': 1, // Ushi
+            'l': 2, // Lego
+            'b': 3, // Barbie
+            'g': 4, // Battleship (Grey)
+            '1': 5, // Light mode
+            '2': 6, // Dark mode
+            '3': 7, // System mode
           };
           const targetIndex = themeMap[char];
           if (targetIndex !== undefined) {
@@ -537,9 +536,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
-  const handleThemeSelect = (newTheme: 'light' | 'dark' | 'system') => {
-    setTheme(newTheme);
-    setIsSettingsOpen(false);
+  const handleModeSelect = (newMode: 'light' | 'dark' | 'system') => {
+    setMode(newMode);
+    // Don't close the menu — user may want to also change the palette
+  };
+
+  const handleSchemeSelect = (scheme: ThemeName) => {
+    setColorScheme(scheme);
+    // Don't close the menu
   };
 
 
@@ -693,6 +697,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
                 ) : (
                   <>
+                    {/* ── Back button (index 0) ─────────────────────────── */}
                     <button
                       ref={(el) => (menuItemsRef.current[0] = el)}
                       className="menu-item"
@@ -702,59 +707,87 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           e.preventDefault();
                           setMenuView('main');
                         } else {
-                          handleMenuKeyDown(e, 0, 4);
+                          handleMenuKeyDown(e, 0, 8);
                         }
                       }}
                       style={{ color: 'var(--text-secondary)', fontSize: '0.85em', borderBottom: '1px solid var(--border-color)', marginBottom: '4px' }}
                     >
-                      ‹ <u>B</u>ack
+                      ‹ Back  <span style={{ opacity: 0.5, fontSize: '0.8em' }}>(X)</span>
                     </button>
 
+                    {/* ── Palette section ───────────────────────────────── */}
+                    <div className="theme-section-label">PALETTE</div>
                     <div className="theme-options">
+                      {themeOrder.map((schemeName, i) => {
+                        const def = themes[schemeName];
+                        const shortcutKeys: Record<ThemeName, string> = {
+                          ushi: 'U', lego: 'L', barbie: 'B', battleship: 'G'
+                        };
+                        const sk = shortcutKeys[schemeName];
+                        return (
+                          <button
+                            key={schemeName}
+                            ref={(el) => (menuItemsRef.current[i + 1] = el)}
+                            className={`menu-item theme-palette-item ${colorScheme === schemeName ? 'active' : ''}`}
+                            onClick={() => handleSchemeSelect(schemeName)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'ArrowLeft') { e.preventDefault(); setMenuView('main'); }
+                              else { handleMenuKeyDown(e, i + 1, 8); }
+                            }}
+                            title={def.name}
+                          >
+                            <span className="theme-palette-emoji">{def.emoji}</span>
+                            <span className="theme-palette-name">{def.name}</span>
+                            <span className="theme-shortcut-hint">({sk})</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* ── Mode section ──────────────────────────────────── */}
+                    <div className="theme-section-label" style={{ marginTop: '6px' }}>MODE</div>
+                    <div className="theme-mode-row">
                       <button
-                        ref={(el) => (menuItemsRef.current[1] = el)}
-                        className={`menu-item ${theme === 'light' ? 'active' : ''}`}
-                        onClick={() => handleThemeSelect('light')}
+                        ref={(el) => (menuItemsRef.current[5] = el)}
+                        className={`theme-mode-btn ${mode === 'light' ? 'active' : ''}`}
+                        onClick={() => handleModeSelect('light')}
                         onKeyDown={(e) => {
-                          if (e.key === 'ArrowLeft') {
-                            e.preventDefault();
-                            setMenuView('main');
-                          } else {
-                            handleMenuKeyDown(e, 1, 4);
-                          }
+                          if (e.key === 'ArrowLeft') { e.preventDefault(); setMenuView('main'); }
+                          else { handleMenuKeyDown(e, 5, 8); }
                         }}
+                        title="Light (1)"
                       >
-                        <Sun size={14} style={{ marginRight: '8px' }} /> <u>L</u>ight
+                        <Sun size={13} />
+                        <span>Light</span>
+                        <span className="theme-shortcut-hint">(1)</span>
                       </button>
                       <button
-                        ref={(el) => (menuItemsRef.current[2] = el)}
-                        className={`menu-item ${theme === 'dark' ? 'active' : ''}`}
-                        onClick={() => handleThemeSelect('dark')}
+                        ref={(el) => (menuItemsRef.current[6] = el)}
+                        className={`theme-mode-btn ${mode === 'dark' ? 'active' : ''}`}
+                        onClick={() => handleModeSelect('dark')}
                         onKeyDown={(e) => {
-                          if (e.key === 'ArrowLeft') {
-                            e.preventDefault();
-                            setMenuView('main');
-                          } else {
-                            handleMenuKeyDown(e, 2, 4);
-                          }
+                          if (e.key === 'ArrowLeft') { e.preventDefault(); setMenuView('main'); }
+                          else { handleMenuKeyDown(e, 6, 8); }
                         }}
+                        title="Dark (2)"
                       >
-                        <Moon size={14} style={{ marginRight: '8px' }} /> <u>D</u>ark
+                        <Moon size={13} />
+                        <span>Dark</span>
+                        <span className="theme-shortcut-hint">(2)</span>
                       </button>
                       <button
-                        ref={(el) => (menuItemsRef.current[3] = el)}
-                        className={`menu-item ${theme === 'system' ? 'active' : ''}`}
-                        onClick={() => handleThemeSelect('system')}
+                        ref={(el) => (menuItemsRef.current[7] = el)}
+                        className={`theme-mode-btn ${mode === 'system' ? 'active' : ''}`}
+                        onClick={() => handleModeSelect('system')}
                         onKeyDown={(e) => {
-                          if (e.key === 'ArrowLeft') {
-                            e.preventDefault();
-                            setMenuView('main');
-                          } else {
-                            handleMenuKeyDown(e, 3, 4);
-                          }
+                          if (e.key === 'ArrowLeft') { e.preventDefault(); setMenuView('main'); }
+                          else { handleMenuKeyDown(e, 7, 8); }
                         }}
+                        title="System (3)"
                       >
-                        <Monitor size={14} style={{ marginRight: '8px' }} /> <u>S</u>ystem
+                        <Monitor size={13} />
+                        <span>System</span>
+                        <span className="theme-shortcut-hint">(3)</span>
                       </button>
                     </div>
                   </>
