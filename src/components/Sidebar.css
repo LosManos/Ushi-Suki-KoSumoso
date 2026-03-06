@@ -92,34 +92,109 @@
     padding-left: 8px;
 }
 
+/* ── Theme picker ─────────────────────────────────────────────────────── */
+
+.theme-section-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    padding: 4px 8px 2px;
+    opacity: 0.7;
+}
+
 .theme-options {
     display: flex;
     flex-direction: column;
     gap: 2px;
 }
 
-.theme-options button {
-    display: flex;
+/* Palette items */
+.theme-palette-item {
+    display: flex !important;
     align-items: center;
-    gap: 0.5rem;
+    gap: 6px;
     width: 100%;
     text-align: left;
     background: transparent;
     border: none;
-    padding: 6px 8px;
+    padding: 5px 8px !important;
     border-radius: 4px;
     cursor: pointer;
     color: var(--text-primary);
     font-size: 0.9rem;
 }
 
-.theme-options button:hover {
+.theme-palette-item:hover {
     background-color: var(--button-hover-bg);
 }
 
-.theme-options button.active {
+.theme-palette-item.active {
     background-color: var(--accent-color);
     color: white;
+}
+
+.theme-palette-emoji {
+    font-size: 1rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.theme-palette-name {
+    flex: 1;
+}
+
+.theme-shortcut-hint {
+    font-size: 0.72rem;
+    opacity: 0.45;
+    flex-shrink: 0;
+}
+
+/* Mode row — 3 equal buttons side by side */
+.theme-mode-row {
+    display: flex;
+    gap: 4px;
+    padding: 0 4px;
+    margin-top: 2px;
+}
+
+.theme-mode-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    background: transparent;
+    border: 1px solid var(--border-color) !important;
+    padding: 5px 4px !important;
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.theme-mode-btn:hover {
+    background-color: var(--button-hover-bg);
+    color: var(--text-primary);
+    border-color: var(--accent-color) !important;
+}
+
+.theme-mode-btn.active {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color) !important;
+    color: white;
+}
+
+.theme-mode-btn .theme-shortcut-hint {
+    opacity: 0.55;
+    font-size: 0.65rem;
+}
+
+.theme-mode-btn.active .theme-shortcut-hint {
+    opacity: 0.7;
+    color: rgba(255, 255, 255, 0.8);
 }
 
 .sidebar-actions {

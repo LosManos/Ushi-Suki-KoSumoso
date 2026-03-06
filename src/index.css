@@ -8,8 +8,12 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  /* Default (Dark) Theme Variables */
-  /* Ushi (Cow) Theme Palette */
+  /*
+   * Colour tokens — values are injected by applyThemeToDocument() in
+   * src/themes/index.ts so that switching palette + mode requires no page
+   * reload. Declaring them here documents what variables exist; the
+   * declarations below are fallbacks only (overridden immediately on mount).
+   */
   --bg-primary: #121420;
   --bg-secondary: #0a0c14;
   --bg-tertiary: #1b1e2e;
@@ -20,51 +24,20 @@
   --input-border: #333333;
   --button-hover-bg: #333;
   --accent-color: #d84315;
-  /* Sunset Red from the Ox icon */
   --accent-hover: #bf360c;
   --scrollbar-track: #1e1e1e;
   --scrollbar-thumb: #444;
   --scrollbar-thumb-hover: #555;
-
-  /* Syntax Highlighting Base Colors (Monokai-ish) */
   --sh-comment: #75715e;
   --sh-string: #e6db74;
   --sh-keyword: #f92672;
   --sh-number: #ae81ff;
   --sh-function: #a6e22e;
+
   --font-mono: 'Consolas', 'Monaco', 'Andale Mono', 'Ubuntu Mono', monospace;
 
   /* Custom Cursors */
   --cursor-info: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Cpath d='M8 4v20l6-6h10L8 4z' fill='%23000' stroke='%23fff' stroke-width='2'/%3E%3Ccircle cx='22' cy='22' r='7' fill='%23007acc' stroke='%23fff' stroke-width='1.5'/%3E%3Ctext x='22' y='25' fill='%23fff' font-family='Arial' font-size='9' font-weight='bold' text-anchor='middle'%3Ei%3C/text%3E%3C/svg%3E") 8 4, auto;
-}
-
-:root.light {
-  /* Light Theme Variables */
-  /* Ushi (Cow) Light Theme Palette */
-  --bg-primary: #fdfaf5;
-  /* Cream background from cow icon */
-  --bg-secondary: #f3eee3;
-  --bg-tertiary: #ffffff;
-  --text-primary: #121420;
-  /* Navy blue from cow icon */
-  --text-secondary: #4a4d5e;
-  --border-color: #dcd7ca;
-  --input-bg: #ffffff;
-  --input-border: #dcd7ca;
-  --button-hover-bg: #ece6d8;
-  --accent-color: #d84315;
-  /* Sunset Red */
-  --accent-hover: #bf360c;
-  --scrollbar-track: #f1f1f1;
-  --scrollbar-thumb: #c1c1c1;
-  --scrollbar-thumb-hover: #a8a8a8;
-
-  /* Syntax Highlighting Base Colors (Light compatible) */
-  --sh-comment: #708090;
-  --sh-string: #22863a;
-  --sh-keyword: #d73a49;
-  --sh-number: #005cc5;
-  --sh-function: #6f42c1;
 }
 
 body {
