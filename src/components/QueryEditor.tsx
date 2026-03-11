@@ -186,8 +186,8 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
         const text = textarea.value;
         const textBefore = text.slice(0, pos);
 
-        // Match "c." followed by optional partial property name (including *)
-        const match = textBefore.match(/c\.([a-zA-Z0-9_*]*)$/);
+        // Match "c." followed by optional partial property name (including * and .)
+        const match = textBefore.match(/c\.([a-zA-Z0-9_*.]*)$/);
 
         if (match && activeTab?.schemaKeys) {
             const partial = match[1];
@@ -367,7 +367,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
         const textAfter = text.slice(pos);
 
         // Find where the "c." or "c.partial" starts
-        const match = textBefore.match(/c\.[a-zA-Z0-9_*]*$/);
+        const match = textBefore.match(/c\.[a-zA-Z0-9_*.]*$/);
         if (!match) return;
 
         let startPos, replacement;
