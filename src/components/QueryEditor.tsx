@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Play, Search, Terminal, Code, Sparkles, X } from 'lucide-react';
+import ReactDOM from 'react-dom';
 import Editor from 'react-simple-code-editor';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-sql';
@@ -59,7 +60,6 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
     const [suggestionIndex, setSuggestionIndex] = useState(0);
-    const [suggestionPosition, setSuggestionPosition] = useState({ top: 0, left: 0 });
     const lastPartialRef = useRef<string | null>(null);
 
     // Derived state from active tab
@@ -79,6 +79,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
     const propertySelectRef = useRef<HTMLSelectElement>(null);
     const tabsContainerRef = useRef<HTMLDivElement>(null);
     const menuRef = useRef<HTMLDivElement>(null);
+    const queryEditorRef = useRef<HTMLDivElement>(null);
 
     // Overflow state
     const [isOverflowing, setIsOverflowing] = useState(false);
@@ -222,10 +223,6 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
                 setFilteredSuggestions(suggestions);
                 setSuggestionIndex(0);
                 setShowSuggestions(true);
-
-                // Calculate position
-                const { top, left } = getCaretCoordinates(textarea, pos);
-                setSuggestionPosition({ top, left });
             } else {
                 setShowSuggestions(false);
                 lastPartialRef.current = null;
@@ -236,18 +233,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
         }
     };
 
-    // Helper to get caret coordinates
-    const getCaretCoordinates = (_textarea: HTMLTextAreaElement, _pos: number) => {
-        // This is a rough estimation since real caret positioning is complex without a library
-        // We can use a mirror div if we want more accuracy, but for now let's try 
-        // a simple approach or a fixed position.
-        // Actually, let's use a fixed position for the suggestion box 
-        // relative to the editor area to keep it simple and robust.
-        return {
-            top: 40, // Below the toolbar
-            left: 20 // Fixed relative position
-        };
-    };
+
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -481,7 +467,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
     }
 
     return (
-        <div className="query-editor-container">
+        <div className="query-editor-container" ref={queryEditorRef}>
             <div className="editor-toolbar">
                 <div className="tabs-container" ref={tabsContainerRef}>
                     {tabs.map((tab, index) => {
@@ -524,8 +510,16 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
                         >
                             ▼
                         </button>
-                        {showDropdown && (
-                            <div className="tabs-dropdown-menu">
+                        {showDropdown && ReactDOM.createPortal(
+                            <div
+                                className="tabs-dropdown-menu"
+                                style={{
+                                    position: 'fixed',
+                                    top: menuRef.current?.getBoundingClientRect().bottom || 0,
+                                    right: window.innerWidth - (menuRef.current?.getBoundingClientRect().right || 0),
+                                    zIndex: 2500
+                                }}
+                            >
                                 {tabs.map(tab => (
                                     <div
                                         key={tab.id}
@@ -539,7 +533,8 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
                                         {tab.containerId}
                                     </div>
                                 ))}
-                            </div>
+                            </div>,
+                            document.body
                         )}
                     </div>
                 )}
@@ -608,36 +603,40 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
                     </button>
                 </div>
             </div>
-            <div className="editor-area">
-                {showSuggestions && (
-                    <div
-                        className="query-suggestions-popup"
-                        style={{
-                            top: suggestionPosition.top,
-                            right: 20 // Suggestion box on the right side
-                        }}
-                    >
-                        <div className="suggestions-header">
-                            Suggestions ({filteredSuggestions.length})
-                        </div>
-                        <div className="suggestions-list">
-                            {filteredSuggestions.map((s, i) => (
-                                <div
-                                    key={s}
-                                    className={`suggestion-item ${i === suggestionIndex ? 'selected' : ''}`}
-                                    onClick={() => insertSuggestion(s)}
-                                    onMouseEnter={() => setSuggestionIndex(i)}
-                                >
-                                    <Code size={12} className="suggestion-icon" />
-                                    <span className="suggestion-text">{s}</span>
-                                </div>
-                            ))}
-                        </div>
-                        <div className="suggestions-footer">
-                            ↑↓ to navigate, Enter to select
-                        </div>
+            {showSuggestions && ReactDOM.createPortal(
+                <div
+                    className="query-suggestions-popup"
+                    style={{
+                        position: 'fixed',
+                        top: (queryEditorRef.current?.getBoundingClientRect().top || 0) + 40,
+                        right: window.innerWidth - (queryEditorRef.current?.getBoundingClientRect().right || 0) + 20,
+                        maxHeight: queryEditorRef.current ? `${queryEditorRef.current.offsetHeight - 60}px` : '400px',
+                        zIndex: 2500
+                    }}
+                >
+                    <div className="suggestions-header">
+                        Suggestions ({filteredSuggestions.length})
                     </div>
-                )}
+                    <div className="suggestions-list">
+                        {filteredSuggestions.map((s, i) => (
+                            <div
+                                key={s}
+                                className={`suggestion-item ${i === suggestionIndex ? 'selected' : ''}`}
+                                onClick={() => insertSuggestion(s)}
+                                onMouseEnter={() => setSuggestionIndex(i)}
+                            >
+                                <Code size={12} className="suggestion-icon" />
+                                <span className="suggestion-text">{s}</span>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="suggestions-footer">
+                        ↑↓ to navigate, Enter to select
+                    </div>
+                </div>,
+                document.body
+            )}
+            <div className="editor-area">
                 <Editor
                     value={query}
                     onValueChange={(code) => onQueryChange(code)}

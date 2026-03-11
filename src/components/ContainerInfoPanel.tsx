@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import ReactDOM from 'react-dom';
 import { X, Database, Key, Clock, Hash, Search, RefreshCw, Play } from 'lucide-react';
 import { ContainerInfo } from '../types';
 import { cosmos } from '../services/cosmos';
@@ -126,8 +127,8 @@ export const ContainerInfoPanel: React.FC<ContainerInfoPanelProps> = ({
         panelStyle.left = anchorRect.right + 8;
     }
 
-    return (
-        <div className="container-info-overlay" onClick={onClose}>
+    return ReactDOM.createPortal(
+        <div className="container-info-overlay" onClick={onClose} style={{ zIndex: 3000 }}>
             <div
                 className="container-info-panel"
                 style={panelStyle}
@@ -327,6 +328,7 @@ export const ContainerInfoPanel: React.FC<ContainerInfoPanelProps> = ({
                     {copyFeedback.text}
                 </div>
             )}
-        </div>
+        </div>,
+        document.body
     );
 };

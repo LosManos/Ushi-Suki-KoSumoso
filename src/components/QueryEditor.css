@@ -6,7 +6,8 @@
     border-bottom: 1px solid var(--border-color);
     background-color: var(--bg-primary);
     box-sizing: border-box;
-    overflow: hidden;
+    overflow: visible; /* Changed from hidden to allow suggestions to overlap */
+    position: relative;
 }
 
 .editor-toolbar {
@@ -272,7 +273,8 @@
     border-radius: 6px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
     width: 280px;
-    max-height: 300px;
+    max-height: 400px; /* Base max height */
+    height: auto;
     display: flex;
     flex-direction: column;
     overflow: hidden;
