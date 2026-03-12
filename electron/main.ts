@@ -2,6 +2,8 @@ import { app, BrowserWindow, dialog, ipcMain, Menu, MenuItemConstructorOptions, 
 import path from 'path';
 import fs from 'fs';
 import { cosmosService } from './cosmos';
+import { checkUpdate, getReleases } from './updateHandler';
+import { saveSchema, getSchemas, saveTemplate, getTemplates, deleteTemplate, migrateToExplicitHierarchy } from './storageHandlers';
 
 process.env.DIST = path.join(__dirname, '../dist');
 
@@ -215,99 +217,11 @@ ipcMain.handle('app:openExternal', async (_, url: string) => {
 });
 
 ipcMain.handle('app:checkUpdate', async () => {
-    return new Promise((resolve) => {
-        const url = 'https://api.github.com/repos/LosManos/Ushi-Suki-KoSumoso/releases/latest';
-        const request = net.request(url);
-
-        request.on('response', (response: any) => {
-            let body = '';
-            response.on('data', (chunk: Buffer) => {
-                body += chunk.toString();
-            });
-            response.on('end', () => {
-                try {
-                    if (response.statusCode === 200) {
-                        const release = JSON.parse(body);
-                        const latestVersion = release.tag_name.replace(/^v/, '');
-                        const currentVersion = app.getVersion();
-
-                        // Simple version comparison (semantic)
-                        const latest = latestVersion.split('.').map(Number);
-                        const current = currentVersion.split('.').map(Number);
-
-                        let isNewer = false;
-                        for (let i = 0; i < 3; i++) {
-                            if ((latest[i] || 0) > (current[i] || 0)) {
-                                isNewer = true;
-                                break;
-                            }
-                            if ((latest[i] || 0) < (current[i] || 0)) {
-                                break;
-                            }
-                        }
-
-                        resolve({
-                            isNewer,
-                            latestVersion,
-                            currentVersion,
-                            url: release.html_url,
-                            publishedAt: release.published_at
-                        });
-                    } else {
-                        resolve({ error: `GitHub API returned ${response.statusCode}` });
-                    }
-                } catch (e: any) {
-                    resolve({ error: e.message });
-                }
-            });
-        });
-
-        request.on('error', (error: Error) => {
-            resolve({ error: error.message });
-        });
-
-        request.end();
-    });
+    return checkUpdate(app.getVersion());
 });
 
 ipcMain.handle('app:getReleases', async () => {
-    return new Promise((resolve) => {
-        const url = 'https://api.github.com/repos/LosManos/Ushi-Suki-KoSumoso/releases';
-        const request = net.request({
-            url,
-            headers: { 'User-Agent': 'Kosumoso-App' } // GitHub requires user agent
-        });
-
-        request.on('response', (response: any) => {
-            let body = '';
-            response.on('data', (chunk: Buffer) => {
-                body += chunk.toString();
-            });
-            response.on('end', () => {
-                try {
-                    if (response.statusCode === 200) {
-                        const releases = JSON.parse(body);
-                        resolve(releases.map((r: any) => ({
-                            version: r.tag_name.replace(/^v/, ''),
-                            date: r.published_at.split('T')[0],
-                            body: r.body,
-                            url: r.html_url
-                        })));
-                    } else {
-                        resolve({ error: `GitHub API returned ${response.statusCode}` });
-                    }
-                } catch (e: any) {
-                    resolve({ error: e.message });
-                }
-            });
-        });
-
-        request.on('error', (error: Error) => {
-            resolve({ error: error.message });
-        });
-
-        request.end();
-    });
+    return getReleases();
 });
 
 // Store documents for compare window
@@ -591,190 +505,24 @@ app.whenReady().then(() => {
 
     // Schema storage handlers
     ipcMain.handle('storage:saveSchema', async (_, storageKey: string, keys: string[]) => {
-        try {
-            let data: any = { Accounts: [] };
-            try {
-                if (fs.existsSync(schemasPath)) {
-                    const content = await fs.promises.readFile(schemasPath, 'utf8');
-                    data = JSON.parse(content);
-                }
-            } catch (e) { }
-
-            if (!data.Accounts) data = { Accounts: [] };
-
-            const [accountName, databaseId, containerId] = storageKey.split('/');
-
-            let accountObj = data.Accounts.find((a: any) => a.Name === accountName);
-            if (!accountObj) {
-                accountObj = { Name: accountName, Databases: [] };
-                data.Accounts.push(accountObj);
-            }
-
-            let databaseObj = accountObj.Databases.find((d: any) => d.Name === databaseId);
-            if (!databaseObj) {
-                databaseObj = { Name: databaseId, Containers: [] };
-                accountObj.Databases.push(databaseObj);
-            }
-
-            let containerObj = databaseObj.Containers.find((c: any) => c.Name === containerId);
-            if (!containerObj) {
-                containerObj = { Name: containerId, Keys: [], LastUpdated: '' };
-                databaseObj.Containers.push(containerObj);
-            }
-
-            containerObj.Keys = keys;
-            containerObj.LastUpdated = new Date().toISOString();
-
-            await fs.promises.writeFile(schemasPath, JSON.stringify(data, null, 2));
-            return { success: true };
-        } catch (error: any) {
-            console.error('[Main] Failed to save schema:', error);
-            return { success: false, error: error.message };
-        }
+        return saveSchema(schemasPath, storageKey, keys);
     });
 
     ipcMain.handle('storage:getSchemas', async () => {
-        try {
-            if (!fs.existsSync(schemasPath)) return { success: true, data: {} };
-
-            const content = await fs.promises.readFile(schemasPath, 'utf8');
-            const data = JSON.parse(content);
-
-            // Reconstruct flat map for renderer
-            const flatSchemas: Record<string, string[]> = {};
-            if (data && data.Accounts) {
-                for (const account of data.Accounts) {
-                    for (const db of account.Databases) {
-                        for (const cont of db.Containers) {
-                            const storageKey = `${account.Name}/${db.Name}/${cont.Name}`;
-                            flatSchemas[storageKey] = cont.Keys || [];
-                        }
-                    }
-                }
-            }
-            return { success: true, data: flatSchemas };
-        } catch (error: any) {
-            console.error('[Main] Failed to get schemas:', error);
-            return { success: false, error: error.message };
-        }
+        return getSchemas(schemasPath);
     });
 
     // Template storage handlers
     ipcMain.handle('storage:saveTemplate', async (_, storageKey: string, template: string) => {
-        try {
-            let data: any = { Accounts: [] };
-            try {
-                if (fs.existsSync(templatesPath)) {
-                    const content = await fs.promises.readFile(templatesPath, 'utf8');
-                    data = JSON.parse(content);
-                }
-            } catch (e) { }
-
-            if (!data.Accounts) data = { Accounts: [] };
-
-            const [accountName, databaseId, containerId] = storageKey.split('/');
-
-            let accountObj = data.Accounts.find((a: any) => a.Name === accountName);
-            if (!accountObj) {
-                accountObj = { Name: accountName, Databases: [] };
-                data.Accounts.push(accountObj);
-            }
-
-            let databaseObj = accountObj.Databases.find((d: any) => d.Name === databaseId);
-            if (!databaseObj) {
-                databaseObj = { Name: databaseId, Containers: [] };
-                accountObj.Databases.push(databaseObj);
-            }
-
-            let containerObj = databaseObj.Containers.find((c: any) => c.Name === containerId);
-
-            if (template.trim()) {
-                if (!containerObj) {
-                    containerObj = { Name: containerId, Template: '', LastUpdated: '' };
-                    databaseObj.Containers.push(containerObj);
-                }
-                containerObj.Template = template;
-                containerObj.LastUpdated = new Date().toISOString();
-            } else if (containerObj) {
-                // Remove container if template is empty
-                databaseObj.Containers = databaseObj.Containers.filter((c: any) => c.Name !== containerId);
-
-                // Cleanup empty objects up the tree
-                if (databaseObj.Containers.length === 0) {
-                    accountObj.Databases = accountObj.Databases.filter((d: any) => d.Name !== databaseId);
-                }
-                if (accountObj.Databases.length === 0) {
-                    data.Accounts = data.Accounts.filter((a: any) => a.Name !== accountName);
-                }
-            }
-
-            await fs.promises.writeFile(templatesPath, JSON.stringify(data, null, 2));
-            return { success: true };
-        } catch (error: any) {
-            console.error('[Main] Failed to save template:', error);
-            return { success: false, error: error.message };
-        }
+        return saveTemplate(templatesPath, storageKey, template);
     });
 
     ipcMain.handle('storage:getTemplates', async () => {
-        try {
-            if (!fs.existsSync(templatesPath)) return { success: true, data: {} };
-
-            const content = await fs.promises.readFile(templatesPath, 'utf8');
-            const data = JSON.parse(content);
-
-            // Reconstruct flat map for renderer
-            const flatTemplates: Record<string, string> = {};
-            if (data && data.Accounts) {
-                for (const account of data.Accounts) {
-                    for (const db of account.Databases) {
-                        for (const cont of db.Containers) {
-                            const storageKey = `${account.Name}/${db.Name}/${cont.Name}`;
-                            flatTemplates[storageKey] = cont.Template || '';
-                        }
-                    }
-                }
-            }
-            return { success: true, data: flatTemplates };
-        } catch (error: any) {
-            console.error('[Main] Failed to get templates:', error);
-            return { success: false, error: error.message };
-        }
+        return getTemplates(templatesPath);
     });
 
     ipcMain.handle('storage:deleteTemplate', async (_, storageKey: string) => {
-        try {
-            if (!fs.existsSync(templatesPath)) return { success: true };
-
-            const content = await fs.promises.readFile(templatesPath, 'utf8');
-            const data = JSON.parse(content);
-
-            if (!data.Accounts) return { success: true };
-
-            const [accountName, databaseId, containerId] = storageKey.split('/');
-
-            const accountObj = data.Accounts.find((a: any) => a.Name === accountName);
-            if (accountObj) {
-                const databaseObj = accountObj.Databases.find((d: any) => d.Name === databaseId);
-                if (databaseObj) {
-                    databaseObj.Containers = databaseObj.Containers.filter((c: any) => c.Name !== containerId);
-
-                    // Cleanup
-                    if (databaseObj.Containers.length === 0) {
-                        accountObj.Databases = accountObj.Databases.filter((d: any) => d.Name !== databaseId);
-                    }
-                    if (accountObj.Databases.length === 0) {
-                        data.Accounts = data.Accounts.filter((a: any) => a.Name !== accountName);
-                    }
-                }
-            }
-
-            await fs.promises.writeFile(templatesPath, JSON.stringify(data, null, 2));
-            return { success: true };
-        } catch (error: any) {
-            console.error('[Main] Failed to delete template:', error);
-            return { success: false, error: error.message };
-        }
+        return deleteTemplate(templatesPath, storageKey);
     });
 
     // Query storage handlers
@@ -1259,50 +1007,7 @@ app.whenReady().then(() => {
         }
     });
 
-    function migrateToExplicitHierarchy(data: any): any {
-        if (!data || (data.Accounts && Array.isArray(data.Accounts))) {
-            return data || { Accounts: [] };
-        }
 
-        const hierarchical: any = { Accounts: [] };
-
-        if (Array.isArray(data)) {
-            data.forEach((h: any) => {
-                const accName = h.accountName || 'Default Account';
-                const dbId = h.databaseId || 'Default DB';
-                const contId = h.containerId || 'Default Container';
-
-                let account = hierarchical.Accounts.find((a: any) => a.Name === accName);
-                if (!account) {
-                    account = { Name: accName, Databases: [] };
-                    hierarchical.Accounts.push(account);
-                }
-
-                let database = account.Databases.find((d: any) => d.Name === dbId);
-                if (!database) {
-                    database = { Name: dbId, Containers: [] };
-                    account.Databases.push(database);
-                }
-
-                let container = database.Containers.find((c: any) => c.Name === contId);
-                if (!container) {
-                    container = { Name: contId, Items: [] };
-                    database.Containers.push(container);
-                }
-
-                const itemQuery = h.query || h.Query;
-                if (!container.Items.find((i: any) => i.Query === itemQuery)) {
-                    container.Items.push({
-                        Id: h.id || h.Id || Math.random().toString(36).substring(2, 15),
-                        Query: itemQuery,
-                        Timestamp: h.timestamp || h.Timestamp || Date.now()
-                    });
-                }
-            });
-        }
-
-        return hierarchical;
-    }
 
     ipcMain.handle('storage:saveHistory', async (_, item: any) => {
         try {
