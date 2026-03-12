@@ -123,8 +123,9 @@ export const FollowLinkDialog: React.FC<FollowLinkDialogProps> = ({
                         </p>
 
                         <div className="form-group">
-                            <label>Database</label>
+                            <label htmlFor="f-db-select">Database</label>
                             <select
+                                id="f-db-select"
                                 ref={firstInputRef}
                                 value={selectedDb}
                                 onChange={(e) => {
@@ -146,8 +147,9 @@ export const FollowLinkDialog: React.FC<FollowLinkDialogProps> = ({
                         </div>
 
                         <div className="form-group">
-                            <label>Container</label>
+                            <label htmlFor="f-container-select">Container</label>
                             <select
+                                id="f-container-select"
                                 value={selectedContainer}
                                 onChange={(e) => setSelectedContainer(e.target.value)}
                             >
@@ -158,8 +160,9 @@ export const FollowLinkDialog: React.FC<FollowLinkDialogProps> = ({
                         </div>
 
                         <div className="form-group">
-                            <label>Target Property Name</label>
+                            <label htmlFor="f-prop-name">Target Property Name</label>
                             <input
+                                id="f-prop-name"
                                 type="text"
                                 value={propertyName}
                                 onChange={(e) => setPropertyName(e.target.value)}
