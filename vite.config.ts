@@ -19,7 +19,14 @@ export default defineConfig({
         },
     },
     test: {
+        // Use Node by default for pure logic
         environment: 'node',
-        include: ['src/**/*.test.ts', 'electron/**/*.test.ts'],
+        // But automatically switch to JSDOM for UI components
+        environmentMatchGlobs: [
+            ['src/components/**/*.test.tsx', 'jsdom']
+        ],
+        include: ['src/**/*.{test,spec}.{ts,tsx}', 'electron/**/*.{test,spec}.{ts,tsx}'],
+        globals: true, // Needed for @testing-library/jest-dom extensions like toBeInTheDocument
+        setupFiles: ['./src/setupTests.ts'],
     },
 })
