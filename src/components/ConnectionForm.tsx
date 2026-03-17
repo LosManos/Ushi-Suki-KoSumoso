@@ -200,8 +200,9 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect, onCan
 
                 {savedConnections.length > 0 && (
                     <div className="form-group saved-connections-group">
-                        <label><u>S</u>aved Connections</label>
+                        <label htmlFor="saved-connections-select"><u>S</u>aved Connections</label>
                         <select
+                            id="saved-connections-select"
                             ref={savedSelectRef}
                             onChange={handleSavedConnectionSelect}
                             value={savedConnections.find(c => c.name === connectionName) ? connectionName : ''}
@@ -243,9 +244,10 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect, onCan
 
                 {authMethod === 'connectionString' && (
                     <div className="form-group">
-                        <label>Connection <u>N</u>ame <small>(Optional - to remember for later)</small></label>
+                        <label htmlFor="conn-name-input">Connection <u>N</u>ame <small>(Optional - to remember for later)</small></label>
                         <div style={{ display: 'flex', gap: '8px' }}>
                             <input
+                                id="conn-name-input"
                                 ref={nameInputRef}
                                 type="text"
                                 value={connectionName}
@@ -268,10 +270,11 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({ onConnect, onCan
                 )}
 
                 <div className="form-group">
-                    <label>
+                    <label htmlFor="conn-string-input">
                         {authMethod === 'connectionString' ? <><u>C</u>onnection String</> : <><u>C</u>osmos DB Endpoint URL</>}
                     </label>
                     <input
+                        id="conn-string-input"
                         ref={inputRef}
                         type={authMethod === 'connectionString' ? 'password' : 'url'}
                         value={inputValue}

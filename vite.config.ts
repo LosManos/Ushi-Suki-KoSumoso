@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import { resolve } from 'path'
 
@@ -17,5 +17,16 @@ export default defineConfig({
                 compare: resolve(__dirname, 'compare.html'),
             },
         },
+    },
+    test: {
+        // Use Node by default for pure logic
+        environment: 'node',
+        // But automatically switch to JSDOM for UI components
+        environmentMatchGlobs: [
+            ['src/components/**/*.test.tsx', 'jsdom']
+        ],
+        include: ['src/**/*.{test,spec}.{ts,tsx}', 'electron/**/*.{test,spec}.{ts,tsx}'],
+        globals: true, // Needed for @testing-library/jest-dom extensions like toBeInTheDocument
+        setupFiles: ['./src/setupTests.ts'],
     },
 })
