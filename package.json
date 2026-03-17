@@ -83,7 +83,8 @@
         "publish": {
             "provider": "github",
             "owner": "LosManos",
-            "repo": "Ushi-Suki-KoSumoso"
+            "repo": "Ushi-Suki-KoSumoso",
+            "releaseType": "release"
         }
     }
 }
