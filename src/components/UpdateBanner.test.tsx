@@ -7,9 +7,11 @@ import React from 'react';
 describe('UpdateBanner', () => {
     const defaultProps = {
         version: '1.2.3',
-        url: 'https://github.com/example/releases/tag/v1.2.3',
+        status: 'available' as const,
         onClose: vi.fn(),
-        onShowChangelog: vi.fn()
+        onShowChangelog: vi.fn(),
+        onDownload: vi.fn(),
+        onInstall: vi.fn()
     };
 
     it('renders the version number correctly', () => {
@@ -18,12 +20,10 @@ describe('UpdateBanner', () => {
         expect(screen.getByText('v1.2.3')).toBeInTheDocument();
     });
 
-    it('renders the external download link correctly', () => {
+    it('renders the download button correctly', () => {
         render(<UpdateBanner {...defaultProps} />);
-        const link = screen.getByRole('link', { name: /Download/i });
-        expect(link).toHaveAttribute('href', defaultProps.url);
-        expect(link).toHaveAttribute('target', '_blank');
-        expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+        const downloadBtn = screen.getByRole('button', { name: /Download Update/i });
+        expect(downloadBtn).toBeInTheDocument();
     });
 
     it('calls onClose when the close button is clicked', () => {

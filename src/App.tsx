@@ -68,6 +68,9 @@ function App() {
 
     // Update State
     const [updateInfo, setUpdateInfo] = useState<{ isNewer: boolean; latestVersion: string; url: string } | null>(null);
+    const [updateStatus, setUpdateStatus] = useState<'available' | 'downloading' | 'downloaded' | 'error'>('available');
+    const [updateProgress, setUpdateProgress] = useState(0);
+    const [updateError, setUpdateError] = useState<string | undefined>(undefined);
     const [showUpdateBanner, setShowUpdateBanner] = useState(false);
     const [showChangelog, setShowChangelog] = useState(false);
     const [isTimestampConverterOpen, setIsTimestampConverterOpen] = useState(false);
@@ -106,12 +109,36 @@ function App() {
         });
 
         // Check for updates
-        window.ipcRenderer.invoke('app:checkUpdate').then(res => {
-            if (res && res.isNewer) {
-                setUpdateInfo(res);
-                setShowUpdateBanner(true);
-            }
-        });
+        window.ipcRenderer.invoke('update:check');
+
+        const onUpdateAvailable = (info: any) => {
+            setUpdateInfo({ isNewer: true, latestVersion: info.version, url: '' });
+            setUpdateStatus('available');
+            setShowUpdateBanner(true);
+        };
+
+        const onUpdateDownloaded = (info: any) => {
+            setUpdateInfo({ isNewer: true, latestVersion: info.version, url: '' });
+            setUpdateStatus('downloaded');
+            setShowUpdateBanner(true);
+        };
+
+        const onDownloadProgress = (progressObj: any) => {
+            setUpdateStatus('downloading');
+            setUpdateProgress(progressObj.percent);
+            setShowUpdateBanner(true);
+        };
+
+        const onUpdateError = (err: any) => {
+            setUpdateStatus('error');
+            setUpdateError(err.message || 'Update failed');
+            setShowUpdateBanner(true);
+        };
+
+        window.ipcRenderer.on('update:available', onUpdateAvailable);
+        window.ipcRenderer.on('update:downloaded', onUpdateDownloaded);
+        window.ipcRenderer.on('update:download-progress', onDownloadProgress);
+        window.ipcRenderer.on('update:error', onUpdateError);
 
         // Check if we should show the changelog (first run after update)
         window.ipcRenderer.invoke('app:getVersion').then(version => {
@@ -865,9 +892,13 @@ function App() {
                     {showUpdateBanner && updateInfo && (
                         <UpdateBanner
                             version={updateInfo.latestVersion}
-                            url={updateInfo.url}
+                            status={updateStatus}
+                            progress={updateProgress}
+                            error={updateError}
                             onClose={() => setShowUpdateBanner(false)}
                             onShowChangelog={() => setShowChangelog(true)}
+                            onDownload={() => window.ipcRenderer.invoke('update:download')}
+                            onInstall={() => window.ipcRenderer.invoke('update:install')}
                         />
                     )}
                     <ConnectionForm
@@ -890,9 +921,13 @@ function App() {
                 {showUpdateBanner && updateInfo && (
                     <UpdateBanner
                         version={updateInfo.latestVersion}
-                        url={updateInfo.url}
+                        status={updateStatus}
+                        progress={updateProgress}
+                        error={updateError}
                         onClose={() => setShowUpdateBanner(false)}
                         onShowChangelog={() => setShowChangelog(true)}
+                        onDownload={() => window.ipcRenderer.invoke('update:download')}
+                        onInstall={() => window.ipcRenderer.invoke('update:install')}
                     />
                 )}
                 <Layout

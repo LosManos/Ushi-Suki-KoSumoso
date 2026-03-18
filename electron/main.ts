@@ -1,4 +1,5 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu, MenuItemConstructorOptions, safeStorage, shell, net } from 'electron';
+import { autoUpdater } from 'electron-updater';
 import path from 'path';
 import fs from 'fs';
 import { cosmosService } from './cosmos';
@@ -222,6 +223,42 @@ ipcMain.handle('app:checkUpdate', async () => {
 
 ipcMain.handle('app:getReleases', async () => {
     return getReleases();
+});
+
+// Auto-update IPC handlers
+autoUpdater.autoDownload = false;
+
+ipcMain.handle('update:check', () => {
+    autoUpdater.checkForUpdatesAndNotify();
+});
+
+ipcMain.handle('update:download', () => {
+    autoUpdater.downloadUpdate();
+});
+
+ipcMain.handle('update:install', () => {
+    autoUpdater.quitAndInstall();
+});
+
+// Auto-update event listeners
+autoUpdater.on('update-available', (info) => {
+    win?.webContents.send('update:available', info);
+});
+
+autoUpdater.on('update-not-available', (info) => {
+    win?.webContents.send('update:not-available', info);
+});
+
+autoUpdater.on('download-progress', (progressObj) => {
+    win?.webContents.send('update:download-progress', progressObj);
+});
+
+autoUpdater.on('update-downloaded', (info) => {
+    win?.webContents.send('update:downloaded', info);
+});
+
+autoUpdater.on('error', (err) => {
+    win?.webContents.send('update:error', err);
 });
 
 // Store documents for compare window

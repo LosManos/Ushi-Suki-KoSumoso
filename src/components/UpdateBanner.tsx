@@ -1,31 +1,71 @@
 import React from 'react';
-import { Download, X, ExternalLink } from 'lucide-react';
+import { Download, X, RefreshCw, AlertCircle } from 'lucide-react';
 import './UpdateBanner.css';
 
 interface UpdateBannerProps {
     version: string;
-    url: string;
+    status: 'available' | 'downloading' | 'downloaded' | 'error';
+    progress?: number;
+    error?: string;
     onClose: () => void;
     onShowChangelog: () => void;
+    onDownload: () => void;
+    onInstall: () => void;
 }
 
-export const UpdateBanner: React.FC<UpdateBannerProps> = ({ version, url, onClose, onShowChangelog }) => {
+export const UpdateBanner: React.FC<UpdateBannerProps> = ({ 
+    version, 
+    status, 
+    progress, 
+    error,
+    onClose, 
+    onShowChangelog,
+    onDownload,
+    onInstall
+}) => {
     return (
-        <div className="update-banner">
+        <div className={`update-banner update-status-${status}`}>
             <div className="update-banner-content">
                 <div className="update-banner-icon">
-                    <Download size={14} />
+                    {status === 'error' ? <AlertCircle size={14} /> : <Download size={14} />}
                 </div>
+                
                 <div className="update-banner-text">
-                    New version <strong>v{version}</strong> is available
+                    {status === 'available' && <>New version <strong>v{version}</strong> is available</>}
+                    {status === 'downloading' && (
+                        <>Downloading update... <strong>{Math.round(progress || 0)}%</strong></>
+                    )}
+                    {status === 'downloaded' && <>Update <strong>v{version}</strong> is ready to install</>}
+                    {status === 'error' && <>Update error: {error || 'Unknown error'}</>}
                 </div>
-                <button className="update-banner-action" onClick={onShowChangelog}>
-                    Changelog...
-                </button>
+
+                {status === 'downloading' && (
+                    <div className="update-banner-progress-container">
+                        <div className="update-banner-progress-bar" style={{ width: `${progress || 0}%` }}></div>
+                    </div>
+                )}
+
+                {(status === 'available' || status === 'downloaded' || status === 'error') && (
+                    <button className="update-banner-action" onClick={onShowChangelog}>
+                        Changelog...
+                    </button>
+                )}
+
                 <div className="update-banner-divider"></div>
-                <a href={url} target="_blank" rel="noopener noreferrer" className="update-banner-link">
-                    Download <ExternalLink size={12} style={{ marginLeft: '4px' }} />
-                </a>
+
+                {status === 'downloaded' ? (
+                    <button className="update-banner-install" onClick={onInstall}>
+                        <RefreshCw size={12} style={{ marginRight: '4px' }} /> Restart to Update
+                    </button>
+                ) : status === 'available' ? (
+                    <button className="update-banner-install" onClick={onDownload}>
+                        <Download size={12} style={{ marginRight: '4px' }} /> Download Update
+                    </button>
+                ) : (
+                    <div className="update-banner-info-text">
+                        Automated update via electron-updater
+                    </div>
+                )}
             </div>
             <button className="update-banner-close" onClick={onClose} title="Dismiss">
                 <X size={14} />
