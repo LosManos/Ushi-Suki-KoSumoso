@@ -90,6 +90,60 @@
     color: white;
 }
 
+.update-status-downloading {
+    background: var(--primary-color-dark, #005a9e);
+}
+
+.update-status-downloaded {
+    background: #107c10; /* Success green */
+}
+
+.update-status-error {
+    background: #d13438; /* Error red */
+}
+
+.update-banner-progress-container {
+    width: 100px;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-left: 8px;
+}
+
+.update-banner-progress-bar {
+    height: 100%;
+    background: white;
+    transition: width 0.3s ease;
+}
+
+.update-banner-install {
+    background: white;
+    color: #107c10;
+    border: none;
+    padding: 2px 10px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: transform 0.2s, background 0.2s;
+    margin-left: 8px;
+}
+
+.update-banner-install:hover {
+    background: #f0f0f0;
+    transform: translateY(-1px);
+}
+
+.update-banner-info-text {
+    font-size: 0.75rem;
+    opacity: 0.7;
+    font-style: italic;
+    margin-left: 8px;
+}
+
 @keyframes slideDown {
     from {
         transform: translateY(-100%);
