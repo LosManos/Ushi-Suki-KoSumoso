@@ -7,3 +7,7 @@ dist
 .vscode
 
 release
+
+playwright-report
+
+test-results
