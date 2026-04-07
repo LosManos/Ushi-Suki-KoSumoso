@@ -433,7 +433,7 @@ export const JsonTreeView = React.forwardRef<HTMLDivElement, JsonTreeViewProps>(
             },
             { divider: true },
             {
-                label: 'Follow Link...',
+                label: item.linkTarget ? 'Edit Link...' : 'Create Link...',
                 accessKey: 'F',
                 shortcut: 'F',
                 icon: <Link size={14} />,
