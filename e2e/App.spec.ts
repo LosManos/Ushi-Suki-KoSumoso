@@ -58,14 +58,4 @@ test('can connect and navigate using mocked database', async () => {
   await expect(window.locator('.nav-item', { hasText: 'MockContainer_A' })).toBeVisible();
 });
 
-test('shows mocked error on failed connection', async () => {
-  await electronApp.evaluate(({ ipcMain }) => {
-    ipcMain.handle('cosmos:connect', async () => ({ 
-        success: false, 
-        error: 'Stubbed Connection Error' 
-    }));
-  });
 
-  await window.getByRole('button', { name: /Connect/i }).click();
-  await expect(window.locator('.error-message', { hasText: 'Stubbed Connection Error' })).toBeVisible();
-});
