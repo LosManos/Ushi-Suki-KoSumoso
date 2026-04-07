@@ -178,7 +178,7 @@ app.on('activate', () => {
 });
 
 app.on('before-quit', (event) => {
-    if (isQuitting) return;
+    if (isQuitting || process.env.IS_TEST) return;
 
     const winForDialog = BrowserWindow.getFocusedWindow() || (win && !win.isDestroyed() ? win : undefined);
     const choice = dialog.showMessageBoxSync(winForDialog as any, {
