@@ -145,9 +145,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   React.useEffect(() => {
     if (selectedDatabase && selectedContainer) {
       setHistoryFilter(`${selectedDatabase}/${selectedContainer}`);
-    } else {
-      setHistoryFilter('');
     }
+    // Note: We don't reset to '' here anymore to allow manual dropdown filter to persist 
+    // when no database/container is selected in the sidebar.
   }, [selectedDatabase, selectedContainer]);
 
 
@@ -980,7 +980,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   title={`${h.query}\n${h.databaseId}/${h.containerId}\n${new Date(h.timestamp).toLocaleString()}\n\nClick/Enter: Open in tab\nDelete/Backspace: Remove`}
                 >
                   <div className="history-query-text">{h.query}</div>
-                  <div className="history-meta">{h.databaseId}/{h.containerId}</div>
+                  {historyFilter !== `${h.databaseId}/${h.containerId}` && <div className="history-meta">{h.databaseId}/{h.containerId}</div>}
                   <div className="history-actions">
                     <button
                       className="history-action-btn"
