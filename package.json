@@ -23,7 +23,7 @@
     },
     "dependencies": {
         "@azure/cosmos": "^4.0.0",
-        "@azure/identity": "^4.13.0",
+        "@azure/identity": "^4.13.1",
         "@types/prismjs": "^1.26.5",
         "diff": "^8.0.3",
         "electron-updater": "^6.8.3",
