@@ -6,7 +6,7 @@
     border-bottom: 1px solid var(--border-color);
     background-color: var(--bg-primary);
     box-sizing: border-box;
-    overflow: visible; /* Changed from hidden to allow suggestions to overlap */
+    overflow: hidden;
     position: relative;
 }
 
