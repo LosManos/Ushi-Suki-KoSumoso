@@ -429,6 +429,16 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
         };
     }, [showDropdown]);
 
+    // Scroll active suggestion into view
+    useEffect(() => {
+        if (showSuggestions) {
+            const selectedElement = document.querySelector('.query-suggestions-popup .suggestion-item.selected');
+            if (selectedElement) {
+                selectedElement.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+            }
+        }
+    }, [suggestionIndex, showSuggestions]);
+
     const handleQuickLookup = () => {
         if (!quickId.trim()) return;
         onGetDocument(quickId.trim());
@@ -610,7 +620,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
                         position: 'fixed',
                         top: (queryEditorRef.current?.getBoundingClientRect().top || 0) + 40,
                         right: window.innerWidth - (queryEditorRef.current?.getBoundingClientRect().right || 0) + 20,
-                        maxHeight: queryEditorRef.current ? `${queryEditorRef.current.offsetHeight - 60}px` : '400px',
+                        maxHeight: 'min(400px, 80vh)',
                         zIndex: 2500
                     }}
                 >
