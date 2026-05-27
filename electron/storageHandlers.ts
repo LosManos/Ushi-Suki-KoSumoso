@@ -230,3 +230,72 @@ export async function deleteTemplate(filePath: string, storageKey: string): Prom
         return { success: false, error: error.message };
     }
 }
+
+export async function savePropertyTranslations(filePath: string, account: string, containerPath: string, propertyPath: string, mappings: Record<string, string>): Promise<any> {
+    try {
+        let data: any = { Accounts: [] };
+        try {
+            if (fs.existsSync(filePath)) {
+                const content = await fs.promises.readFile(filePath, 'utf8');
+                data = JSON.parse(content);
+            }
+        } catch (e) { }
+
+        if (!data.Accounts) data = { Accounts: [] };
+
+        const [dbId, containerId] = containerPath.split('/');
+
+        let accountObj = data.Accounts.find((a: any) => a.Name === account);
+        if (!accountObj) {
+            accountObj = { Name: account, Databases: [] };
+            data.Accounts.push(accountObj);
+        }
+
+        let databaseObj = accountObj.Databases.find((d: any) => d.Name === dbId);
+        if (!databaseObj) {
+            databaseObj = { Name: dbId, Containers: [] };
+            accountObj.Databases.push(databaseObj);
+        }
+
+        let containerObj = databaseObj.Containers.find((c: any) => c.Name === containerId);
+        if (!containerObj) {
+            containerObj = { Name: containerId, Properties: [] };
+            databaseObj.Containers.push(containerObj);
+        }
+
+        let propertyObj = containerObj.Properties.find((p: any) => p.Path === propertyPath);
+        if (!propertyObj) {
+            propertyObj = { Path: propertyPath, Mappings: [] };
+            containerObj.Properties.push(propertyObj);
+        }
+
+        // Replace all mappings for this property path
+        propertyObj.Mappings = Object.entries(mappings)
+            .filter(([_, trans]) => trans && trans.trim())
+            .map(([val, trans]) => ({
+                Value: val,
+                Translation: trans.trim(),
+                LastUpdated: new Date().toISOString()
+            }));
+
+        // Cleanup empty objects up the tree if there are no mappings left
+        if (propertyObj.Mappings.length === 0) {
+            containerObj.Properties = containerObj.Properties.filter((p: any) => p.Path !== propertyPath);
+        }
+        if (containerObj.Properties.length === 0) {
+            databaseObj.Containers = databaseObj.Containers.filter((c: any) => c.Name !== containerId);
+        }
+        if (databaseObj.Containers.length === 0) {
+            accountObj.Databases = accountObj.Databases.filter((d: any) => d.Name !== dbId);
+        }
+        if (accountObj.Databases.length === 0) {
+            data.Accounts = data.Accounts.filter((a: any) => a.Name !== account);
+        }
+
+        await fs.promises.writeFile(filePath, JSON.stringify(data, null, 2));
+        return { success: true };
+    } catch (error: any) {
+        console.error('[Storage] Failed to save property translations:', error);
+        return { success: false, error: error.message };
+    }
+}

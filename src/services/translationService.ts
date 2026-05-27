@@ -14,6 +14,10 @@ export const translationService = {
         return window.ipcRenderer.invoke('storage:saveTranslation', account, containerPath, propertyPath, value, translation);
     },
 
+    savePropertyTranslations: async (account: string, containerPath: string, propertyPath: string, mappings: TranslationMapping): Promise<{ success: boolean; error?: string }> => {
+        return window.ipcRenderer.invoke('storage:savePropertyTranslations', account, containerPath, propertyPath, mappings);
+    },
+
     getTranslations: async (): Promise<{ success: boolean; data?: Record<string, ContainerTranslations>; error?: string }> => {
         return window.ipcRenderer.invoke('storage:getTranslations');
     },

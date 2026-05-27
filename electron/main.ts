@@ -4,7 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import { cosmosService } from './cosmos';
 import { checkUpdate, getReleases } from './updateHandler';
-import { saveSchema, getSchemas, saveTemplate, getTemplates, deleteTemplate, migrateToExplicitHierarchy } from './storageHandlers';
+import { saveSchema, getSchemas, saveTemplate, getTemplates, deleteTemplate, migrateToExplicitHierarchy, savePropertyTranslations } from './storageHandlers';
 
 process.env.DIST = path.join(__dirname, '../dist');
 
@@ -874,6 +874,10 @@ app.whenReady().then(() => {
             console.error('[Main] Failed to save translation:', error);
             return { success: false, error: error.message };
         }
+    });
+
+    ipcMain.handle('storage:savePropertyTranslations', async (_, account: string, containerPath: string, propertyPath: string, mappings: Record<string, string>) => {
+        return savePropertyTranslations(translationsPath, account, containerPath, propertyPath, mappings);
     });
 
     ipcMain.handle('storage:getTranslations', async () => {

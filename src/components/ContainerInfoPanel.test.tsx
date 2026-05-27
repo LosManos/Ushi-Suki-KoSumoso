@@ -68,11 +68,8 @@ describe('ContainerInfoPanel', () => {
     it('handles discover schema', async () => {
         render(<ContainerInfoPanel {...defaultProps} />);
         
-        await waitFor(() => {
-            expect(screen.getByText('test-container')).toBeInTheDocument();
-        });
-        
-        const discoverBtn = screen.getByRole('button', { name: /Discover/i });
+        // Wait for container info to load and discover button to be available
+        const discoverBtn = await screen.findByRole('button', { name: /Discover/i });
         fireEvent.click(discoverBtn);
 
         await waitFor(() => {

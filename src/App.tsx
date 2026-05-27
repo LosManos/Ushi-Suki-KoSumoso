@@ -743,38 +743,71 @@ function App() {
         setTranslationItem({ item, sourceTabId: activeTabId, propertyPath });
     };
 
-    const confirmTranslation = async (translation: string) => {
+    const confirmTranslation = async (mappings: Record<string, string>) => {
         if (!translationItem || !activeTabId) return;
-        const { item, propertyPath } = translationItem;
+        const { propertyPath } = translationItem;
         const [dbId, containerId] = activeTabId.split('/');
 
-        const result = await translationService.saveTranslation(accountName, activeTabId, propertyPath, item.value, translation);
-        if (result.success) {
-            // Update local state (maintaining hierarchy)
-            setTranslations((prev: any) => {
-                const newTranslations = { ...prev };
-                if (!newTranslations[accountName]) newTranslations[accountName] = {};
-                if (!newTranslations[accountName][dbId]) newTranslations[accountName][dbId] = {};
-                if (!newTranslations[accountName][dbId][containerId]) newTranslations[accountName][dbId][containerId] = {};
-                if (!newTranslations[accountName][dbId][containerId][propertyPath]) newTranslations[accountName][dbId][containerId][propertyPath] = {};
+        try {
+            const result = await translationService.savePropertyTranslations(accountName, activeTabId, propertyPath, mappings);
+            if (result.success) {
+                // Update local state cleanly using immutable deep copying to trigger React update
+                setTranslations((prev: any) => {
+                    const newTranslations = { ...prev };
+                    const accObj = { ...(newTranslations[accountName] || {}) };
+                    const dbObj = { ...(accObj[dbId] || {}) };
 
-                const valueKey = String(item.value);
-                if (translation && translation.trim()) {
-                    newTranslations[accountName][dbId][containerId][propertyPath][valueKey] = translation;
-                } else {
-                    delete newTranslations[accountName][dbId][containerId][propertyPath][valueKey];
-                    // Cleanup
-                    if (Object.keys(newTranslations[accountName][dbId][containerId][propertyPath]).length === 0) {
-                        delete newTranslations[accountName][dbId][containerId][propertyPath];
+                    // Filter and trim empty translations
+                    const trimmedMappings: Record<string, string> = {};
+                    for (const [k, v] of Object.entries(mappings)) {
+                        if (v && v.trim()) {
+                            trimmedMappings[k] = v.trim();
+                        }
                     }
-                    if (Object.keys(newTranslations[accountName][dbId][containerId]).length === 0) {
-                        delete newTranslations[accountName][dbId][containerId];
+
+                    if (Object.keys(trimmedMappings).length > 0) {
+                        dbObj[containerId] = {
+                            ...(dbObj[containerId] || {}),
+                            [propertyPath]: trimmedMappings
+                        };
+                        accObj[dbId] = dbObj;
+                        newTranslations[accountName] = accObj;
+                    } else {
+                        // If all mappings for the path are empty, clean up empty parent nodes recursively
+                        const containerObj = { ...(dbObj[containerId] || {}) };
+                        delete containerObj[propertyPath];
+
+                        if (Object.keys(containerObj).length > 0) {
+                            dbObj[containerId] = containerObj;
+                            accObj[dbId] = dbObj;
+                            newTranslations[accountName] = accObj;
+                        } else {
+                            delete dbObj[containerId];
+                            if (Object.keys(dbObj).length > 0) {
+                                accObj[dbId] = dbObj;
+                                newTranslations[accountName] = accObj;
+                            } else {
+                                delete accObj[dbId];
+                                if (Object.keys(accObj).length > 0) {
+                                    newTranslations[accountName] = accObj;
+                                } else {
+                                    delete newTranslations[accountName];
+                                }
+                            }
+                        }
                     }
-                }
-                return newTranslations;
-            });
+                    return newTranslations;
+                });
+            } else {
+                console.error('[Translation] Save failed:', result.error);
+                alert(`Failed to save translations: ${result.error}`);
+            }
+        } catch (error: any) {
+            console.error('[Translation] Uncaught exception during save:', error);
+            alert(`An error occurred while saving translations:\n${error.message}`);
+        } finally {
+            setTranslationItem(null);
         }
-        setTranslationItem(null);
     };
 
     const handleEditDocument = (doc: any) => {
@@ -1041,11 +1074,11 @@ function App() {
                 {translationItem && (
                     <TranslationDialog
                         propertyPath={translationItem.propertyPath}
-                        value={translationItem.item.value}
-                        currentTranslation={(() => {
-                            if (!activeTabId) return undefined;
+                        initialValue={translationItem.item.value}
+                        currentMappings={(() => {
+                            if (!activeTabId) return {};
                             const [dbId, containerId] = activeTabId.split('/');
-                            return (translations[accountName] as any)?.[dbId]?.[containerId]?.[translationItem.propertyPath]?.[String(translationItem.item.value)];
+                            return (translations[accountName] as any)?.[dbId]?.[containerId]?.[translationItem.propertyPath] || {};
                         })()}
                         onClose={() => setTranslationItem(null)}
                         onConfirm={confirmTranslation}
