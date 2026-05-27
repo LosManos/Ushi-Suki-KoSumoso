@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import fs from 'fs';
-import { saveSchema, getSchemas, saveTemplate, getTemplates, deleteTemplate, migrateToExplicitHierarchy } from './storageHandlers';
+import { saveSchema, getSchemas, saveTemplate, getTemplates, deleteTemplate, migrateToExplicitHierarchy, savePropertyTranslations } from './storageHandlers';
 
 // Mock the real 'fs' module
 vi.mock('fs', () => {
@@ -177,6 +177,36 @@ describe('storageHandlers', () => {
             // Cont1 should be gone, but Cont2 should remain
             expect(writtenData.Accounts[0].Databases[0].Containers).toHaveLength(1);
             expect(writtenData.Accounts[0].Databases[0].Containers[0].Name).toBe('Cont2');
+        });
+    });
+
+    // ─── Translations ───────────────────────────────────────────────────────
+
+    describe('savePropertyTranslations', () => {
+        it('saves property translations mapping successfully', async () => {
+            (fs.existsSync as any).mockReturnValue(false);
+
+            await savePropertyTranslations(TEMP_FILE, 'Acc1', 'Db1/Cont1', 'role', {
+                'admin': 'Administrator',
+                'user': 'Normal User'
+            });
+
+            expect(fs.promises.writeFile).toHaveBeenCalled();
+            const writeArgs = (fs.promises.writeFile as any).mock.calls[0];
+            expect(writeArgs[0]).toBe(TEMP_FILE);
+
+            const writtenData = JSON.parse(writeArgs[1]);
+            expect(writtenData.Accounts[0].Name).toBe('Acc1');
+            expect(writtenData.Accounts[0].Databases[0].Name).toBe('Db1');
+            expect(writtenData.Accounts[0].Databases[0].Containers[0].Name).toBe('Cont1');
+            
+            const prop = writtenData.Accounts[0].Databases[0].Containers[0].Properties[0];
+            expect(prop.Path).toBe('role');
+            expect(prop.Mappings).toHaveLength(2);
+            expect(prop.Mappings[0].Value).toBe('admin');
+            expect(prop.Mappings[0].Translation).toBe('Administrator');
+            expect(prop.Mappings[1].Value).toBe('user');
+            expect(prop.Mappings[1].Translation).toBe('Normal User');
         });
     });
 });
