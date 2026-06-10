@@ -1,12 +1,6 @@
 
 // Template storage service - persists templates per container
 
-export interface ContainerTemplate {
-    containerId: string;  // "databaseId/containerId"
-    template: string;
-    lastUpdated: number;
-}
-
 export const templateService = {
     saveTemplate: async (containerId: string, template: string): Promise<{ success: boolean; error?: string }> => {
         return window.ipcRenderer.invoke('storage:saveTemplate', containerId, template);

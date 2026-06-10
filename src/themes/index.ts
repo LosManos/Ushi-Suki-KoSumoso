@@ -18,7 +18,7 @@ export type ResolvedMode = 'light' | 'dark';
 // ── Token shape ───────────────────────────────────────────────────────────────
 // These map 1-to-1 with the CSS custom properties consumed by the app.
 
-export interface ThemeTokens {
+interface ThemeTokens {
     bgPrimary: string;
     bgSecondary: string;
     bgTertiary: string;
