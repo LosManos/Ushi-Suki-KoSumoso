@@ -954,5 +954,3 @@ const JsonNode: React.FC<{
         </div>
     );
 }
-
-export default JsonTreeView;
