@@ -34,7 +34,7 @@ interface ResultsViewProps {
   onEditDocument?: (doc: any) => void;
 }
 
-type ViewMode = 'text' | 'json' | 'template';
+type ViewMode = 'text' | 'json' | 'template' | 'table';
 
 interface SearchState {
   query: string;
@@ -98,6 +98,105 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
       return results;
     }
   }, [results, search.query, search.show, search.isRegex, viewMode]);
+
+  // Table state and helper functions
+  const [sortColumn, setSortColumn] = React.useState<string | null>(null);
+  const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('asc');
+  const [selectedRowIndex, setSelectedRowIndex] = React.useState<number | null>(null);
+
+  const columns = React.useMemo(() => {
+    const keys = new Set<string>();
+    filteredResults.forEach(item => {
+      if (item && typeof item === 'object') {
+        Object.keys(item).forEach(key => keys.add(key));
+      }
+    });
+    const sorted = Array.from(keys);
+    return sorted.sort((a, b) => {
+      if (a === 'id') return -1;
+      if (b === 'id') return 1;
+      const aIsSystem = a.startsWith('_');
+      const bIsSystem = b.startsWith('_');
+      if (aIsSystem && !bIsSystem) return 1;
+      if (!aIsSystem && bIsSystem) return -1;
+      return a.localeCompare(b);
+    });
+  }, [filteredResults]);
+
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      if (sortDirection === 'asc') {
+        setSortDirection('desc');
+      } else {
+        setSortColumn(null);
+      }
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  const sortedResults = React.useMemo(() => {
+    if (!sortColumn) return filteredResults;
+    const sorted = [...filteredResults];
+    sorted.sort((a, b) => {
+      const aVal = a[sortColumn];
+      const bVal = b[sortColumn];
+      if (aVal === undefined || aVal === null) return 1;
+      if (bVal === undefined || bVal === null) return -1;
+
+      let comp = 0;
+      if (typeof aVal === 'object' && typeof bVal === 'object') {
+        comp = JSON.stringify(aVal).localeCompare(JSON.stringify(bVal));
+      } else if (typeof aVal === 'number' && typeof bVal === 'number') {
+        comp = aVal - bVal;
+      } else {
+        comp = String(aVal).localeCompare(String(bVal));
+      }
+      return sortDirection === 'asc' ? comp : -comp;
+    });
+    return sorted;
+  }, [filteredResults, sortColumn, sortDirection]);
+
+  const highlightText = (text: string, query: string, isRegex: boolean) => {
+    if (!query) return text;
+    try {
+      const pattern = isRegex ? query : query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`(${pattern})`, 'gi');
+      const parts = text.split(regex);
+      return (
+        <>
+          {parts.map((part, i) =>
+            regex.test(part) ? <mark key={i}>{part}</mark> : <span key={i}>{part}</span>
+          )}
+        </>
+      );
+    } catch (e) {
+      return text;
+    }
+  };
+
+  const renderCellValue = (val: any) => {
+    if (val === null) return <span className="cell-null">null</span>;
+    if (val === undefined) return '';
+    if (typeof val === 'boolean') {
+      return (
+        <span className={`cell-boolean ${val ? 'bool-true' : 'bool-false'}`}>
+          {val ? 'true' : 'false'}
+        </span>
+      );
+    }
+    if (typeof val === 'object') {
+      const stringified = JSON.stringify(val);
+      return (
+        <span className="cell-object" title={stringified}>
+          {highlightText(stringified, search.show ? search.query : '', search.isRegex)}
+        </span>
+      );
+    }
+    const stringified = String(val);
+    return highlightText(stringified, search.show ? search.query : '', search.isRegex);
+  };
 
   // Focus helper
   const focusActiveView = React.useCallback(() => {
@@ -461,8 +560,12 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
         }
       }
 
-      // Cmd/Ctrl + Alt + T to switch to Template view
-      if ((e.metaKey || e.ctrlKey) && e.altKey && e.code === 'KeyT') {
+      // Cmd/Ctrl + Alt + Shift + T to switch to Table view
+      if ((e.metaKey || e.ctrlKey) && e.altKey && e.shiftKey && e.code === 'KeyT') {
+        e.preventDefault();
+        setViewMode('table');
+      } else if ((e.metaKey || e.ctrlKey) && e.altKey && !e.shiftKey && e.code === 'KeyT') {
+        // Cmd/Ctrl + Alt + T to switch to Template view
         e.preventDefault();
         setViewMode('template');
       }
@@ -673,6 +776,13 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
               Hierarchical
             </button>
             <button
+              className={viewMode === 'table' ? 'active' : ''}
+              onClick={() => setViewMode('table')}
+              title="Table View (Cmd/Ctrl+Alt+Shift+T)"
+            >
+              Table
+            </button>
+            <button
               className={viewMode === 'template' ? 'active' : ''}
               onClick={() => setViewMode('template')}
               title="Template View (Cmd/Ctrl+Alt+T)"
@@ -830,6 +940,87 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                   onAddTranslation={onAddTranslation}
                   onEditDocument={onEditDocument}
                 />
+              </div>
+            ) : viewMode === 'table' ? (
+              <div className="table-view-container">
+                <table className="results-table">
+                  <thead>
+                    <tr>
+                      <th className="actions-header sticky-col">Actions</th>
+                      {columns.map(col => (
+                        <th
+                          key={col}
+                          onClick={() => handleSort(col)}
+                          className={sortColumn === col ? 'sorted-header' : ''}
+                          title={`Sort by ${col}`}
+                        >
+                          <div className="header-cell-content">
+                            <span>{col}</span>
+                            {sortColumn === col && (
+                              <span className="sort-indicator">
+                                {sortDirection === 'asc' ? ' ▴' : ' ▾'}
+                              </span>
+                            )}
+                          </div>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedResults.map((item, rowIndex) => {
+                      const isSelected = selectedRowIndex === rowIndex;
+                      return (
+                        <tr
+                          key={item.id || rowIndex}
+                          className={isSelected ? 'selected-row' : ''}
+                          onClick={() => setSelectedRowIndex(rowIndex)}
+                          onDoubleClick={() => onEditDocument?.(item)}
+                        >
+                          <td className="actions-cell sticky-col">
+                            <div className="cell-actions">
+                              <button
+                                className="table-action-btn"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onEditDocument?.(item);
+                                }}
+                                title="Edit Document"
+                                disabled={!onEditDocument}
+                              >
+                                <Edit size={12} />
+                              </button>
+                              <button
+                                className="table-action-btn"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigator.clipboard.writeText(JSON.stringify(item, null, 2));
+                                }}
+                                title="Copy Document JSON"
+                              >
+                                <Copy size={12} />
+                              </button>
+                            </div>
+                          </td>
+                          {columns.map(col => {
+                            const val = item[col];
+                            const stringValue = val === null || val === undefined ? '' : typeof val === 'object' ? JSON.stringify(val) : String(val);
+                            return (
+                              <td
+                                key={col}
+                                className={typeof val === 'number' ? 'number-cell' : ''}
+                                title={stringValue}
+                              >
+                                <div className="cell-content-wrapper">
+                                  {renderCellValue(val)}
+                                </div>
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             ) : (
               <div className="template-view-container" ref={templateContainerRef}>
