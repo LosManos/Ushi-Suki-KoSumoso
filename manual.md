@@ -62,6 +62,13 @@ Transform your JSON results into custom text formats.
 *   **Escaping**: Use `{{` and `}}` for literal braces.
 *   **Scenario**: Perfect for generating CSV lines, Bash commands, or human-readable reports from your data.
 
+### 4. Table View (`Cmd + Alt + Shift + T`)
+Shows your JSON results in a structured grid/table format.
+*   **Dynamic Columns**: Columns are automatically discovered and sorted alphabetically (with `id` shown first and system fields starting with `_` at the end).
+*   **Sorting**: Click on column headers to sort the table ascending, descending, or reset to original.
+*   **Actions**: Edit or copy each document directly from the row's Action column, or double-click a row to edit the document.
+*   **Auto-highlight**: Active search queries highlight matching text inside cells.
+
 ---
 
 ## Editing Data
@@ -106,6 +113,7 @@ Quickly jump to any container in your account without using the sidebar. Just st
 | **`Cmd + T`** | Switch to Text Results |
 | **`Cmd + Shift + T`** | Switch to Hierarchical Results |
 | **`Cmd + Alt + T`** | Switch to Template Results |
+| **`Cmd + Alt + Shift + T`**| Switch to Table Results |
 | **`Cmd + E`** | Focus Query Editor |
 | **`Cmd + Shift + H`**| Toggle Query Helper Mode |
 | **`Cmd + R`** | Focus Results View |

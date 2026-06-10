@@ -99,4 +99,49 @@ describe('ResultsView', () => {
         // But let's check if the button gets active class
         expect(jsonBtn).toHaveClass('active');
     });
+
+    it('switches to Table view and renders columns and rows', () => {
+        renderWithContext(<ResultsView {...defaultProps} />);
+        
+        const tableBtn = screen.getByRole('button', { name: /Table/i });
+        fireEvent.click(tableBtn);
+        
+        expect(tableBtn).toHaveClass('active');
+        
+        // Assert table headers exist
+        expect(screen.getByText('Actions')).toBeInTheDocument();
+        expect(screen.getByText('id')).toBeInTheDocument();
+        expect(screen.getByText('name')).toBeInTheDocument();
+        
+        // Assert table rows display document data
+        expect(screen.getByText('Alice')).toBeInTheDocument();
+        expect(screen.getByText('Bob')).toBeInTheDocument();
+    });
+
+    it('sorts columns when clicking header', () => {
+        renderWithContext(<ResultsView {...defaultProps} />);
+        
+        const tableBtn = screen.getByRole('button', { name: /Table/i });
+        fireEvent.click(tableBtn);
+        
+        const nameHeader = screen.getByText('name');
+        
+        // By default, Alice should be first, Bob second (order they appear)
+        let rows = screen.getAllByRole('row');
+        // Index 0 is the header row, Index 1 is Alice, Index 2 is Bob
+        expect(rows[1]).toHaveTextContent('Alice');
+        expect(rows[2]).toHaveTextContent('Bob');
+        
+        // Click name header to sort ascending (Alice then Bob)
+        fireEvent.click(nameHeader);
+        rows = screen.getAllByRole('row');
+        expect(rows[1]).toHaveTextContent('Alice');
+        expect(rows[2]).toHaveTextContent('Bob');
+        
+        // Click name header again to toggle to desc
+        fireEvent.click(nameHeader);
+        rows = screen.getAllByRole('row');
+        expect(rows[1]).toHaveTextContent('Bob');
+        expect(rows[2]).toHaveTextContent('Alice');
+    });
 });
